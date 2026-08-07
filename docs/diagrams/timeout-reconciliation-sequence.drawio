@@ -1,0 +1,553 @@
+<mxfile host="app.diagrams.net" modified="2026-08-07T20:35:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="timeout-reconciliation" name="Timeout &amp; Reconciliation Sequence">
+    <mxGraphModel dx="4200" dy="3300" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4200" pageHeight="3900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Domestic Interbank Transfer — Timeout &amp;amp; Reconciliation Sequence&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;3&quot;&gt;Timeout ≠ Rejection · No Blind Resubmission · Reservation remains controlled · Durable Reconciliation · Auditable Manual Recovery&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E78;strokeColor=#1F4E78;fontColor=#FFFFFF;fontSize=22;fontStyle=1;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="4040" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="pm" value="Transfer Management&lt;br&gt;Process Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="100" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="pm_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_pm" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="pm" target="pm_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="transfer" value="Transfer&lt;br&gt;Aggregate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="transfer_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="546.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_transfer" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="transfer" target="transfer_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="account" value="Account &amp;amp; Balance&lt;br&gt;Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="760" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="account_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_account" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="account" target="account_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="PostgreSQL" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#E2F0D9;strokeColor=#70AD47;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="db_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_db" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="db" target="db_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="recon" value="Reconciliation&lt;br&gt;Worker / Context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="recon_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_recon" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="recon" target="recon_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="payint" value="Payment Network&lt;br&gt;Integration / ACL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1750" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="payint_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_payint" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="payint" target="payint_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="network" value="Domestic Payment&lt;br&gt;Network" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2080" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="network_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_network" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="network" target="network_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="outbox" value="Outbox&lt;br&gt;Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2410" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="outbox_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2526.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_outbox" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="outbox" target="outbox_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="notify" value="Notification&lt;br&gt;Consumer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2740" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="notify_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2856.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_notify" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="notify" target="notify_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" value="Operations&lt;br&gt;User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#BF9000;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="3070" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="ops_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3186.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_ops" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="ops" target="ops_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="audit" value="Audit &amp;amp; Operations&lt;br&gt;Module" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="3400" y="145" width="235" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3516.5" y="3640" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_audit" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="audit" target="audit_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase1" value="&lt;b&gt;1. Ambiguous external timeout — outcome cannot be inferred&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="4040" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="precondition" value="&lt;b&gt;Precondition&lt;/b&gt;&lt;br&gt;Fraud Approved · Balance Reservation = Active · Transfer = PendingExternalSubmission · stable NetworkSubmissionReference assigned." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="330" width="650" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_1s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="474" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_1t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="474" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" value="Submit Transfer(NetworkSubmissionReference)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_1s" target="a_payint_1t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_2s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="529" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_2t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="529" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" value="Submit domestic interbank transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_2s" target="a_network_2t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_3s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="584" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_3t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="584" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m3" value="TIMEOUT — no definitive business result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_network_3s" target="a_payint_3t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_4s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="639" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_4t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="639" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m4" value="PaymentNetworkTimedOut / outcome ambiguous" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_4s" target="a_pm_4t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_5s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="694" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_5t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="546.5" y="694" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m5" value="Mark SubmissionStatusUnknown" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_5s" target="a_transfer_5t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_6s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="749" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_6t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="749" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m6" value="&lt;b&gt;Short local transaction&lt;/b&gt;&lt;br&gt;persist Transfer/Process = SubmissionStatusUnknown&lt;br&gt;+ durable Reconciliation work" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_6s" target="a_db_6t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_7s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="814" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_7t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="814" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m7" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_7s" target="a_pm_7t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="no_retry" value="&lt;b&gt;PROHIBITED&lt;/b&gt;&lt;br&gt;Do NOT blindly call Submit again after this timeout.&lt;br&gt;The Payment Network may already have accepted or settled the Transfer." style="shape=note;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=11;fontStyle=1;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1850" y="675" width="470" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="reservation_note" value="&lt;b&gt;Reservation rule&lt;/b&gt;&lt;br&gt;The active Reservation is NOT automatically released while the external outcome is unknown." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="735" y="835" width="440" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="phase2" value="&lt;b&gt;2. Durable Reconciliation — status enquiry uses the same external correlation reference&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="970" width="4040" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_8s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="1059" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_8t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1059" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m8" value="Claim eligible Reconciliation work&lt;br&gt;persist attempt/lease" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_recon_8s" target="a_db_8t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_9s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1114" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_9t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="1114" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m9" value="TransferId + NetworkSubmissionReference + attempt state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_9s" target="a_recon_9t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_10s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="1169" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_10t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="1169" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m10" value="Enquire Transfer Status(NetworkSubmissionReference)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_recon_10s" target="a_payint_10t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_11s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="1224" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_11t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="1224" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m11" value="Status Enquiry using stable reference" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_11s" target="a_network_11t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="restart_note" value="&lt;b&gt;Restart safe&lt;/b&gt;&lt;br&gt;Reconciliation work, attempt state and NextAttemptAt are persisted. Application restart does not require blind resubmission." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1370" y="810" width="520" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="alt_settled" value="&lt;b&gt;ALT A — Authoritative result = Settled&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#808080;fontSize=12;fontStyle=1;align=left;spacingLeft=12;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1320" width="4040" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_12s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="1409" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_12t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="1409" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m12" value="Status = Settled" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_network_12s" target="a_payint_12t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_13s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="1459" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_13t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="1459" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m13" value="Reconciliation result: Settled" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_13s" target="a_recon_13t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_14s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="1509" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_14t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1509" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m14" value="Resolved: Settled" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_recon_14s" target="a_pm_14t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_15s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1559" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_15t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="546.5" y="1559" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m15" value="Process Settlement Confirmation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_15s" target="a_transfer_15t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_16s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1609" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_16t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="1609" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m16" value="Consume Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_16s" target="a_account_16t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_17s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="1659" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_17t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1659" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m17" value="&lt;b&gt;Local transaction&lt;/b&gt;&lt;br&gt;Reservation Active → Consumed&lt;br&gt;ReservedBalance -= Amount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_17s" target="a_db_17t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_18s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1714" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_18t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="1714" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m18" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_18s" target="a_account_18t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_19s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="1759" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_19t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1759" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m19" value="Reservation Consumed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_19s" target="a_pm_19t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_20s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1809" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_20t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="546.5" y="1809" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m20" value="Complete Transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_20s" target="a_transfer_20t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_21s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1859" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_21t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1859" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m21" value="&lt;b&gt;Atomic transaction&lt;/b&gt;&lt;br&gt;Transfer = Completed + Outbox(TransferCompleted)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_21s" target="a_db_21t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_22s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1914" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_22t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="1914" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m22" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_22s" target="a_pm_22t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_outbox_23s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2526.5" y="1959" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_23t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="1959" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m23" value="Claim TransferCompleted Outbox" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_outbox_23s" target="a_db_23t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_24s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="2009" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_outbox_24t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2526.5" y="2009" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m24" value="Outbox Message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_24s" target="a_outbox_24t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_outbox_25s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2526.5" y="2059" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_notify_25t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2856.5" y="2059" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m25" value="TransferCompleted (at-least-once)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_outbox_25s" target="a_notify_25t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="alt_rejected" value="&lt;b&gt;ALT B — Authoritative result = Definitively Rejected&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#808080;fontSize=12;fontStyle=1;align=left;spacingLeft=12;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="2150" width="4040" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_26s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="2234" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_26t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="2234" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m26" value="Status = Definitively Rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_network_26s" target="a_payint_26t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_27s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="2284" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_27t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="2284" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m27" value="Reconciliation result: Rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_27s" target="a_recon_27t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_28s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="2334" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_28t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="2334" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m28" value="Resolved: Rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_recon_28s" target="a_pm_28t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_29s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="2384" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_29t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="546.5" y="2384" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m29" value="Mark Transfer Rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_29s" target="a_transfer_29t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_30s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="2434" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_30t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="2434" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m30" value="Release active Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_30s" target="a_account_30t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_31s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="2484" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_31t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="2484" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m31" value="&lt;b&gt;Local transaction&lt;/b&gt;&lt;br&gt;Reservation Active → Released&lt;br&gt;ReservedBalance -= Amount; AvailableBalance += Amount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_31s" target="a_db_31t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_32s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="2539" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_32t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="2539" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m32" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_32s" target="a_account_32t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_33s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="876.5" y="2584" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_33t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="2584" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m33" value="Reservation Released" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_33s" target="a_pm_33t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="alt_unknown" value="&lt;b&gt;ALT C — Result still Unknown / conflicting&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#808080;fontSize=12;fontStyle=1;align=left;spacingLeft=12;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="2675" width="4040" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_34s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2196.5" y="2759" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_34t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="2759" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m34" value="Status = Unknown / conflicting evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_network_34s" target="a_payint_34t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_35s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1866.5" y="2809" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_35t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="2809" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m35" value="Still Unknown" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_35s" target="a_recon_35t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_36s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="2859" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_36t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="2859" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m36" value="Persist Reconciliation Attempt&lt;br&gt;Attempts + LastOutcome + NextAttemptAt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_recon_36s" target="a_db_36t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_37s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="2914" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_37t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="2914" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m37" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_37s" target="a_recon_37t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="policy_note" value="&lt;b&gt;Configured bounded policy&lt;/b&gt;&lt;br&gt;If automated recovery may continue safely → retry Reconciliation later.&lt;br&gt;Exact retry count, delay and escalation time are NOT specified by the Challenge." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="2960" width="610" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="a_recon_38s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1536.5" y="3069" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_38t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3069" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m38" value="Configured escalation threshold reached" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_recon_38s" target="a_pm_38t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_39s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3119" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_39t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="546.5" y="3119" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m39" value="Mark ManualReviewRequired" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_39s" target="a_transfer_39t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_40s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3164" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_audit_40t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3516.5" y="3164" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m40" value="Create operational case / expose stuck Transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_40s" target="a_audit_40t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_audit_41s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3516.5" y="3209" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_ops_41t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3186.5" y="3209" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m41" value="Manual intervention required" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_audit_41s" target="a_ops_41t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase3" value="&lt;b&gt;3. Manual recovery — explicit, authorised and auditable; never direct DB editing&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="3300" width="4040" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="a_ops_42s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3186.5" y="3399" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_audit_42t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3516.5" y="3399" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m42" value="Authorised Manual Recovery Command + reason" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#C55A11;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_ops_42s" target="a_audit_42t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_audit_43s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3516.5" y="3449" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_43t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3449" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m43" value="Execute explicit recovery action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#C55A11;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_audit_43s" target="a_pm_43t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_44s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3499" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_44t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="3499" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m44" value="Persist allowed state/action + immutable Audit Record" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_44s" target="a_db_44t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_45s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1206.5" y="3554" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_45t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="216.5" y="3554" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m45" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_45s" target="a_pm_45t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="manual_note" value="&lt;b&gt;Examples only — subject to authorisation/business policy&lt;/b&gt;&lt;br&gt;Request another Reconciliation, record externally verified settlement/rejection, or release Reservation when explicitly authorised. Actor, reason, prior state, result and correlation must be audited." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2630" y="3360" width="760" height="155" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

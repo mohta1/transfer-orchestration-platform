@@ -1,0 +1,526 @@
+<mxfile host="app.diagrams.net" modified="2026-08-07T17:05:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="transfer-happy-path" name="Domestic Interbank Happy Path">
+    <mxGraphModel dx="3600" dy="2400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3600" pageHeight="2500" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Domestic Interbank Transfer — Happy-Path Sequence&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;3&quot;&gt;Persistent Process Manager · Fraud before Reservation · Accepted ≠ Settled · Transactional Outbox · At-Least-Once Notification&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E78;strokeColor=#1F4E78;fontColor=#FFFFFF;fontSize=22;fontStyle=1;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="3440" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="customer" value="Customer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="customer_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="174.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_customer" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="customer" target="customer_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="api" value="ASP.NET Core&lt;br&gt;Transfer API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="330" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="api_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="424.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_api" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="api" target="api_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pm" value="Transfer Management&lt;br&gt;Process Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="580" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pm_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_pm" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="pm" target="pm_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="transfer" value="Transfer&lt;br&gt;Aggregate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="830" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="transfer_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_transfer" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="transfer" target="transfer_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" value="Customer&lt;br&gt;Authorisation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1174.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_auth" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="auth" target="auth_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="limit" value="Daily Limit&lt;br&gt;Capability" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="limit_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1424.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_limit" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="limit" target="limit_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fraud" value="Fraud &amp;amp;&lt;br&gt;Compliance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="fraud_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1674.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_fraud" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="fraud" target="fraud_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="account" value="Account &amp;amp; Balance&lt;br&gt;Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1830" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="account_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_account" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="account" target="account_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="PostgreSQL" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#E2F0D9;strokeColor=#70AD47;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="2080" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_db" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="db" target="db_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="payint" value="Payment Network&lt;br&gt;Integration / ACL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="payint_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_payint" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="payint" target="payint_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="network" value="Domestic Payment&lt;br&gt;Network" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2580" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="network_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2674.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_network" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="network" target="network_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="outbox" value="Outbox&lt;br&gt;Background Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="2830" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="outbox_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2924.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_outbox" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="outbox" target="outbox_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="notify" value="Notification&lt;br&gt;Consumer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#4F81BD;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="3080" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="notify_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3174.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_notify" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="notify" target="notify_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="provider" value="Notification&lt;br&gt;Provider" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="3330" y="145" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="provider_bottom" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3424.0" y="2290" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="life_provider" value="" style="edgeStyle=none;html=1;endArrow=none;startArrow=none;strokeColor=#A6A6A6;dashed=1;strokeWidth=1;" edge="1" parent="1" source="provider" target="provider_bottom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase1" value="&lt;b&gt;1. HTTP acceptance + durable process creation&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="3440" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="phase2" value="&lt;b&gt;2. Authorisation, limit, fraud, and financial reservation&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="650" width="3440" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="phase3" value="&lt;b&gt;3. External submission and settlement&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1190" width="3440" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="phase4" value="&lt;b&gt;4. Financial finalisation + reliable asynchronous notification&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1690" width="3440" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="a_customer_1s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="174.0" y="354" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_api_1t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="424.0" y="354" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" value="POST /api/transfers&lt;br&gt;Idempotency-Key + X-Correlation-ID" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_customer_1s" target="a_api_1t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_api_2s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="424.0" y="404" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_2t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="404" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" value="SubmitTransfer request&lt;br&gt;validate request + fingerprint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_api_2s" target="a_pm_2t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_3s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="464" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_3t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="464" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m3" value="&lt;b&gt;Short local transaction&lt;/b&gt;&lt;br&gt;claim Idempotency Record + create Transfer&lt;br&gt;+ persist initial Process State" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_3s" target="a_db_3t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_4s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="534" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_4t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="534" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m4" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_4s" target="a_pm_4t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_5s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="584" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_api_5t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="424.0" y="584" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m5" value="Accepted: TransferId + current status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_5s" target="a_api_5t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_api_6s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="424.0" y="624" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_customer_6t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="174.0" y="624" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m6" value="202 Accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_api_6s" target="a_customer_6t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_7s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="734" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_7t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="734" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m7" value="Advance → PendingAuthorisation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_7s" target="a_transfer_7t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_8s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="784" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_auth_8t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1174.0" y="784" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m8" value="Authorise customer for Source Account" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_8s" target="a_auth_8t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_auth_9s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1174.0" y="829" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_9t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="829" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m9" value="Authorised" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_auth_9s" target="a_pm_9t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_10s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="874" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_10t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="874" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m10" value="Advance → Authorised" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_10s" target="a_transfer_10t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_11s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="919" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_limit_11t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1424.0" y="919" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m11" value="Validate Daily Transfer Limit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_11s" target="a_limit_11t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_limit_12s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1424.0" y="964" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_12t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="964" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m12" value="Approved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_limit_12s" target="a_pm_12t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_13s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1009" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_13t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="1009" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m13" value="Advance → PendingFraudScreening" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_13s" target="a_transfer_13t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_14s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1054" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_fraud_14t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1674.0" y="1054" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m14" value="Request Fraud Screening" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_14s" target="a_fraud_14t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_fraud_15s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1674.0" y="1099" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_15t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1099" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m15" value="Fraud Approved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_fraud_15s" target="a_pm_15t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_16s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1144" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_16t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="1144" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m16" value="Reserve Balance(TransferId, Amount)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_16s" target="a_account_16t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_17s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="1269" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_17t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="1269" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m17" value="&lt;b&gt;Short local transaction&lt;/b&gt;&lt;br&gt;optimistic Account update + BalanceReservation&lt;br&gt;DB constraints protect invariants" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_17s" target="a_db_17t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_18s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="1334" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_18t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="1334" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m18" value="COMMIT: Reservation Active" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_18s" target="a_account_18t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_19s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="1379" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_19t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1379" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m19" value="Balance Reserved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_19s" target="a_pm_19t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_20s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1424" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_20t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="1424" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m20" value="Advance → BalanceReserved → PendingExternalSubmission" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_20s" target="a_transfer_20t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_21s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1479" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_21t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="1479" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m21" value="Submit Transfer(NetworkSubmissionReference)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_21s" target="a_payint_21t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_22s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="1529" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_22t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2674.0" y="1529" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m22" value="Submit domestic interbank transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_22s" target="a_network_22t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_23s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2674.0" y="1579" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_23t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="1579" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m23" value="Submission Accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_network_23s" target="a_payint_23t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_24s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="1624" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_24t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1624" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m24" value="Accepted (not Settled)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_24s" target="a_pm_24t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_25s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1659" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_25t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="1659" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m25" value="Advance → SettlementPending" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_25s" target="a_transfer_25t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_network_26s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2674.0" y="1779" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_26t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="1779" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m26" value="Settlement Confirmation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_network_26s" target="a_payint_26t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_payint_27s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2424.0" y="1824" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_27t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1824" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m27" value="Settlement Confirmed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_payint_27s" target="a_pm_27t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_28s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1869" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_28t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="1869" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m28" value="Process Settlement Confirmation&lt;br&gt;raise TransferSettled domain fact" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_28s" target="a_transfer_28t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_29s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="1914" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_29t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="1914" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m29" value="Consume Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_29s" target="a_account_29t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_30s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="1959" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_30t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="1959" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m30" value="&lt;b&gt;Short local transaction&lt;/b&gt;&lt;br&gt;ReservedBalance -= Amount&lt;br&gt;Reservation → Consumed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_30s" target="a_db_30t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_31s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2009" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_31t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="2009" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m31" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_31s" target="a_account_31t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_account_32s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="1924.0" y="2049" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_32t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="2049" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m32" value="Reservation Consumed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_account_32s" target="a_pm_32t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_33s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="2089" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_transfer_33t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="924.0" y="2089" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m33" value="Complete Transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_33s" target="a_transfer_33t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_34s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="2139" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_34t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2139" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m34" value="&lt;b&gt;Atomic local transaction&lt;/b&gt;&lt;br&gt;Transfer = Completed + Outbox(TransferCompleted)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_pm_34s" target="a_db_34t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_35s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2189" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_pm_35t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="674.0" y="2189" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m35" value="COMMIT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_35s" target="a_pm_35t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_outbox_36s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2924.0" y="2239" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_36t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2239" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m36" value="Claim pending Outbox&lt;br&gt;FOR UPDATE SKIP LOCKED" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_outbox_36s" target="a_db_36t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_37s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2289" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_outbox_37t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2924.0" y="2289" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m37" value="TransferCompleted message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;strokeColor=#7F7F7F;strokeWidth=1.1;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_db_37s" target="a_outbox_37t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_outbox_38s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2924.0" y="2339" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_notify_38t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3174.0" y="2339" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m38" value="TransferCompleted (at-least-once)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_outbox_38s" target="a_notify_38t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_notify_39s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3174.0" y="2389" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_db_39t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="2174.0" y="2389" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m39" value="Idempotency guard&lt;br&gt;ProcessedMessages UNIQUE(MessageId, ConsumerName)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_notify_39s" target="a_db_39t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_notify_40s" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3174.0" y="2439" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="a_provider_40t" value="" style="opacity=0;fillOpacity=0;strokeOpacity=0;" vertex="1" parent="1">
+          <mxGeometry x="3424.0" y="2439" width="2" height="2" as="geometry" />
+        </mxCell>
+        <mxCell id="m40" value="Send customer notification" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.4;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="a_notify_40s" target="a_provider_40t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note_http" value="&lt;b&gt;HTTP boundary&lt;/b&gt;&lt;br&gt;The customer receives an accepted-for-processing response after durable creation/claiming. The long-running workflow continues from persisted Process State." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="65" y="520" width="420" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="note_guard" value="&lt;b&gt;External-submission guard&lt;/b&gt;&lt;br&gt;Domestic Interbank submission is allowed only after Fraud Approved + successful Balance Reservation." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="1360" width="390" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="note_accept" value="&lt;b&gt;Important&lt;/b&gt;&lt;br&gt;Submission Accepted ≠ Settlement.&lt;br&gt;Reservation remains active while Settlement is pending." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2510" y="1615" width="330" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="note_complete" value="&lt;b&gt;Completion rule&lt;/b&gt;&lt;br&gt;Settlement confirmation leads to Reservation consumption first; then Transfer completion is persisted atomically with the Outbox Message." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1800" y="2070" width="500" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="note_delivery" value="&lt;b&gt;Reliable messaging&lt;/b&gt;&lt;br&gt;Publication is at-least-once. Duplicate delivery is expected; the Notification consumer uses durable ProcessedMessages deduplication." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2780" y="2140" width="560" height="110" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
