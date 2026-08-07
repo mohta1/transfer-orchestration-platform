@@ -1,0 +1,151 @@
+<mxfile host="app.diagrams.net" modified="2026-08-07T16:55:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="migration-roadmap" name="Current-to-Target Migration">
+    <mxGraphModel dx="1900" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Current-to-Target Migration — Strangler Fig&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;3&quot;&gt;Single owner per Transfer · no financial dual-write · routing rollback only for new requests&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E78;strokeColor=#1F4E78;fontColor=#FFFFFF;fontSize=22;fontStyle=1;align=left;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2460" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" value="Phase 1&lt;br&gt;&lt;b&gt;Domain Discovery &amp;amp; Observability&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Map Legacy · baseline metrics · hidden rules&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#6C8EBF;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="50" y="155" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="Phase 2&lt;br&gt;&lt;b&gt;Boundary Isolation&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Router · Feature Toggle · ACL · ownership&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#6C8EBF;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="455" y="155" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="Phase 3&lt;br&gt;&lt;b&gt;New Transfer Submission&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Shadow → Canary · New-owned cohort&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#6C8EBF;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="860" y="155" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="Phase 4&lt;br&gt;&lt;b&gt;External Integration Migration&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;New Payment adapter · timeout/reconciliation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#6C8EBF;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1265" y="155" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" value="Phase 5&lt;br&gt;&lt;b&gt;Reconciliation &amp;amp; Operations&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Stuck detection · manual recovery · audit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#6C8EBF;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1670" y="155" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" value="Phase 6&lt;br&gt;&lt;b&gt;Legacy Decommissioning&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;100% New · drain Legacy · retire old path&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F6FA;strokeColor=#6C8EBF;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2075" y="155" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="phase_e_0" value="exit criteria met" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="p1" target="p2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase_e_1" value="exit criteria met" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="p2" target="p3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase_e_2" value="exit criteria met" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="p3" target="p4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase_e_3" value="exit criteria met" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="p4" target="p5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="phase_e_4" value="exit criteria met" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="p5" target="p6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="client" value="&lt;b&gt;Mobile / API Clients&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#BF9000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="430" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="router" value="&lt;b&gt;Routing Boundary&lt;/b&gt;&lt;br&gt;Feature Toggle&lt;br&gt;&lt;font size=&quot;2&quot;&gt;owner chosen only for NEW requests&lt;/font&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#BF9000;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="405" width="260" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy" value="&lt;b&gt;Legacy Banking System&lt;/b&gt;&lt;br&gt;Legacy-owned Transfers&lt;br&gt;remain here until terminal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#7F6000;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="360" width="380" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="new" value="&lt;b&gt;New Transfer Orchestration Platform&lt;/b&gt;&lt;br&gt;New-owned Transfers&lt;br&gt;Process Manager · Reservation · Outbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#6AA84F;fontSize=14;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="620" width="380" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="acl" value="&lt;b&gt;Legacy Anti-Corruption Layer&lt;/b&gt;&lt;br&gt;API/adapter translation&lt;br&gt;protects New Ubiquitous Language" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=13;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="410" width="360" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_events" value="&lt;b&gt;Legacy Event Bridge&lt;/b&gt;&lt;br&gt;1. Legacy Outbox (preferred)&lt;br&gt;2. CDC adapter (fallback)&lt;br&gt;3. Polling (temporary only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=13;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="610" width="360" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="recon" value="&lt;b&gt;Migration Reconciliation&lt;/b&gt;&lt;br&gt;owner · amount · status · external ref · settlement&lt;br&gt;detect mismatch — never silently overwrite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=13;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="470" width="390" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" value="&lt;b&gt;Operations / Audit&lt;/b&gt;&lt;br&gt;routing history · ownership · stuck/unknown&lt;br&gt;manual recovery · rollback evidence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=13;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="710" width="390" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="network" value="&lt;b&gt;Domestic Payment Network&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=13;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2280" y="555" width="250" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="client_router" value="new Transfer request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;strokeWidth=1.7;" edge="1" parent="1" source="client" target="router">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="router_legacy" value="Legacy-owned cohort" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;strokeWidth=1.7;" edge="1" parent="1" source="router" target="legacy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="router_new" value="New-owned cohort" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;strokeWidth=1.7;" edge="1" parent="1" source="router" target="new">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="new_acl" value="Legacy data/capabilities where required" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;strokeWidth=1.7;" edge="1" parent="1" source="new" target="acl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_events_recon" value="translated events / changes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="legacy_events" target="recon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_to_events" value="committed Legacy changes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="legacy" target="legacy_events">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="new_recon" value="New-owned state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="new" target="recon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_recon" value="Legacy-owned state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="legacy" target="recon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="recon_ops" value="mismatch / escalation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="recon" target="ops">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="new_ops" value="stuck/unknown/manual recovery" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="new" target="ops">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_network" value="Legacy-owned in-flight only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;strokeWidth=1.7;" edge="1" parent="1" source="legacy" target="network">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="new_network" value="New Payment Integration" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;strokeWidth=1.7;" edge="1" parent="1" source="new" target="network">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="shadow" value="&lt;b&gt;Shadow / Parallel Comparison&lt;/b&gt;&lt;br&gt;Legacy = real financial owner&lt;br&gt;New = compare only&lt;br&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;NO real Reservation&lt;br&gt;NO real Payment submission&lt;br&gt;NO duplicate Settlement&lt;/font&gt;" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="700" width="280" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_shadow" value="comparison inputs/outcomes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="legacy" target="shadow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="shadow_new" value="non-side-effect evaluation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="shadow" target="new">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rollback" value="&lt;b&gt;ROLLBACK&lt;/b&gt;&lt;br&gt;Disable New routing for future requests&lt;br&gt;Existing New-owned Transfers stay in New&lt;br&gt;Reconcile/recover there until terminal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="410" y="1010" width="500" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="rollback_router" value="toggle OFF New routing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.7;dashed=1;" edge="1" parent="1" source="rollback" target="router">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="history" value="&lt;b&gt;Historical Data Coexistence&lt;/b&gt;&lt;br&gt;Legacy history remains readable initially&lt;br&gt;New history stored in New PostgreSQL&lt;br&gt;phased idempotent backfill + control totals" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="1010" width="480" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy_history" value="historical source" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="legacy" target="history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="new_history" value="new source" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="new" target="history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="target" value="&lt;b&gt;TARGET STATE&lt;/b&gt;&lt;br&gt;100% eligible new Domestic Interbank Transfers → New&lt;br&gt;Legacy-owned in-flight Transfers drained&lt;br&gt;Reconciliation / Operations / history requirements satisfied&lt;br&gt;Legacy Transfer execution retired" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#38761D;fontSize=15;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1750" y="1020" width="650" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p6_target" value="decommissioning criteria satisfied" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6C8EBF;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="p6" target="target">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rule1" value="&lt;b&gt;Migration Safety Rule 1&lt;/b&gt;&lt;br&gt;Exactly one workflow owner per Transfer.&lt;br&gt;No financial dual-write." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1300" width="520" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="rule2" value="&lt;b&gt;Migration Safety Rule 2&lt;/b&gt;&lt;br&gt;Rollback affects only future routing.&lt;br&gt;In-flight ownership is not casually reassigned." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="720" y="1300" width="560" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="rule3" value="&lt;b&gt;Migration Safety Rule 3&lt;/b&gt;&lt;br&gt;Shadow mode compares behaviour only.&lt;br&gt;It must not duplicate Reservation, Payment submission or Settlement." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="1300" width="600" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="rule4" value="&lt;b&gt;Decommission only with evidence&lt;/b&gt;&lt;br&gt;No ownership conflicts · in-flight drained · monitoring active · Reconciliation acceptable · rollback window formally closed." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="1300" width="470" height="115" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

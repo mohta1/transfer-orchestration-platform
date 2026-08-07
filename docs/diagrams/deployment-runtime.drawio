@@ -1,0 +1,154 @@
+<mxfile host="app.diagrams.net" modified="2026-08-07T20:31:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="deployment-runtime" name="Deployment &amp; Runtime">
+    <mxGraphModel dx="3200" dy="2100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3200" pageHeight="2100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Deployment / Runtime — Initial Challenge Topology&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;3&quot;&gt;One deployable Modular Monolith · .NET 8 / ASP.NET Core · PostgreSQL · Docker Compose · no broker initially&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E78;strokeColor=#1F4E78;fontColor=#FFFFFF;fontSize=22;fontStyle=1;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="3020" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" value="&lt;b&gt;Mobile Banking Client&lt;/b&gt;&lt;br&gt;POST /api/transfers&lt;br&gt;GET /api/transfers/{id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#BF9000;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="200" width="260" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" value="&lt;b&gt;Operations User&lt;/b&gt;&lt;br&gt;stuck / unknown / manual recovery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#BF9000;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="390" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="host" value="&lt;b&gt;Application Host / Server&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Self-hosted runtime boundary&lt;/font&gt;" style="swimlane;html=1;rounded=1;startSize=38;horizontal=1;fillColor=#F8F9FA;strokeColor=#7F8C8D;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="150" width="1900" height="1450" as="geometry" />
+        </mxCell>
+        <mxCell id="docker" value="&lt;b&gt;Docker Engine + Docker Compose&lt;/b&gt;" style="swimlane;html=1;rounded=1;startSize=38;horizontal=1;fillColor=#EAF2F8;strokeColor=#5B9BD5;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="485" y="225" width="1770" height="1280" as="geometry" />
+        </mxCell>
+        <mxCell id="app" value="&lt;b&gt;transfer-orchestration-platform&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;ONE deployable .NET 8 Modular Monolith container&lt;/font&gt;" style="swimlane;html=1;rounded=1;startSize=42;horizontal=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="550" y="310" width="1110" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="api" value="&lt;b&gt;ASP.NET Core API&lt;/b&gt;&lt;br&gt;HTTP validation · Problem Details&lt;br&gt;Idempotency / Correlation boundary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="400" width="450" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="tm" value="&lt;b&gt;Transfer Management&lt;/b&gt;&lt;br&gt;Transfer Aggregate&lt;br&gt;Persistent Process Manager&lt;br&gt;Daily Limit capability" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="560" width="450" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="account" value="&lt;b&gt;Account &amp;amp; Balance Management&lt;/b&gt;&lt;br&gt;Account Aggregate&lt;br&gt;Balance Reservation&lt;br&gt;Optimistic concurrency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="560" width="450" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="payment" value="&lt;b&gt;Payment Network Integration / ACL&lt;/b&gt;&lt;br&gt;submission · status enquiry&lt;br&gt;external-reference mapping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="760" width="450" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="recon" value="&lt;b&gt;Reconciliation&lt;/b&gt;&lt;br&gt;unknown-result recovery&lt;br&gt;stuck process support" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="760" width="450" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="notification" value="&lt;b&gt;Notification&lt;/b&gt;&lt;br&gt;idempotent consumer&lt;br&gt;non-critical downstream" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="945" width="450" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="audit" value="&lt;b&gt;Audit &amp;amp; Operations&lt;/b&gt;&lt;br&gt;operational read models&lt;br&gt;manual-action audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="945" width="450" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="workers" value="&lt;b&gt;.NET Hosted BackgroundServices&lt;/b&gt;&lt;br&gt;Outbox Publisher · Reconciliation Scheduler/Worker&lt;br&gt;stuck-process detection / durable retries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="1130" width="960" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="app_note" value="&lt;b&gt;Important&lt;/b&gt;&lt;br&gt;Module / Bounded Context boundaries are code + ownership boundaries.&lt;br&gt;They are NOT separate containers or Microservices in the initial deployment." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="610" y="1280" width="960" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="postgres_container" value="&lt;b&gt;PostgreSQL Container&lt;/b&gt;" style="swimlane;html=1;rounded=1;startSize=42;horizontal=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1740" y="310" width="450" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;module-owned tables/schemas&lt;br&gt;&lt;br&gt;Transfers&lt;br&gt;TransferProcessState&lt;br&gt;Accounts&lt;br&gt;BalanceReservations&lt;br&gt;IdempotencyRecords&lt;br&gt;OutboxMessages&lt;br&gt;ProcessedMessages&lt;br&gt;ReconciliationRecords&lt;br&gt;OperationsAuditRecords" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#D9EAD3;strokeColor=#6AA84F;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="430" width="310" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="db_note" value="&lt;b&gt;Persistence rules&lt;/b&gt;&lt;br&gt;• local transactions&lt;br&gt;• optimistic concurrency for Aggregates&lt;br&gt;• DB constraints for financial/idempotency invariants&lt;br&gt;• Outbox claiming may use FOR UPDATE SKIP LOCKED" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1785" y="900" width="360" height="185" as="geometry" />
+        </mxCell>
+        <mxCell id="durability_note" value="&lt;b&gt;Durability&lt;/b&gt;&lt;br&gt;Pending process, retry, reconciliation and Outbox work survives app restart because work state is persisted here." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1785" y="1130" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" value="&lt;b&gt;Customer Authorisation&lt;/b&gt;&lt;br&gt;external/supporting dependency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2450" y="240" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fraud" value="&lt;b&gt;Fraud &amp;amp; Compliance&lt;/b&gt;&lt;br&gt;external/supporting dependency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2450" y="400" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="network" value="&lt;b&gt;Domestic Payment Network&lt;/b&gt;&lt;br&gt;real integration out of challenge scope&lt;br&gt;adapter/stub in implementation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2450" y="590" width="300" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="provider" value="&lt;b&gt;Notification Provider&lt;/b&gt;&lt;br&gt;adapter/stub acceptable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2450" y="790" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="legacy" value="&lt;b&gt;Legacy Banking System&lt;/b&gt;&lt;br&gt;coexists during Strangler migration&lt;br&gt;access via ACL / explicit integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#7F6000;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2450" y="990" width="300" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="future" value="&lt;b&gt;Future — only if justified&lt;/b&gt;&lt;br&gt;RabbitMQ/Kafka may later sit behind Outbox publisher for independently deployed consumers.&lt;br&gt;Not present in initial runtime." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2440" y="1260" width="480" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime_rules" value="&lt;b&gt;Runtime guarantees demonstrated by this topology&lt;/b&gt;&lt;br&gt;1. API and workers may restart without losing persisted workflow work.&lt;br&gt;2. Business state + Outbox are committed atomically in PostgreSQL.&lt;br&gt;3. Outbox delivery is at-least-once; consumers are idempotent.&lt;br&gt;4. Payment timeout enters durable Reconciliation rather than blind retry.&lt;br&gt;5. Notification failure does not roll back a completed Transfer.&lt;br&gt;6. No synchronous distributed transaction is required." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1660" width="1900" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="nong_oals" value="&lt;b&gt;Intentional non-goals in this initial deployment&lt;/b&gt;&lt;br&gt;No Kubernetes · no service-per-module deployment · no Kafka/RabbitMQ requirement · no production-grade external banking/fraud/auth platform implementation." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2420" y="1570" width="540" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile_api" value="HTTPS&lt;br&gt;Idempotency-Key + X-Correlation-ID" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="mobile" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ops_api" value="HTTPS&lt;br&gt;operational queries / authorised commands" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="ops" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="api_tm" value="application command" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="tm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_account" value="Reserve / Release / Consume" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="account">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_payment" value="Submit / status-related command" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="payment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_recon" value="schedule / resolved outcome" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="recon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_audit" value="operational state / manual action" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="notification_audit" value="delivery/ops visibility" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="notification" target="audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_db" value="EF Core / local transaction" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#548235;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="account_db" value="EF Core / local transaction" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#548235;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="account" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="recon_db" value="persisted attempts / state" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#548235;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="recon" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="notification_db" value="ProcessedMessages dedup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#548235;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="notification" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_db" value="audit/read models" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#548235;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="audit" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="workers_db" value="poll / claim / retry&lt;br&gt;Outbox + durable work" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#548235;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="workers" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_auth" value="synchronous decision" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tm_fraud" value="screening&lt;br&gt;bounded retry policy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tm" target="fraud">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_network" value="submit / status enquiry&lt;br&gt;stable NetworkSubmissionReference" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#404040;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="payment" target="network">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="notification_provider" value="async notification effect" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="notification" target="provider">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_legacy" value="migration/ACL only where required" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="payment" target="legacy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="workers_notification" value="dispatch TransferCompleted&lt;br&gt;at-least-once" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="workers" target="notification">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="workers_recon" value="durable scheduled execution" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#5B9BD5;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="workers" target="recon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

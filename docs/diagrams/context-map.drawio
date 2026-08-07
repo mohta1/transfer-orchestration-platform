@@ -1,0 +1,106 @@
+<mxfile host="Electron" agent="ChatGPT">
+  <diagram id="context-map-1" name="Context Map">
+    <mxGraphModel dx="1578" dy="1043" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E78;strokeColor=#1F4E78;fontColor=#FFFFFF;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;spacingLeft=18;" value="&lt;b&gt;Context Map — Resilient Interbank Transfer Orchestration Platform&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;3&quot;&gt;Domain boundaries, relationships, ownership and initial deployment decision&lt;/font&gt;" vertex="1">
+          <mxGeometry height="85" width="2080" x="40" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="deploy" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#666666;dashed=1;dashPattern=8 4;fontSize=16;fontStyle=1;align=left;verticalAlign=top;spacingTop=10;spacingLeft=12;" value="&lt;b&gt;Initial Deployment Boundary: Transfer Orchestration Modular Monolith&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Logical Bounded Contexts / modules; one deployable application initially&lt;/font&gt;" vertex="1">
+          <mxGeometry height="950" width="1550" x="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="transfer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE5CD;strokeColor=#E69138;fontSize=15;fontStyle=1;arcSize=12;" value="&lt;b&gt;Transfer Management&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;CORE DOMAIN / BOUNDED CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Owns Transfer lifecycle, process state,&lt;br&gt;idempotency, routing and invariants" vertex="1">
+          <mxGeometry height="180" width="410" x="830" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="daily_limit" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#BF9000;dashed=1;fontSize=12;fontStyle=1;arcSize=12;" value="&lt;b&gt;Daily Limit Policy&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;Logical capability inside Transfer Management&lt;/font&gt;&lt;br&gt;Not a separate Aggregate, Microservice or deployment unit" vertex="1">
+          <mxGeometry height="90" width="340" x="865" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="account" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#6AA84F;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Account &amp;amp; Balance Management&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;SUPPORTING BOUNDED CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Owns Account, balances,&lt;br&gt;reservations and concurrency" vertex="1">
+          <mxGeometry height="150" width="320" x="390" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_integration" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Payment Network Integration&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;INTEGRATION BOUNDED CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;ACL, submission/reference mapping,&lt;br&gt;response translation, status enquiry" vertex="1">
+          <mxGeometry height="160" width="350" x="1390" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="reconciliation" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#6AA84F;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Reconciliation&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;SUPPORTING BOUNDED CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Resolves unknown/delayed/conflicting&lt;br&gt;external outcomes" vertex="1">
+          <mxGeometry height="145" width="350" x="1390" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="notification" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Notification&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;GENERIC / SUPPORTING CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Consumes integration events;&lt;br&gt;outside critical financial path" vertex="1">
+          <mxGeometry height="140" width="320" x="390" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#6AA84F;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Audit &amp;amp; Operations&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;SUPPORTING BOUNDED CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Stuck-transfer views, escalation,&lt;br&gt;manual actions and audit history" vertex="1">
+          <mxGeometry height="150" width="410" x="830" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Customer Authorisation&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;UPSTREAM SUPPORTING CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Authorises customer use&lt;br&gt;of Source Account" vertex="1">
+          <mxGeometry height="130" width="230" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="fraud" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Fraud &amp;amp; Compliance&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;UPSTREAM SUPPORTING CONTEXT&lt;/font&gt;&lt;br&gt;&lt;br&gt;Approved / Rejected /&lt;br&gt;Manual Review / Timeout" vertex="1">
+          <mxGeometry height="135" width="230" x="40" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_network" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Domestic Payment Network&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;EXTERNAL SYSTEM&lt;/font&gt;" vertex="1">
+          <mxGeometry height="105" width="220" x="1900" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="notification_provider" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=14;fontStyle=1;arcSize=12;" value="&lt;b&gt;Notification Provider&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;EXTERNAL SYSTEM&lt;/font&gt;" vertex="1">
+          <mxGeometry height="95" width="230" x="40" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="e_account_transfer" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6AA84F;exitX=0;exitY=0.35;entryX=1;entryY=0.45;" target="account" value="&lt;b&gt;Customer / Supplier&lt;/b&gt;&lt;br&gt;module contract&lt;br&gt;reserve / release / consume">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_auth_transfer" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#CC0000;exitX=0;exitY=0.15;entryX=1;entryY=0.5;" target="auth" value="&lt;b&gt;Customer / Supplier&lt;/b&gt;&lt;br&gt;synchronous decision">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="810" y="427" />
+              <mxPoint x="810" y="300" />
+              <mxPoint x="290" y="300" />
+              <mxPoint x="290" y="385" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_fraud_transfer" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#CC0000;exitX=0;exitY=0.7;entryX=1;entryY=0.5;" target="fraud" value="&lt;b&gt;Customer / Supplier&lt;/b&gt;&lt;br&gt;synchronous decision&lt;br&gt;bounded retry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_transfer_payment" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#8E7CC3;exitX=1;exitY=0.35;entryX=0;entryY=0.45;" target="payment_integration" value="&lt;b&gt;Customer / Supplier&lt;/b&gt;&lt;br&gt;ACL-facing application contract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_payment_external" edge="1" parent="1" source="payment_integration" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#8E7CC3;" target="payment_network" value="&lt;b&gt;Anti-Corruption Layer&lt;/b&gt;&lt;br&gt;protocol translation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_transfer_recon" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#6AA84F;exitX=1;exitY=0.8;entryX=0;entryY=0.25;" target="reconciliation" value="&lt;b&gt;Published Language / Work Request&lt;/b&gt;&lt;br&gt;SubmissionStatusUnknown">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_recon_payment" edge="1" parent="1" source="reconciliation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#8E7CC3;" target="payment_integration" value="status enquiry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_recon_transfer" edge="1" parent="1" source="reconciliation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#6AA84F;exitX=0;exitY=0.75;entryX=1;entryY=0.95;" target="transfer" value="&lt;b&gt;Resolved Outcome&lt;/b&gt;&lt;br&gt;settled / rejected / still unknown">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1290" y="788.83" />
+              <mxPoint x="1290" y="571" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_transfer_notification" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;strokeWidth=1.5;strokeColor=#3D85C6;exitX=0.2;exitY=1;entryX=1;entryY=0.3;" target="notification" value="&lt;b&gt;Published Language&lt;/b&gt;&lt;br&gt;TransferCompleted&lt;br&gt;async / at-least-once">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_notification_provider" edge="1" parent="1" source="notification" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#3D85C6;" target="notification_provider" value="provider adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_transfer_ops" edge="1" parent="1" source="transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;strokeWidth=1.5;strokeColor=#6AA84F;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="ops" value="&lt;b&gt;Operational Events / Read Models&lt;/b&gt;&lt;br&gt;state age, failures, unknown status">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ops_transfer" edge="1" parent="1" source="ops" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.5;strokeColor=#6AA84F;exitX=0.7;exitY=0;entryX=0.7;entryY=1;" target="transfer" value="&lt;b&gt;Authorised Manual Commands&lt;/b&gt;&lt;br&gt;reconcile / resolve / reject">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ownership_note" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" value="&lt;b&gt;Data ownership rule&lt;/b&gt;&lt;br&gt;&lt;br&gt;Each Context owns its model and persistence schema/tables.&lt;br&gt;No cross-context direct table access.&lt;br&gt;Cross-context access occurs through explicit module/application contracts or Integration Events.&lt;br&gt;&lt;br&gt;&lt;b&gt;Initial DB:&lt;/b&gt; one PostgreSQL instance is acceptable, with schema/table ownership kept explicit." vertex="1">
+          <mxGeometry height="170" width="760" x="300" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="extraction_note" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" value="&lt;b&gt;Initial vs later deployment&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Initial:&lt;/b&gt; one Modular Monolith deployable for new orchestration capability.&lt;br&gt;&lt;b&gt;Logical boundaries:&lt;/b&gt; Transfer, Account/Balance, Reconciliation, Notification, Audit/Ops, Payment Integration.&lt;br&gt;&lt;b&gt;Likely later extraction candidates:&lt;/b&gt; Notification, Payment Network Integration, Reconciliation — only when scale, isolation, compliance or ownership justify it.&lt;br&gt;&lt;b&gt;Do not extract Account/Reservation merely to match entity names.&lt;/b&gt;" vertex="1">
+          <mxGeometry height="170" width="760" x="1090" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B7B7B7;fontSize=11;align=left;verticalAlign=top;spacing=8;" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;Orange = Core Domain&lt;br&gt;Green = Supporting Context&lt;br&gt;Blue = Generic/Supporting&lt;br&gt;Purple = Integration Context&lt;br&gt;Red = External/Upstream&lt;br&gt;Dashed yellow = Logical capability, not a separate BC/service&lt;br&gt;Dashed arrows = asynchronous/event-driven relationship" vertex="1">
+          <mxGeometry height="245" width="240" x="1880" y="720" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

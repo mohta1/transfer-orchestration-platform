@@ -1,0 +1,303 @@
+<mxfile host="app.diagrams.net" modified="2026-08-07T20:45:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="transfer-state" name="Transfer State Diagram">
+    <mxGraphModel dx="3400" dy="2200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3400" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;Transfer Aggregate — State Diagram&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;3&quot;&gt;Challenge state vocabulary · explicit legal transitions · Domestic Interbank recovery · Internal Transfer variation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E78;strokeColor=#1F4E78;fontColor=#FFFFFF;fontSize=22;fontStyle=1;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="3260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="Draft" value="&lt;b&gt;Draft&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="110" y="240" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Submitted" value="&lt;b&gt;Submitted&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="390" y="240" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="PendingAuthorisation" value="&lt;b&gt;PendingAuthorisation&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="690" y="240" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Authorised" value="&lt;b&gt;Authorised&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAF7;strokeColor=#3D85C6;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="240" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="PendingFraudScreening" value="&lt;b&gt;PendingFraudScreening&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="240" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="PendingBalanceReservation" value="&lt;b&gt;PendingBalanceReservation&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="240" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="BalanceReserved" value="&lt;b&gt;BalanceReserved&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#6AA84F;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="240" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="PendingExternalSubmission" value="&lt;b&gt;PendingExternalSubmission&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="2380" y="240" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="SettlementPending" value="&lt;b&gt;SettlementPending&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="2730" y="240" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Completed" value="&lt;b&gt;Completed&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9EAD3;strokeColor=#38761D;fontSize=13;fontStyle=1;arcSize=12;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="3000" y="240" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ValidationFailed" value="&lt;b&gt;ValidationFailed&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#666666;fontSize=12;fontStyle=1;arcSize=12;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="390" y="600" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="FraudRejected" value="&lt;b&gt;FraudRejected&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4CCCC;strokeColor=#CC0000;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="600" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="SubmissionStatusUnknown" value="&lt;b&gt;SubmissionStatusUnknown&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE5CD;strokeColor=#E69138;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="2380" y="600" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ManualReviewRequired" value="&lt;b&gt;ManualReviewRequired&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE5CD;strokeColor=#E69138;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1700" y="850" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="CompensationRequired" value="&lt;b&gt;CompensationRequired&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE5CD;strokeColor=#E69138;fontSize=12;fontStyle=1;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="1080" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Rejected" value="&lt;b&gt;Rejected&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#666666;fontSize=12;fontStyle=1;arcSize=12;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="2660" y="1080" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Cancelled" value="&lt;b&gt;Cancelled&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#666666;fontSize=12;fontStyle=1;arcSize=12;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1320" width="205" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="start" value="" style="ellipse;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="55" y="265" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="e_start" value="create" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="start" target="Draft">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="Submit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Draft" target="Submitted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Validation passed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Submitted" target="PendingAuthorisation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Customer authorised" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingAuthorisation" target="Authorised">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Daily Limit approved" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Authorised" target="PendingFraudScreening">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Fraud approved" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingFraudScreening" target="PendingBalanceReservation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Balance reserved" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingBalanceReservation" target="BalanceReserved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Domestic Interbank" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="BalanceReserved" target="PendingExternalSubmission">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Submission accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingExternalSubmission" target="SettlementPending">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Settlement confirmed + Reservation consumed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#3D85C6;strokeWidth=1.8;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="SettlementPending" target="Completed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_validation_fail" value="Validation failed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Submitted" target="ValidationFailed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_auth_reject" value="Authorisation denied" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingAuthorisation" target="Rejected">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="815" y="500" />
+              <mxPoint x="2780" y="500" />
+              <mxPoint x="2780" y="1080" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_limit_reject" value="Daily Limit rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Authorised" target="Rejected">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1130" y="470" />
+              <mxPoint x="2810" y="470" />
+              <mxPoint x="2810" y="1080" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_fraud_reject1" value="Fraud rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingFraudScreening" target="FraudRejected">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fraud_reject2" value="Finalise rejection" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="FraudRejected" target="Rejected">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1450" y="710" />
+              <mxPoint x="2880" y="710" />
+              <mxPoint x="2880" y="1080" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_balance_fail" value="Reservation denied / insufficient balance" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingBalanceReservation" target="Rejected">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1815" y="570" />
+              <mxPoint x="2910" y="570" />
+              <mxPoint x="2910" y="1080" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_submit_reject" value="Definitive external rejection&lt;br&gt;+ release Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingExternalSubmission" target="Rejected">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2505" y="460" />
+              <mxPoint x="2940" y="460" />
+              <mxPoint x="2940" y="1080" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_timeout" value="Ambiguous timeout / unknown" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingExternalSubmission" target="SubmissionStatusUnknown">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_recon_pending" value="Reconciliation: accepted / pending" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="SubmissionStatusUnknown" target="SettlementPending">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2505" y="735" />
+              <mxPoint x="2850" y="735" />
+              <mxPoint x="2850" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_recon_settled" value="Reconciliation: Settled&lt;br&gt;+ consume Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="SubmissionStatusUnknown" target="Completed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2505" y="790" />
+              <mxPoint x="3120" y="790" />
+              <mxPoint x="3120" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_recon_rejected" value="Reconciliation: definitively rejected&lt;br&gt;+ release Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="SubmissionStatusUnknown" target="Rejected">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_recon_manual" value="Still unknown / conflicting&lt;br&gt;after configured threshold" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="SubmissionStatusUnknown" target="ManualReviewRequired">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fraud_manual" value="Manual review required / retry exhausted" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingFraudScreening" target="ManualReviewRequired">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manual_approve_fraud" value="Authorised manual fraud approval" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#8E7CC3;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="ManualReviewRequired" target="PendingBalanceReservation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1825" y="850" />
+              <mxPoint x="1815" y="560" />
+              <mxPoint x="1815" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_manual_reject" value="Authorised rejection" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#8E7CC3;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="ManualReviewRequired" target="Rejected">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manual_external_pending" value="Externally verified accepted / pending" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#8E7CC3;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="ManualReviewRequired" target="SettlementPending">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1950" y="900" />
+              <mxPoint x="2850" y="900" />
+              <mxPoint x="2850" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_manual_external_settled" value="Externally verified Settled&lt;br&gt;+ consume Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#8E7CC3;strokeWidth=1.5;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="ManualReviewRequired" target="Completed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1950" y="950" />
+              <mxPoint x="3160" y="950" />
+              <mxPoint x="3160" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_comp_req" value="Committed side effect cannot&lt;br&gt;safely continue" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="BalanceReserved" target="CompensationRequired">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_comp_cancel" value="Compensation succeeds&lt;br&gt;Reservation released" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="CompensationRequired" target="Cancelled">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_comp_manual" value="Automatic compensation cannot complete" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#E69138;strokeWidth=1.6;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="CompensationRequired" target="ManualReviewRequired">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_internal" value="Internal Bank Transfer:&lt;br&gt;internal settlement + consume Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#38761D;strokeWidth=1.7;dashed=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="BalanceReserved" target="Completed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2160" y="160" />
+              <mxPoint x="3110" y="160" />
+              <mxPoint x="3110" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_1" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Draft" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="212.5" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_2" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Submitted" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="492.5" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_3" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingAuthorisation" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="815.0" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_4" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="Authorised" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1132.5" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_5" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingFraudScreening" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1455.0" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_6" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="PendingBalanceReservation" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1815.0" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cancel_7" value="Cancel + release Reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#7F7F7F;strokeWidth=1.2;dashed=1;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="BalanceReserved" target="Cancelled">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2152.5" y="1240" />
+              <mxPoint x="1480" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="note_rules" value="&lt;b&gt;State-machine invariants&lt;/b&gt;&lt;br&gt;• Invalid transitions are rejected.&lt;br&gt;• Completed cannot be resubmitted or completed again.&lt;br&gt;• FraudRejected cannot continue through the normal flow.&lt;br&gt;• External submission requires Fraud Approval + successful Balance Reservation.&lt;br&gt;• Payment timeout is not Rejection and must not trigger blind resubmission." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1580" width="720" height="235" as="geometry" />
+        </mxCell>
+        <mxCell id="note_reservation" value="&lt;b&gt;Reservation side effect&lt;/b&gt;&lt;br&gt;Transfer state and Reservation state are distinct models. Reject/Cancel releases an active Reservation; successful Settlement consumes it. The Reservation is not auto-released while SubmissionStatusUnknown." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="900" y="1580" width="700" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="note_manual" value="&lt;b&gt;Manual recovery&lt;/b&gt;&lt;br&gt;ManualReviewRequired suspends automatic progression. Any resolution must be explicit, authorised and auditable. The exact role/approval matrix is a business/security decision." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="1580" width="650" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="note_limit" value="&lt;b&gt;Daily Limit&lt;/b&gt;&lt;br&gt;The Challenge state vocabulary has no dedicated PendingLimit state. Therefore the limit decision is represented on the transition from Authorised to PendingFraudScreening; a rejection terminates the normal flow." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="2430" y="1580" width="770" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;Blue = normal lifecycle&lt;br&gt;Purple = waiting/pending external decision&lt;br&gt;Green = financially protected/success&lt;br&gt;Orange = recovery/manual/unknown&lt;br&gt;Red = explicit failure state&lt;br&gt;Grey = terminal non-success&lt;br&gt;Green dashed = Internal Bank variation&lt;br&gt;Grey dashed = cancellation path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#A6A6A6;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1870" width="560" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="note_terminal" value="&lt;b&gt;Terminal states used here&lt;/b&gt;&lt;br&gt;`ValidationFailed`, `Rejected`, `Cancelled`, and `Completed` are terminal for normal commands. `FraudRejected` is an explicit failure state that finalises into `Rejected`. `CompensationRequired` and `ManualReviewRequired` are recovery states, not successful terminal outcomes." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="750" y="1870" width="980" height="185" as="geometry" />
+        </mxCell>
+        <mxCell id="note_scope" value="&lt;b&gt;Scope&lt;/b&gt;&lt;br&gt;The Domestic Interbank path is shown in full because it includes Payment Network submission, ambiguous timeout, Settlement, and Reconciliation. Internal Bank Transfer shares validation/authorisation/limit/fraud/reservation, then uses internal settlement and bypasses PendingExternalSubmission / SubmissionStatusUnknown / SettlementPending." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1840" y="1870" width="1360" height="185" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
