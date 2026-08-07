@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.18" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\TransferManagement\TransferOrchestration.TransferManagement.csproj" />
+    <ProjectReference Include="..\Modules\AccountBalance\TransferOrchestration.AccountBalance.csproj" />
+    <ProjectReference Include="..\Modules\PaymentNetwork\TransferOrchestration.PaymentNetwork.csproj" />
+    <ProjectReference Include="..\Modules\Reconciliation\TransferOrchestration.Reconciliation.csproj" />
+    <ProjectReference Include="..\Modules\Notification\TransferOrchestration.Notification.csproj" />
+    <ProjectReference Include="..\Modules\AuditOperations\TransferOrchestration.AuditOperations.csproj" />
+  </ItemGroup>
+
+</Project>
