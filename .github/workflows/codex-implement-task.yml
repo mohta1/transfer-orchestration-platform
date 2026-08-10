@@ -1,0 +1,248 @@
+name: Codex Implement Task
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_number:
+        description: 'Task number to implement, for example: 01'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-task-implementation
+  cancel-in-progress: false
+
+jobs:
+  implement:
+    name: Implement TASK-${{ inputs.task_number }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+          token: ${{ secrets.CODEX_GH_TOKEN }}
+
+      - name: Validate requested task
+        id: task
+        shell: bash
+        env:
+          TASK_NUMBER: ${{ inputs.task_number }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$TASK_NUMBER" =~ ^[0-9]{2}$ ]]; then
+            echo "Task number must contain exactly two digits, for example: 01"
+            exit 1
+          fi
+
+          shopt -s nullglob
+          matches=(docs/tasks/TASK-"$TASK_NUMBER"-*.md)
+
+          if [ "${#matches[@]}" -eq 0 ]; then
+            echo "No task file found for TASK-$TASK_NUMBER"
+            exit 1
+          fi
+
+          if [ "${#matches[@]}" -ne 1 ]; then
+            echo "Expected exactly one task file for TASK-$TASK_NUMBER"
+            printf '%s\n' "${matches[@]}"
+            exit 1
+          fi
+
+          TASK_FILE="${matches[0]}"
+
+          if ! grep -Eiq 'Status:.*Not Started' "$TASK_FILE"; then
+            echo "$TASK_FILE is not in Not Started status."
+            exit 1
+          fi
+
+          echo "task_file=$TASK_FILE" >> "$GITHUB_OUTPUT"
+
+          TASK_BASENAME="$(basename "$TASK_FILE" .md)"
+          TASK_SLUG="${TASK_BASENAME#TASK-}"
+          BRANCH_NAME="codex/task-${TASK_SLUG}-${GITHUB_RUN_ID}"
+
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+          echo "Selected task: $TASK_FILE"
+          echo "Branch: $BRANCH_NAME"
+
+      - name: Enforce sequential task order
+        shell: bash
+        env:
+          SELECTED_TASK: ${{ steps.task.outputs.task_file }}
+        run: |
+          set -euo pipefail
+
+          selected_name="$(basename "$SELECTED_TASK")"
+
+          while IFS= read -r task_file; do
+            task_name="$(basename "$task_file")"
+
+            if [ "$task_name" = "$selected_name" ]; then
+              break
+            fi
+
+            if ! grep -Eiq 'Status:.*Done' "$task_file"; then
+              echo "Cannot start $selected_name."
+              echo "Earlier task is not Done: $task_name"
+              exit 1
+            fi
+          done < <(find docs/tasks -maxdepth 1 -type f -name 'TASK-[0-9][0-9]-*.md' | sort)
+
+      - name: Ensure no other Codex task PR is open
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CODEX_GH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          OPEN_COUNT="$(
+            gh pr list \
+              --state open \
+              --json headRefName \
+              --jq '[.[] | select(.headRefName | startswith("codex/task-"))] | length'
+          )"
+
+          if [ "$OPEN_COUNT" -ne 0 ]; then
+            echo "Another Codex task pull request is already open."
+            echo "Review and manually merge or close it before starting another task."
+            exit 1
+          fi
+
+      - name: Create task branch
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ steps.task.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+          git switch -c "$BRANCH_NAME"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Restore dependencies
+        run: dotnet restore TransferOrchestrationPlatform.sln
+
+      - name: Verify baseline build
+        run: dotnet build TransferOrchestrationPlatform.sln --no-restore
+
+      - name: Verify baseline tests
+        run: dotnet test TransferOrchestrationPlatform.sln --no-build
+
+      - name: Run Codex implementer
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":workspace"
+          safety-strategy: drop-sudo
+          prompt: |
+            Read and follow all instructions in:
+            .github/codex/prompts/implement.md
+
+            The ONLY task for this execution is:
+            ${{ steps.task.outputs.task_file }}
+
+            Implement exactly that task.
+
+            Do not implement any later task.
+            Do not merge anything.
+            Do not start another task.
+
+      - name: Show changed files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --short
+          git diff --stat
+
+      - name: Ensure Codex produced changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet && \
+             git diff --cached --quiet && \
+             [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "Codex completed without producing repository changes."
+            exit 1
+          fi
+
+      - name: Commit implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "codex-task-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add --all
+          git commit -m "Implement ${{ inputs.task_number }} task"
+
+      - name: Push task branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CODEX_GH_TOKEN }}
+          BRANCH_NAME: ${{ steps.task.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+
+          gh auth setup-git
+          git push --set-upstream origin "$BRANCH_NAME"
+
+      - name: Prepare pull request body
+        shell: bash
+        env:
+          TASK_FILE: ${{ steps.task.outputs.task_file }}
+          CODEX_REPORT: ${{ steps.codex.outputs.final-message }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Codex Task Implementation"
+            echo
+            echo "**Task:** \`$TASK_FILE\`"
+            echo
+            echo "### Implementer report"
+            echo
+            printf '%s\n' "$CODEX_REPORT"
+            echo
+            echo "---"
+            echo
+            echo "This pull request was generated automatically."
+            echo
+            echo "It must be reviewed and merged manually."
+            echo
+            echo "Merging this PR will NOT start the next task."
+          } > /tmp/codex-pr-body.md
+
+      - name: Create pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CODEX_GH_TOKEN }}
+          BRANCH_NAME: ${{ steps.task.outputs.branch_name }}
+          TASK_FILE: ${{ steps.task.outputs.task_file }}
+        run: |
+          set -euo pipefail
+
+          TASK_NAME="$(basename "$TASK_FILE" .md)"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "[Codex] $TASK_NAME" \
+            --body-file /tmp/codex-pr-body.md
