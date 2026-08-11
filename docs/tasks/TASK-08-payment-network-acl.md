@@ -4,7 +4,7 @@
 **Stage:** Stage 2 — Submission & Coordination
 **Recommended branch:** `feature/payment-network-acl`
 **Depends on:** TASK-07
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -72,22 +72,22 @@ Payment timeout must not be treated as rejection and must never trigger blind du
 
 ## 8. Acceptance Criteria
 
-- [ ] Unknown-outcome semantics proven.
-- [ ] No duplicate external submission path.
-- [ ] Domestic/Internal routing correct.
+- [x] Unknown-outcome semantics proven.
+- [x] No duplicate external submission path.
+- [x] Domestic/Internal routing correct.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
 - [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
+- [x] Existing tests have no regressions.
 - [x] Work remains inside this task's Scope.
 - [x] No locked ADR is contradicted.
 - [x] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
+- [x] The requested Evidence is captured before merge.
 - [x] The task branch is reviewable independently.
 - [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
@@ -104,9 +104,16 @@ Captured by `PaymentSubmissionWorkflowTests` against PostgreSQL:
 - the persisted `NetworkSubmissionReference` equals both the submission and status-enquiry reference;
 - Internal Bank reservation completes its TASK-08 handoff without creating external submission work.
 
-Verification of the corrective cancellation and migration-upgrade scenarios is pending a
-real PostgreSQL test run. The build completes with 0 warnings and 0 errors; TASK-08 must
-not return to Done until the full required PostgreSQL suite passes without skips.
+Exact-head GitHub CI provides the required real PostgreSQL verification:
+
+- CI runs PostgreSQL 16 and sets `TEST_DATABASE_CONNECTION_STRING`;
+- Build passed with 0 warnings and 0 errors;
+- Test passed, including the accepted, rejected, timeout, Internal Bank bypass, and
+  restart/no-resubmit scenarios;
+- cancellation-shaped provider timeout durability is covered;
+- caller cancellation after external `SubmitAsync` begins is covered; and
+- migration backfill of legacy TASK-07 Domestic Interbank `BalanceReserved` handoffs is
+  covered.
 
 ## 11. Handoff to the Next Task
 
