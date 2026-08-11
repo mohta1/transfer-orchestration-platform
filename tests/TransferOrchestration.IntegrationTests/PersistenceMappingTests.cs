@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using TransferOrchestration.AccountBalance.Application.Persistence;
 using TransferOrchestration.AccountBalance.Domain.Accounts;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence;
+using TransferOrchestration.AccountBalance.Infrastructure.Persistence.Repositories;
+using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
+using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
 
 namespace TransferOrchestration.IntegrationTests;
 
@@ -50,37 +54,42 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TransferPersistsAndReloads()
+    public async Task TransferPersistsAndReloadsThroughRepository()
     {
         var transfer = Transfer.Create(Guid.NewGuid(), Guid.NewGuid(), 125.50m, "GBP", TransferType.InternalBank, DateTimeOffset.UtcNow);
         await using (var context = CreateTransferContext())
         {
-            context.Transfers.Add(transfer);
-            await context.SaveChangesAsync();
+            var repository = CreateTransferRepository(context);
+            await repository.AddAsync(transfer, CancellationToken.None);
+            await repository.SaveChangesAsync(CancellationToken.None);
         }
 
         await using var readContext = CreateTransferContext();
-        var reloaded = await readContext.Transfers.SingleAsync(candidate => candidate.Id == transfer.Id);
+        var readRepository = CreateTransferRepository(readContext);
+        var reloaded = await readRepository.GetByIdAsync(transfer.Id, CancellationToken.None);
+        Assert.NotNull(reloaded);
         Assert.Equal(transfer.Id, reloaded.Id);
         Assert.Equal(125.50m, reloaded.Amount);
         Assert.Equal("GBP", reloaded.Currency);
     }
 
     [Fact]
-    public async Task AccountWithReservationPersistsAndReloads()
+    public async Task AccountWithReservationPersistsAndReloadsThroughRepository()
     {
         var account = Account.Create(Guid.NewGuid(), "GBP", 500m);
         var transferId = Guid.NewGuid();
         account.Reserve(transferId, 125m, DateTimeOffset.UtcNow);
         await using (var context = CreateAccountContext())
         {
-            context.Accounts.Add(account);
-            await context.SaveChangesAsync();
+            var repository = CreateAccountRepository(context);
+            await repository.AddAsync(account, CancellationToken.None);
+            await repository.SaveChangesAsync(CancellationToken.None);
         }
 
         await using var readContext = CreateAccountContext();
-        var reloaded = await readContext.Accounts.Include(candidate => candidate.Reservations)
-            .SingleAsync(candidate => candidate.Id == account.Id);
+        var readRepository = CreateAccountRepository(readContext);
+        var reloaded = await readRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        Assert.NotNull(reloaded);
         Assert.Equal(375m, reloaded.AvailableBalance);
         Assert.Equal(125m, reloaded.ReservedBalance);
         Assert.Equal(transferId, Assert.Single(reloaded.Reservations).TransferId);
@@ -116,7 +125,7 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AccountVersionIsAConcurrencyTokenAndRejectsAStaleUpdate()
+    public async Task StaleAccountRepositoryWriterGetsExplicitConflictAndCannotOverwriteWinner()
     {
         var account = Account.Create(Guid.NewGuid(), "GBP", 100m);
         await using (var setup = CreateAccountContext())
@@ -127,16 +136,54 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
 
         await using var firstContext = CreateAccountContext();
         await using var secondContext = CreateAccountContext();
-        var first = await firstContext.Accounts.SingleAsync(candidate => candidate.Id == account.Id);
-        var stale = await secondContext.Accounts.SingleAsync(candidate => candidate.Id == account.Id);
+        var firstRepository = CreateAccountRepository(firstContext);
+        var staleRepository = CreateAccountRepository(secondContext);
+        var first = await firstRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        var stale = await staleRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        Assert.NotNull(first);
+        Assert.NotNull(stale);
+        Assert.Equal(0, first.Version);
+        Assert.Equal(0, stale.Version);
 
         Assert.True(firstContext.Model.FindEntityType(typeof(Account))!
             .FindProperty(nameof(Account.Version))!.IsConcurrencyToken);
 
         first.Reserve(Guid.NewGuid(), 10m, DateTimeOffset.UtcNow);
         stale.Reserve(Guid.NewGuid(), 20m, DateTimeOffset.UtcNow);
-        await firstContext.SaveChangesAsync();
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => secondContext.SaveChangesAsync());
+        await firstRepository.SaveChangesAsync(CancellationToken.None);
+        var conflict = await Assert.ThrowsAsync<AccountConcurrencyConflictException>(
+            () => staleRepository.SaveChangesAsync(CancellationToken.None));
+        Assert.Equal(account.Id.Value, conflict.AccountId);
+
+        await using var reloadContext = CreateAccountContext();
+        var reloadRepository = CreateAccountRepository(reloadContext);
+        var winner = await reloadRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        Assert.NotNull(winner);
+        Assert.Equal(1, winner.Version);
+        Assert.Equal(90m, winner.AvailableBalance);
+        Assert.Equal(10m, winner.ReservedBalance);
+        var winningReservation = Assert.Single(winner.Reservations);
+        Assert.Equal(10m, winningReservation.Amount);
+
+        Console.WriteLine(
+            "Concurrency evidence: both writers loaded version=0, available=100, reserved=0; " +
+            "winner committed version=1, available=90, reserved=10; stale writer conflict; " +
+            "reload version=1, available=90, reserved=10.");
+    }
+
+    [Fact]
+    public void RepositoryAbstractionsDoNotExposeEntityFrameworkCoreTypes()
+    {
+        var repositoryTypes = new[] { typeof(IAccountRepository), typeof(ITransferRepository) };
+
+        var exposedTypes = repositoryTypes
+            .SelectMany(type => type.GetMethods())
+            .SelectMany(method => method.GetParameters().Select(parameter => parameter.ParameterType)
+                .Append(method.ReturnType));
+
+        Assert.DoesNotContain(
+            exposedTypes,
+            type => type.FullName?.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal) == true);
     }
 
     private AccountBalanceDbContext CreateAccountContext() =>
@@ -144,8 +191,14 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
             _connectionString,
             options => options.MigrationsHistoryTable("__EFMigrationsHistory", AccountBalanceDbContext.Schema)).Options);
 
+    private static AccountRepository CreateAccountRepository(AccountBalanceDbContext context) =>
+        new AccountRepository(context);
+
     private TransferManagementDbContext CreateTransferContext() =>
         new(new DbContextOptionsBuilder<TransferManagementDbContext>().UseNpgsql(
             _connectionString,
             options => options.MigrationsHistoryTable("__EFMigrationsHistory", TransferManagementDbContext.Schema)).Options);
+
+    private static TransferRepository CreateTransferRepository(TransferManagementDbContext context) =>
+        new TransferRepository(context);
 }
