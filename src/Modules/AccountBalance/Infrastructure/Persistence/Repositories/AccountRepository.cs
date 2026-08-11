@@ -9,9 +9,11 @@ internal sealed class AccountRepository(AccountBalanceDbContext dbContext)
 {
     public Task<Account?> GetByIdAsync(
         AccountId accountId,
+        Guid reservationTransferId,
         CancellationToken cancellationToken) =>
         dbContext.Accounts
-            .Include(account => account.Reservations)
+            .Include(account => account.Reservations.Where(
+                reservation => reservation.TransferId == reservationTransferId))
             .SingleOrDefaultAsync(account => account.Id == accountId, cancellationToken);
 
     public async Task AddAsync(
@@ -34,6 +36,8 @@ internal sealed class AccountRepository(AccountBalanceDbContext dbContext)
                 .Where(entry => entry.Entity is Account)
                 .Select(entry => ((Account)entry.Entity).Id.Value)
                 .FirstOrDefault();
+
+            dbContext.ChangeTracker.Clear();
 
             throw new AccountConcurrencyConflictException(accountId, exception);
         }

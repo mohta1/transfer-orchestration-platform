@@ -22,6 +22,7 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         builder.Property(transfer => transfer.Currency).HasColumnName("currency").HasMaxLength(3).IsFixedLength();
         builder.Property(transfer => transfer.Type).HasColumnName("type").HasConversion<string>().HasMaxLength(32);
         builder.Property(transfer => transfer.State).HasColumnName("state").HasConversion<string>().HasMaxLength(40);
+        builder.Property(transfer => transfer.Version).HasColumnName("version").IsConcurrencyToken();
         builder.Property(transfer => transfer.CreatedAtUtc).HasColumnName("created_at_utc");
         builder.Property(transfer => transfer.UpdatedAtUtc).HasColumnName("updated_at_utc");
 

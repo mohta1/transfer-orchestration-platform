@@ -22,6 +22,22 @@ internal sealed class TransferRepository(TransferManagementDbContext dbContext)
         await dbContext.Transfers.AddAsync(transfer, cancellationToken);
     }
 
-    public async Task SaveChangesAsync(CancellationToken cancellationToken) =>
-        await dbContext.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            var transferId = exception.Entries
+                .Where(entry => entry.Entity is Transfer)
+                .Select(entry => ((Transfer)entry.Entity).Id.Value)
+                .FirstOrDefault();
+
+            dbContext.ChangeTracker.Clear();
+
+            throw new TransferConcurrencyConflictException(transferId, exception);
+        }
+    }
 }
