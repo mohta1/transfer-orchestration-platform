@@ -14,6 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: transfer_orchestration
+          POSTGRES_USER: transfer_app
+          POSTGRES_PASSWORD: transfer_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U transfer_app -d transfer_orchestration"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_CONNECTION_STRING: >-
+        Host=localhost;
+        Port=5432;
+        Database=transfer_orchestration;
+        Username=transfer_app;
+        Password=transfer_test
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

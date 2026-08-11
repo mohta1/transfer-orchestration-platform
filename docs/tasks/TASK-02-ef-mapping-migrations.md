@@ -4,7 +4,7 @@
 **Stage:** Stage 1 — Domain & Persistence
 **Recommended branch:** `feature/ef-mapping-migrations`
 **Depends on:** TASK-01
-**Status:** In Progress
+**Status:** Done
 
 ---
 
