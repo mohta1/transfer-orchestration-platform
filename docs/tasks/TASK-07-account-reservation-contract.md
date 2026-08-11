@@ -111,7 +111,8 @@ This task is **DONE only when all of the following are true**:
   Reservation, disposed that scope while Transfer remained
   `PendingBalanceReservation` with `ReserveBalance`, then used a new scope. The
   contract returned equivalent-reservation success and the process step persisted
-  `BalanceReserved` with `ContinueWorkflow`; the Account remained changed once.
+  `BalanceReserved` with the process parked as `Waiting` / `None`; the Account
+  remained changed once.
 - Dependency inspection shows TransferManagement has one project reference to the
   AccountBalance assembly and imports only `TransferOrchestration.AccountBalance.Contracts`.
   AccountBalance Domain, Infrastructure, DbContext, EF types, and private tables

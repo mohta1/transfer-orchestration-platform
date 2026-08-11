@@ -12,6 +12,12 @@ internal interface ITransferProcessManager
 
     Task MarkWaitingAsync(TransferId transferId, DateTimeOffset nowUtc, CancellationToken cancellationToken);
 
+    Task MarkWaitingAsync(TransferId transferId, long claimedVersion, DateTimeOffset nowUtc, CancellationToken cancellationToken);
+
+    Task RecordAttemptAsync(TransferId transferId, long claimedVersion, DateTimeOffset nextAttemptAtUtc, DateTimeOffset nowUtc, CancellationToken cancellationToken);
+
+    Task<long?> TryClaimDueAsync(TransferId transferId, TransferProcessAction action, DateTimeOffset nowUtc, DateTimeOffset leaseUntilUtc, CancellationToken cancellationToken);
+
     Task CompleteAsync(TransferId transferId, DateTimeOffset nowUtc, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DueTransferProcess>> GetDueAsync(DateTimeOffset dueAtUtc, int maximumCount, CancellationToken cancellationToken);

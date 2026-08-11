@@ -38,6 +38,49 @@ internal sealed class TransferProcessManager(
         await processRepository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task MarkWaitingAsync(TransferId transferId, long claimedVersion, DateTimeOffset nowUtc, CancellationToken cancellationToken)
+    {
+        var state = await GetClaimedAsync(transferId, claimedVersion, cancellationToken);
+        state.MarkWaiting(nowUtc);
+        await processRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RecordAttemptAsync(TransferId transferId, long claimedVersion, DateTimeOffset nextAttemptAtUtc, DateTimeOffset nowUtc, CancellationToken cancellationToken)
+    {
+        var state = await GetClaimedAsync(transferId, claimedVersion, cancellationToken);
+        state.RecordAttempt(nextAttemptAtUtc, nowUtc);
+        await processRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<long?> TryClaimDueAsync(
+        TransferId transferId,
+        TransferProcessAction action,
+        DateTimeOffset nowUtc,
+        DateTimeOffset leaseUntilUtc,
+        CancellationToken cancellationToken)
+    {
+        var state = await processRepository.GetAsync(transferId, cancellationToken);
+        if (state is null
+            || state.Status != TransferProcessStatus.Active
+            || state.NextAction != action
+            || state.NextAttemptAtUtc is null
+            || state.NextAttemptAtUtc > nowUtc)
+        {
+            return null;
+        }
+
+        state.Claim(leaseUntilUtc, nowUtc);
+        try
+        {
+            await processRepository.SaveChangesAsync(cancellationToken);
+            return state.Version;
+        }
+        catch (TransferProcessConcurrencyConflictException)
+        {
+            return null;
+        }
+    }
+
     public async Task CompleteAsync(TransferId transferId, DateTimeOffset nowUtc, CancellationToken cancellationToken)
     {
         var state = await GetRequiredAsync(transferId, cancellationToken);
@@ -91,4 +134,15 @@ internal sealed class TransferProcessManager(
     private async Task<TransferProcessState> GetRequiredAsync(TransferId transferId, CancellationToken cancellationToken) =>
         await processRepository.GetAsync(transferId, cancellationToken)
         ?? throw new DomainException($"Transfer process '{transferId.Value}' was not found.");
+
+    private async Task<TransferProcessState> GetClaimedAsync(TransferId transferId, long claimedVersion, CancellationToken cancellationToken)
+    {
+        var state = await GetRequiredAsync(transferId, cancellationToken);
+        if (state.Version != claimedVersion)
+        {
+            throw new TransferProcessConcurrencyConflictException(transferId.Value);
+        }
+
+        return state;
+    }
 }

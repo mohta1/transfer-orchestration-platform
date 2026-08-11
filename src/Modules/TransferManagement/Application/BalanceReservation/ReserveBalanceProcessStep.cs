@@ -9,6 +9,7 @@ internal interface IReserveBalanceProcessStep
 {
     Task<ReserveBalanceStepOutcome> ExecuteAsync(
         TransferId transferId,
+        long claimedVersion,
         CancellationToken cancellationToken);
 }
 
@@ -29,12 +30,18 @@ internal sealed class ReserveBalanceProcessStep(
 {
     public async Task<ReserveBalanceStepOutcome> ExecuteAsync(
         TransferId transferId,
+        long claimedVersion,
         CancellationToken cancellationToken)
     {
         var transfer = await transferRepository.GetByIdAsync(transferId, cancellationToken)
             ?? throw new InvalidOperationException($"Transfer '{transferId.Value}' was not found.");
         var process = await processRepository.GetAsync(transferId, cancellationToken)
             ?? throw new InvalidOperationException($"Transfer process '{transferId.Value}' was not found.");
+
+        if (process.Version != claimedVersion)
+        {
+            throw new TransferProcessConcurrencyConflictException(transferId.Value);
+        }
 
         if (transfer.State == TransferState.BalanceReserved
             && process.NextAction != TransferProcessAction.ReserveBalance)

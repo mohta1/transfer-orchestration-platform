@@ -542,6 +542,85 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
     }
 
+    [Fact]
+    public async Task TwoDispatchersAllowOnlyTheClaimOwnerToReserve()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        var gate = new ClaimedExecutionGate((id, version) => ExecuteClaimedStepAsync(id, version, clock));
+        await using var providerA = CreateProvider(processStep: gate, timeProvider: clock);
+        await using var providerB = CreateProvider(processStep: gate, timeProvider: clock);
+
+        var dispatchA = DispatchAsync(providerA);
+        await gate.Claimed;
+        Assert.Equal(0, await DispatchAsync(providerB));
+        gate.Release();
+        Assert.Equal(1, await dispatchA);
+
+        Assert.Equal(1, gate.Invocations);
+        Assert.Equal((400m, 100m, 1L, 1), SnapshotTuple(await SnapshotAsync(accountId)));
+        var workflow = await WorkflowSnapshotAsync(transferId);
+        Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
+        var process = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(TransferProcessStatus.Waiting, process.Status);
+        Assert.Equal(TransferProcessAction.None, process.NextAction);
+    }
+
+    [Fact]
+    public async Task CompetingContentionWorkerCannotParkSuccessfulClaimOwnersProcess()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        var successful = new ClaimedExecutionGate((id, version) => ExecuteClaimedStepAsync(id, version, clock));
+        var contention = new SequencedReserveBalanceStep(null, ReserveBalanceStepOutcome.RetryableContention);
+        await using var successfulProvider = CreateProvider(processStep: successful, timeProvider: clock);
+        await using var contentionProvider = CreateProvider(processStep: contention, timeProvider: clock);
+
+        var successDispatch = DispatchAsync(successfulProvider);
+        await successful.Claimed;
+        Assert.Equal(0, await DispatchAsync(contentionProvider));
+        successful.Release();
+        await successDispatch;
+
+        Assert.Equal(0, contention.Invocations);
+        Assert.Equal(1, await ReservationCountAsync(transferId.Value));
+        Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
+        Assert.Equal(TransferProcessStatus.Waiting, (await ProcessSnapshotAsync(transferId)).Status);
+    }
+
+    [Fact]
+    public async Task ExpiredClaimIsRecoveredAfterWorkerCrash()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        await using (var claimingProvider = CreateProvider(timeProvider: clock))
+        await using (var scope = claimingProvider.CreateAsyncScope())
+        {
+            var manager = scope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
+            var claimedVersion = await manager.TryClaimDueAsync(
+                transferId,
+                TransferProcessAction.ReserveBalance,
+                clock.GetUtcNow(),
+                clock.GetUtcNow() + TransferProcessDueWorkDispatcher.ClaimLease,
+                CancellationToken.None);
+            Assert.NotNull(claimedVersion);
+        }
+
+        await using (var beforeExpiry = CreateProvider(timeProvider: clock))
+        {
+            Assert.Equal(0, await DispatchAsync(beforeExpiry));
+        }
+
+        clock.Advance(TransferProcessDueWorkDispatcher.ClaimLease + TimeSpan.FromSeconds(1));
+        await using var recoveredProvider = CreateProvider(timeProvider: clock);
+        Assert.Equal(1, await DispatchAsync(recoveredProvider));
+        Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
+        Assert.Equal(1, await ReservationCountAsync(transferId.Value));
+    }
+
     private async Task<IReadOnlyList<ReserveFundsResult>> ReserveConcurrentlyAsync(params ReserveFundsRequest[] requests)
     {
         await using var provider = CreateProvider(new TwoPartyLoadGate());
@@ -570,8 +649,22 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         await using var provider = CreateProvider(timeProvider: timeProvider);
         await using var scope = provider.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<IReserveBalanceProcessStep>()
-            .ExecuteAsync(transferId, CancellationToken.None);
+            .ExecuteAsync(transferId, (await ProcessSnapshotAsync(transferId)).Version, CancellationToken.None);
     }
+
+    private async Task<ReserveBalanceStepOutcome> ExecuteClaimedStepAsync(
+        TransferId transferId,
+        long claimedVersion,
+        TimeProvider timeProvider)
+    {
+        await using var provider = CreateProvider(timeProvider: timeProvider);
+        await using var scope = provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IReserveBalanceProcessStep>()
+            .ExecuteAsync(transferId, claimedVersion, CancellationToken.None);
+    }
+
+    private static (decimal Available, decimal Reserved, long Version, int Reservations) SnapshotTuple(AccountSnapshot snapshot) =>
+        (snapshot.Available, snapshot.Reserved, snapshot.Version, snapshot.Reservations.Count);
 
     private async Task<Guid> SeedAccountAsync(
         decimal balance,
@@ -782,6 +875,7 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
 
         public async Task<ReserveBalanceStepOutcome> ExecuteAsync(
             TransferId transferId,
+            long claimedVersion,
             CancellationToken cancellationToken)
         {
             var invocation = Interlocked.Increment(ref _invocations);
@@ -791,6 +885,31 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             }
 
             return outcomes[invocation - 1];
+        }
+    }
+
+    private sealed class ClaimedExecutionGate(Func<TransferId, long, Task<ReserveBalanceStepOutcome>> execute)
+        : IReserveBalanceProcessStep
+    {
+        private readonly TaskCompletionSource _claimed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _invocations;
+
+        public Task Claimed => _claimed.Task;
+
+        public int Invocations => _invocations;
+
+        public void Release() => _released.TrySetResult();
+
+        public async Task<ReserveBalanceStepOutcome> ExecuteAsync(
+            TransferId transferId,
+            long claimedVersion,
+            CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _invocations);
+            _claimed.TrySetResult();
+            await _released.Task.WaitAsync(cancellationToken);
+            return await execute(transferId, claimedVersion);
         }
     }
 
