@@ -342,7 +342,7 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
 
         var workflow = await WorkflowSnapshotAsync(transferId);
         Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
-        Assert.Equal(TransferProcessAction.None, workflow.NextAction);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, workflow.NextAction);
         Assert.Equal(6, workflow.TransferVersion);
         var account = await SnapshotAsync(accountId);
         Assert.Equal((400m, 100m, 1), (account.Available, account.Reserved, account.Reservations.Count));
@@ -365,7 +365,7 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         var workflow = await WorkflowSnapshotAsync(transferId);
         var account = await SnapshotAsync(accountId);
         Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
-        Assert.Equal(TransferProcessAction.None, workflow.NextAction);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, workflow.NextAction);
         Assert.Equal((400m, 100m, 1), (account.Available, account.Reserved, account.Reservations.Count));
         Console.WriteLine("TASK-07 crash recovery: account commit survived disposed scope; retry returned equivalent reservation; transfer=BalanceReserved; reservations=1.");
     }
@@ -536,9 +536,9 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Equal(2, step.Invocations);
 
         var process = await ProcessSnapshotAsync(transferId);
-        Assert.Equal(TransferProcessStatus.Waiting, process.Status);
-        Assert.Equal(TransferProcessAction.None, process.NextAction);
-        Assert.Null(process.NextAttemptAtUtc);
+        Assert.Equal(TransferProcessStatus.Active, process.Status);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, process.NextAction);
+        Assert.NotNull(process.NextAttemptAtUtc);
         Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
     }
 
@@ -563,8 +563,8 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         var workflow = await WorkflowSnapshotAsync(transferId);
         Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
         var process = await ProcessSnapshotAsync(transferId);
-        Assert.Equal(TransferProcessStatus.Waiting, process.Status);
-        Assert.Equal(TransferProcessAction.None, process.NextAction);
+        Assert.Equal(TransferProcessStatus.Active, process.Status);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, process.NextAction);
     }
 
     [Fact]
@@ -587,7 +587,9 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Equal(0, contention.Invocations);
         Assert.Equal(1, await ReservationCountAsync(transferId.Value));
         Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
-        Assert.Equal(TransferProcessStatus.Waiting, (await ProcessSnapshotAsync(transferId)).Status);
+        var successfulProcess = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(TransferProcessStatus.Active, successfulProcess.Status);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, successfulProcess.NextAction);
     }
 
     [Fact]
@@ -770,7 +772,9 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Equal(1, await staleDispatch);
         Assert.Equal((400m, 100m, 1L, 1), SnapshotTuple(await SnapshotAsync(accountId)));
         Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
-        Assert.Equal(TransferProcessStatus.Waiting, (await ProcessSnapshotAsync(transferId)).Status);
+        var completedProcess = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(TransferProcessStatus.Active, completedProcess.Status);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, completedProcess.NextAction);
     }
 
     private async Task<IReadOnlyList<ReserveFundsResult>> ReserveConcurrentlyAsync(params ReserveFundsRequest[] requests)
@@ -971,7 +975,7 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Equal((400m, 100m, 1L, 1),
             (account.Available, account.Reserved, account.Version, account.Reservations.Count));
         Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
-        Assert.Equal(TransferProcessAction.None, workflow.NextAction);
+        Assert.Equal(TransferProcessAction.SubmitToPaymentNetwork, workflow.NextAction);
     }
 
     private ServiceProvider CreateProvider(

@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\AccountBalance\TransferOrchestration.AccountBalance.csproj" />
     <ProjectReference Include="..\..\src\Modules\TransferManagement\TransferOrchestration.TransferManagement.csproj" />
+    <ProjectReference Include="..\..\src\Modules\PaymentNetwork\TransferOrchestration.PaymentNetwork.csproj" />
     <ProjectReference Include="..\..\src\TransferOrchestration.Api\TransferOrchestration.Api.csproj" />
   </ItemGroup>
 

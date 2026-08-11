@@ -36,6 +36,8 @@ internal sealed class TransferProcessState
 
     public int AttemptCount { get; private set; }
 
+    public string? NetworkSubmissionReference { get; private set; }
+
     public DateTimeOffset? NextAttemptAtUtc { get; private set; }
 
     public long Version { get; private set; }
@@ -68,6 +70,12 @@ internal sealed class TransferProcessState
         if (nextAction == TransferProcessAction.None)
         {
             throw new DomainException("An actionable process requires a next action.");
+        }
+
+        if (nextAction == TransferProcessAction.SubmitToPaymentNetwork
+            && NetworkSubmissionReference is not null)
+        {
+            throw new DomainException("External submission cannot be scheduled after its reference is assigned.");
         }
 
         if (nextAttemptAtUtc < nowUtc)
@@ -137,6 +145,31 @@ internal sealed class TransferProcessState
         CurrentStep = TransferProcessStep.WaitingForOutcome;
         NextAction = TransferProcessAction.None;
         NextAttemptAtUtc = null;
+        Touch(nowUtc);
+    }
+
+    public void PrepareExternalSubmission(string networkSubmissionReference, DateTimeOffset nowUtc)
+    {
+        EnsureMutable();
+        EnsureUpdateTime(nowUtc);
+        ArgumentException.ThrowIfNullOrWhiteSpace(networkSubmissionReference);
+
+        if (NetworkSubmissionReference is not null
+            && !string.Equals(NetworkSubmissionReference, networkSubmissionReference, StringComparison.Ordinal))
+        {
+            throw new DomainException("The network submission reference is immutable once assigned.");
+        }
+
+        if (Status != TransferProcessStatus.Active || NextAction != TransferProcessAction.SubmitToPaymentNetwork)
+        {
+            throw new DomainException("Only claimed payment submission work can be prepared.");
+        }
+
+        NetworkSubmissionReference ??= networkSubmissionReference;
+        Status = TransferProcessStatus.Active;
+        CurrentStep = TransferProcessStep.ActionScheduled;
+        NextAction = TransferProcessAction.EnquirePaymentStatus;
+        NextAttemptAtUtc = nowUtc;
         Touch(nowUtc);
     }
 

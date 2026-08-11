@@ -4,7 +4,7 @@
 **Stage:** Stage 2 — Submission & Coordination
 **Recommended branch:** `feature/payment-network-acl`
 **Depends on:** TASK-07
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -72,29 +72,48 @@ Payment timeout must not be treated as rejection and must never trigger blind du
 
 ## 8. Acceptance Criteria
 
-- [ ] Unknown-outcome semantics proven.
-- [ ] No duplicate external submission path.
-- [ ] Domestic/Internal routing correct.
+- [x] Unknown-outcome semantics proven.
+- [x] No duplicate external submission path.
+- [x] Domestic/Internal routing correct.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
 - Provider call logs for accepted/rejected/timeout.
 - Stable reference proof.
+
+Captured by `PaymentSubmissionWorkflowTests` against PostgreSQL:
+
+- accepted, rejected, timeout-result, and thrown-timeout outcomes record exactly one Submit call;
+- timeout and thrown ambiguous exceptions reload as `SubmissionStatusUnknown` with an active Reservation;
+- repeated dispatch after restart-style scope recreation does not Submit again;
+- the persisted `NetworkSubmissionReference` equals both the submission and status-enquiry reference;
+- Internal Bank reservation completes its TASK-08 handoff without creating external submission work.
+
+Exact-head GitHub CI provides the required real PostgreSQL verification:
+
+- CI runs PostgreSQL 16 and sets `TEST_DATABASE_CONNECTION_STRING`;
+- Build passed with 0 warnings and 0 errors;
+- Test passed, including the accepted, rejected, timeout, Internal Bank bypass, and
+  restart/no-resubmit scenarios;
+- cancellation-shaped provider timeout durability is covered;
+- caller cancellation after external `SubmitAsync` begins is covered; and
+- migration backfill of legacy TASK-07 Domestic Interbank `BalanceReserved` handoffs is
+  covered.
 
 ## 11. Handoff to the Next Task
 

@@ -94,4 +94,23 @@ public sealed class TransferProcessStateTests
         Assert.Equal(2, state.Version);
         Assert.Throws<DomainException>(() => state.Claim(Now.AddSeconds(31), Now));
     }
+
+    [Fact]
+    public void PreparingSubmissionPersistsImmutableReferenceAndFencesSubmitAction()
+    {
+        var state = TransferProcessState.Create(TransferId.New(), Guid.NewGuid(), Now);
+        state.Schedule(TransferProcessAction.SubmitToPaymentNetwork, Now, Now);
+        state.Claim(Now.AddSeconds(30), Now);
+
+        state.PrepareExternalSubmission("TOP-REFERENCE", Now);
+
+        Assert.Equal("TOP-REFERENCE", state.NetworkSubmissionReference);
+        Assert.Equal(TransferProcessAction.EnquirePaymentStatus, state.NextAction);
+        Assert.Throws<DomainException>(() =>
+            state.Schedule(TransferProcessAction.SubmitToPaymentNetwork, Now, Now));
+        Assert.Throws<DomainException>(() =>
+            state.PrepareExternalSubmission("TOP-DIFFERENT", Now));
+        Assert.Equal("TOP-REFERENCE", state.NetworkSubmissionReference);
+        Assert.Equal(TransferProcessAction.EnquirePaymentStatus, state.NextAction);
+    }
 }
