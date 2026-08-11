@@ -36,29 +36,30 @@ internal sealed class TransferProcessDueWorkDispatcher(
             await using var workScope = scopeFactory.CreateAsyncScope();
             var manager = workScope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
             var claimTime = timeProvider.GetUtcNow();
-            var claimedVersion = await manager.TryClaimDueAsync(
+            var claim = await manager.TryClaimDueAsync(
                 work.TransferId,
                 TransferProcessAction.ReserveBalance,
+                work.Version,
                 claimTime,
                 claimTime + ClaimLease,
                 cancellationToken);
-            if (claimedVersion is null)
+            if (claim is null)
             {
                 continue;
             }
 
             var step = workScope.ServiceProvider.GetRequiredService<IReserveBalanceProcessStep>();
-            var outcome = await step.ExecuteAsync(work.TransferId, claimedVersion.Value, cancellationToken);
+            var outcome = await step.ExecuteAsync(work.TransferId, claim.ClaimedVersion, cancellationToken);
             if (outcome == ReserveBalanceStepOutcome.RetryableContention)
             {
                 var now = timeProvider.GetUtcNow();
-                if (work.AttemptCount >= MaximumContentionReschedules)
+                if (claim.AttemptCount >= MaximumContentionReschedules)
                 {
-                    await manager.MarkWaitingAsync(work.TransferId, claimedVersion.Value, now, cancellationToken);
+                    await manager.MarkWaitingAsync(work.TransferId, claim.ClaimedVersion, now, cancellationToken);
                 }
                 else
                 {
-                    await manager.RecordAttemptAsync(work.TransferId, claimedVersion.Value, now + ContentionDelay, now, cancellationToken);
+                    await manager.RecordAttemptAsync(work.TransferId, claim.ClaimedVersion, now + ContentionDelay, now, cancellationToken);
                 }
             }
 

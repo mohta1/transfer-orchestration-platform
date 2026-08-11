@@ -16,7 +16,7 @@ internal interface ITransferProcessManager
 
     Task RecordAttemptAsync(TransferId transferId, long claimedVersion, DateTimeOffset nextAttemptAtUtc, DateTimeOffset nowUtc, CancellationToken cancellationToken);
 
-    Task<long?> TryClaimDueAsync(TransferId transferId, TransferProcessAction action, DateTimeOffset nowUtc, DateTimeOffset leaseUntilUtc, CancellationToken cancellationToken);
+    Task<TransferProcessClaim?> TryClaimDueAsync(TransferId transferId, TransferProcessAction action, long expectedVersion, DateTimeOffset nowUtc, DateTimeOffset leaseUntilUtc, CancellationToken cancellationToken);
 
     Task CompleteAsync(TransferId transferId, DateTimeOffset nowUtc, CancellationToken cancellationToken);
 

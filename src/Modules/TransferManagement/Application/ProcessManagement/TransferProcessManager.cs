@@ -52,15 +52,17 @@ internal sealed class TransferProcessManager(
         await processRepository.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<long?> TryClaimDueAsync(
+    public async Task<TransferProcessClaim?> TryClaimDueAsync(
         TransferId transferId,
         TransferProcessAction action,
+        long expectedVersion,
         DateTimeOffset nowUtc,
         DateTimeOffset leaseUntilUtc,
         CancellationToken cancellationToken)
     {
         var state = await processRepository.GetAsync(transferId, cancellationToken);
         if (state is null
+            || state.Version != expectedVersion
             || state.Status != TransferProcessStatus.Active
             || state.NextAction != action
             || state.NextAttemptAtUtc is null
@@ -73,7 +75,7 @@ internal sealed class TransferProcessManager(
         try
         {
             await processRepository.SaveChangesAsync(cancellationToken);
-            return state.Version;
+            return new TransferProcessClaim(state.TransferId, state.Version, state.AttemptCount, leaseUntilUtc);
         }
         catch (TransferProcessConcurrencyConflictException)
         {

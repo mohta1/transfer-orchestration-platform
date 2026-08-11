@@ -37,6 +37,7 @@ internal sealed class TransferProcessStateRepository(TransferManagementDbContext
                 state.CurrentStep,
                 state.NextAction,
                 state.AttemptCount,
+                state.Version,
                 state.NextAttemptAtUtc!.Value,
                 state.CreatedAtUtc,
                 state.UpdatedAtUtc))
@@ -64,6 +65,7 @@ internal sealed class TransferProcessStateRepository(TransferManagementDbContext
                 state.CurrentStep,
                 state.NextAction,
                 state.AttemptCount,
+                state.Version,
                 state.NextAttemptAtUtc!.Value,
                 state.CreatedAtUtc,
                 state.UpdatedAtUtc))

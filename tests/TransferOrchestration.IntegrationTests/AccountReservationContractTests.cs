@@ -600,13 +600,19 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         await using (var scope = claimingProvider.CreateAsyncScope())
         {
             var manager = scope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
-            var claimedVersion = await manager.TryClaimDueAsync(
+            var candidate = Assert.Single(await manager.GetDueForActionAsync(
+                TransferProcessAction.ReserveBalance,
+                clock.GetUtcNow(),
+                1,
+                CancellationToken.None));
+            var claim = await manager.TryClaimDueAsync(
                 transferId,
                 TransferProcessAction.ReserveBalance,
+                candidate.Version,
                 clock.GetUtcNow(),
                 clock.GetUtcNow() + TransferProcessDueWorkDispatcher.ClaimLease,
                 CancellationToken.None);
-            Assert.NotNull(claimedVersion);
+            Assert.NotNull(claim);
         }
 
         await using (var beforeExpiry = CreateProvider(timeProvider: clock))
@@ -619,6 +625,152 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Equal(1, await DispatchAsync(recoveredProvider));
         Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
         Assert.Equal(1, await ReservationCountAsync(transferId.Value));
+    }
+
+    [Fact]
+    public async Task StaleCandidateVersionCannotClaimANewerContentionRetry()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        DueTransferProcess staleCandidate;
+
+        await using (var provider = CreateProvider(timeProvider: clock))
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var manager = scope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
+            staleCandidate = Assert.Single(await manager.GetDueForActionAsync(
+                TransferProcessAction.ReserveBalance, clock.GetUtcNow(), 1, CancellationToken.None));
+            var claim = await manager.TryClaimDueAsync(
+                transferId, TransferProcessAction.ReserveBalance, staleCandidate.Version,
+                clock.GetUtcNow(), clock.GetUtcNow() + TransferProcessDueWorkDispatcher.ClaimLease,
+                CancellationToken.None);
+            Assert.NotNull(claim);
+            await manager.RecordAttemptAsync(
+                transferId, claim.ClaimedVersion, clock.GetUtcNow().AddSeconds(1),
+                clock.GetUtcNow(), CancellationToken.None);
+        }
+
+        clock.Advance(TimeSpan.FromSeconds(2));
+        await using var retryProvider = CreateProvider(timeProvider: clock);
+        await using var retryScope = retryProvider.CreateAsyncScope();
+        var retryManager = retryScope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
+        Assert.Null(await retryManager.TryClaimDueAsync(
+            transferId, TransferProcessAction.ReserveBalance, staleCandidate.Version,
+            clock.GetUtcNow(), clock.GetUtcNow() + TransferProcessDueWorkDispatcher.ClaimLease,
+            CancellationToken.None));
+        Assert.Equal(1, (await ProcessSnapshotAsync(transferId)).AttemptCount);
+
+        var freshCandidate = Assert.Single(await retryManager.GetDueForActionAsync(
+            TransferProcessAction.ReserveBalance, clock.GetUtcNow(), 1, CancellationToken.None));
+        var freshClaim = await retryManager.TryClaimDueAsync(
+            transferId, TransferProcessAction.ReserveBalance, freshCandidate.Version,
+            clock.GetUtcNow(), clock.GetUtcNow() + TransferProcessDueWorkDispatcher.ClaimLease,
+            CancellationToken.None);
+        Assert.NotNull(freshClaim);
+        Assert.Equal(1, freshClaim.AttemptCount);
+    }
+
+    [Fact]
+    public async Task ManyStaleDispatchersCannotBypassDurableContentionBudget()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        DueTransferProcess candidate;
+        await using (var discoveryProvider = CreateProvider(timeProvider: clock))
+        await using (var discoveryScope = discoveryProvider.CreateAsyncScope())
+        {
+            candidate = Assert.Single(await discoveryScope.ServiceProvider
+                .GetRequiredService<ITransferProcessManager>()
+                .GetDueForActionAsync(TransferProcessAction.ReserveBalance, clock.GetUtcNow(), 1, CancellationToken.None));
+        }
+        var staleCandidates = Enumerable.Repeat(candidate, 8).ToArray();
+        var step = new SequencedReserveBalanceStep(
+            null,
+            ReserveBalanceStepOutcome.RetryableContention,
+            ReserveBalanceStepOutcome.RetryableContention,
+            ReserveBalanceStepOutcome.RetryableContention);
+        await using var dispatcherProvider = CreateProvider(processStep: step, timeProvider: clock);
+
+        for (var execution = 0; execution < 3; execution++)
+        {
+            Assert.Equal(1, await DispatchAsync(dispatcherProvider));
+            clock.Advance(TimeSpan.FromSeconds(2));
+            foreach (var stale in staleCandidates)
+            {
+                await using var staleScope = dispatcherProvider.CreateAsyncScope();
+                var staleManager = staleScope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
+                Assert.Null(await staleManager.TryClaimDueAsync(
+                    transferId, TransferProcessAction.ReserveBalance, stale.Version,
+                    clock.GetUtcNow(), clock.GetUtcNow() + TransferProcessDueWorkDispatcher.ClaimLease,
+                    CancellationToken.None));
+            }
+        }
+
+        Assert.Equal(0, await DispatchAsync(dispatcherProvider));
+        Assert.Equal(3, step.Invocations);
+        var process = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(2, process.AttemptCount);
+        Assert.Equal(TransferProcessStatus.Waiting, process.Status);
+        Assert.Equal(TransferProcessAction.None, process.NextAction);
+    }
+
+    [Fact]
+    public async Task ExpiredOwnerFinancialCommitRearmsProcessParkedByNewOwner()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        await SetProcessAttemptCountAsync(transferId, 2);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        var gate = new BlockingReservationCommitObserver();
+        await using var staleOwner = CreateProvider(observer: gate, timeProvider: clock);
+        var staleDispatch = DispatchAsync(staleOwner);
+        await gate.Entered;
+
+        clock.Advance(TransferProcessDueWorkDispatcher.ClaimLease + TimeSpan.FromSeconds(1));
+        var contention = new SequencedReserveBalanceStep(null, ReserveBalanceStepOutcome.RetryableContention);
+        await using (var newOwner = CreateProvider(processStep: contention, timeProvider: clock))
+        {
+            Assert.Equal(1, await DispatchAsync(newOwner));
+        }
+        Assert.Equal(TransferProcessStatus.Waiting, (await ProcessSnapshotAsync(transferId)).Status);
+
+        gate.Release();
+        Assert.Equal(1, await staleDispatch);
+        Assert.Equal((400m, 100m, 1L, 1), SnapshotTuple(await SnapshotAsync(accountId)));
+        var recovered = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(TransferProcessStatus.Active, recovered.Status);
+        Assert.Equal(TransferProcessAction.ReserveBalance, recovered.NextAction);
+
+        await using var recoveryProvider = CreateProvider(timeProvider: clock);
+        Assert.Equal(1, await DispatchAsync(recoveryProvider));
+        Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
+        Assert.Equal(1, await ReservationCountAsync(transferId.Value));
+    }
+
+    [Fact]
+    public async Task NewOwnerMayCompleteBeforeExpiredOwnerResumes()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        var gate = new BlockingReservationCommitObserver();
+        await using var staleOwner = CreateProvider(observer: gate, timeProvider: clock);
+        var staleDispatch = DispatchAsync(staleOwner);
+        await gate.Entered;
+
+        clock.Advance(TransferProcessDueWorkDispatcher.ClaimLease + TimeSpan.FromSeconds(1));
+        await using (var newOwner = CreateProvider(timeProvider: clock))
+        {
+            Assert.Equal(1, await DispatchAsync(newOwner));
+        }
+
+        gate.Release();
+        Assert.Equal(1, await staleDispatch);
+        Assert.Equal((400m, 100m, 1L, 1), SnapshotTuple(await SnapshotAsync(accountId)));
+        Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
+        Assert.Equal(TransferProcessStatus.Waiting, (await ProcessSnapshotAsync(transferId)).Status);
     }
 
     private async Task<IReadOnlyList<ReserveFundsResult>> ReserveConcurrentlyAsync(params ReserveFundsRequest[] requests)
@@ -776,6 +928,20 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             .CountAsync(reservation => reservation.TransferId == transferId);
     }
 
+    private async Task SetProcessAttemptCountAsync(TransferId transferId, int count)
+    {
+        await using var provider = CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+        var process = await context.TransferProcessStates.SingleAsync(candidate => candidate.TransferId == transferId);
+        var now = DateTimeOffset.UtcNow;
+        for (var attempt = 0; attempt < count; attempt++)
+        {
+            process.RecordAttempt(now, now);
+        }
+        await context.SaveChangesAsync();
+    }
+
     private async Task FinaliseReservationAsync(
         Guid accountId,
         Guid transferId,
@@ -931,6 +1097,28 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             }
 
             await _bothLoaded.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    private sealed class BlockingReservationCommitObserver : IReservationAttemptObserver
+    {
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _blocked;
+
+        public Task Entered => _entered.Task;
+
+        public void Release() => _released.TrySetResult();
+
+        public async Task AfterAccountLoadedAsync(int attempt, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Exchange(ref _blocked, 1) != 0)
+            {
+                return;
+            }
+
+            _entered.TrySetResult();
+            await _released.Task.WaitAsync(cancellationToken);
         }
     }
 

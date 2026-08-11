@@ -122,6 +122,18 @@ This task is **DONE only when all of the following are true**:
 - No schema change or migration was required. Existing non-negative balance,
   positive amount, monetary precision, Account Version, and unique Transfer
   reservation constraints remain unchanged.
+- Due-work discovery now captures the Process `Version`, and claiming requires
+  that exact candidate version. A successful claim returns the claimed Version,
+  persisted contention `AttemptCount`, and lease expiry; retry-budget decisions
+  use only that claimed snapshot. PostgreSQL regressions cover stale-candidate
+  rejection and many stale dispatchers attempting to bypass the durable budget.
+- Lease expiry does not define the financial correctness boundary. If an ACTIVE
+  reservation commits after its worker loses Process ownership, the step reloads
+  Transfer and Process state with bounded optimistic-concurrency repair: completed
+  progression is accepted, existing Active/ReserveBalance work is preserved, and
+  Waiting/None is re-armed as due ReserveBalance work. PostgreSQL gate tests cover
+  both a newer owner parking before the stale commit and a newer owner completing
+  first; the existing expired-claim crash recovery remains in place.
 
 ## 11. Handoff to the Next Task
 
