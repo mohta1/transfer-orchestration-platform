@@ -4,7 +4,7 @@
 **Stage:** Stage 2 — Submission & Coordination
 **Recommended branch:** `feature/http-idempotency`
 **Depends on:** TASK-03
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -72,24 +72,24 @@ The challenge requires the same request to create at most one Transfer and expli
 
 ## 8. Acceptance Criteria
 
-- [ ] Durable uniqueness enforced in PostgreSQL.
-- [ ] Sequential and concurrent duplicate behavior is deterministic.
-- [ ] Different-payload conflict is proven.
+- [x] Durable uniqueness enforced in PostgreSQL.
+- [x] Sequential and concurrent duplicate behavior is deterministic.
+- [x] Different-payload conflict is proven.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
