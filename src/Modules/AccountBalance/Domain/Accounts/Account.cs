@@ -80,18 +80,6 @@ internal sealed class Account : AggregateRoot<AccountId>
         decimal amount,
         DateTimeOffset nowUtc)
     {
-        if (Status != AccountStatus.Active)
-        {
-            throw new DomainException(
-                "Funds cannot be reserved on an inactive account.");
-        }
-
-        if (amount <= 0)
-        {
-            throw new DomainException(
-                "Reservation amount must be greater than zero.");
-        }
-
         var existingReservation =
             _reservations.SingleOrDefault(
                 reservation =>
@@ -105,14 +93,19 @@ internal sealed class Account : AggregateRoot<AccountId>
                     "A reservation already exists for this transfer with a different amount.");
             }
 
-            if (existingReservation.Status
-                != BalanceReservationStatus.Active)
-            {
-                throw new DomainException(
-                    "A finalised reservation cannot be recreated.");
-            }
-
             return existingReservation;
+        }
+
+        if (Status != AccountStatus.Active)
+        {
+            throw new DomainException(
+                "Funds cannot be reserved on an inactive account.");
+        }
+
+        if (amount <= 0)
+        {
+            throw new DomainException(
+                "Reservation amount must be greater than zero.");
         }
 
         if (AvailableBalance < amount)
