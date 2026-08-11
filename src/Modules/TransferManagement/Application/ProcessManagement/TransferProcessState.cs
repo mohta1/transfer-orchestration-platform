@@ -107,6 +107,28 @@ internal sealed class TransferProcessState
         Touch(nowUtc);
     }
 
+    public void Claim(DateTimeOffset leaseUntilUtc, DateTimeOffset nowUtc)
+    {
+        EnsureMutable();
+        EnsureUpdateTime(nowUtc);
+        EnsureUtc(leaseUntilUtc, nameof(leaseUntilUtc));
+        if (Status != TransferProcessStatus.Active
+            || NextAction == TransferProcessAction.None
+            || NextAttemptAtUtc is null
+            || NextAttemptAtUtc > nowUtc)
+        {
+            throw new DomainException("Only due actionable process work can be claimed.");
+        }
+
+        if (leaseUntilUtc <= nowUtc)
+        {
+            throw new DomainException("A process claim lease must expire after its claim time.");
+        }
+
+        NextAttemptAtUtc = leaseUntilUtc;
+        Touch(nowUtc);
+    }
+
     public void MarkWaiting(DateTimeOffset nowUtc)
     {
         EnsureMutable();

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\BuildingBlocks\TransferOrchestration.BuildingBlocks\TransferOrchestration.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\AccountBalance\TransferOrchestration.AccountBalance.csproj" />
   </ItemGroup>
 
   <ItemGroup>

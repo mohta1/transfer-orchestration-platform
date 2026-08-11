@@ -9,6 +9,7 @@ internal sealed record DueTransferProcess(
     TransferProcessStep CurrentStep,
     TransferProcessAction NextAction,
     int AttemptCount,
+    long Version,
     DateTimeOffset NextAttemptAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);

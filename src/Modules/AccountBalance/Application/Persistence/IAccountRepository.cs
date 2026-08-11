@@ -9,9 +9,20 @@ internal interface IAccountRepository
         Guid reservationTransferId,
         CancellationToken cancellationToken);
 
+    Task<ReservationIntent?> GetReservationIntentAsync(
+        Guid transferId,
+        CancellationToken cancellationToken);
+
     Task AddAsync(
         Account account,
         CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    void DiscardTrackedChanges();
 }
+
+internal sealed record ReservationIntent(
+    Guid AccountId,
+    decimal Amount,
+    BalanceReservationStatus Status);

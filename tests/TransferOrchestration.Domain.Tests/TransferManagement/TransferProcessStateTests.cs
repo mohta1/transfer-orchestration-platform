@@ -79,4 +79,19 @@ public sealed class TransferProcessStateTests
         Assert.Throws<DomainException>(() => state.RecordAttempt(Now.AddMinutes(7), Now.AddMinutes(3)));
         Assert.Equal(1, state.AttemptCount);
     }
+
+    [Fact]
+    public void ClaimLeasesDueWorkWithoutConsumingAttemptBudget()
+    {
+        var state = TransferProcessState.Create(TransferId.New(), Guid.NewGuid(), Now);
+        state.Schedule(TransferProcessAction.ReserveBalance, Now, Now);
+
+        state.Claim(Now.AddSeconds(30), Now);
+
+        Assert.Equal(0, state.AttemptCount);
+        Assert.Equal(TransferProcessAction.ReserveBalance, state.NextAction);
+        Assert.Equal(Now.AddSeconds(30), state.NextAttemptAtUtc);
+        Assert.Equal(2, state.Version);
+        Assert.Throws<DomainException>(() => state.Claim(Now.AddSeconds(31), Now));
+    }
 }

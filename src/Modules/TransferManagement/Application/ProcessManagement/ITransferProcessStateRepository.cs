@@ -13,5 +13,11 @@ internal interface ITransferProcessStateRepository
         int maximumCount,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<DueTransferProcess>> GetDueForActionAsync(
+        TransferProcessAction action,
+        DateTimeOffset dueAtUtc,
+        int maximumCount,
+        CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
