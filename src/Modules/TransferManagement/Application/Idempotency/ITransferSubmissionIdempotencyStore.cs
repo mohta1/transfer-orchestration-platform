@@ -8,6 +8,8 @@ internal interface ITransferSubmissionIdempotencyStore
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken);
 
+    Task LinkToTransferAsync(Guid ownerToken, Guid transferId, CancellationToken cancellationToken);
+
     Task CompleteAsync(
         Guid ownerToken,
         TransferSubmissionResult result,

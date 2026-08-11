@@ -23,6 +23,16 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TransferOrchestration.TransferManagement.Infrastructure.Persistence.DailyTransferUsage", b =>
+                {
+                    b.Property<Guid>("SourceAccountId").HasColumnType("uuid").HasColumnName("source_account_id");
+                    b.Property<string>("Currency").IsRequired().HasMaxLength(3).HasColumnType("character varying(3)").HasColumnName("currency");
+                    b.Property<DateOnly>("UtcDay").HasColumnType("date").HasColumnName("utc_day");
+                    b.Property<decimal>("ConsumedAmount").HasPrecision(19, 4).HasColumnType("numeric(19,4)").HasColumnName("consumed_amount");
+                    b.HasKey("SourceAccountId", "Currency", "UtcDay");
+                    b.ToTable("daily_transfer_usages", "transfer_management", t => t.HasCheckConstraint("ck_daily_transfer_usage_positive", "consumed_amount > 0"));
+                });
+
             modelBuilder.Entity("TransferOrchestration.TransferManagement.Application.ProcessManagement.TransferProcessState", b =>
                 {
                     b.Property<Guid>("TransferId")
@@ -179,6 +189,11 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                         .HasColumnType("character varying(64)")
                         .HasColumnName("scope");
 
+                    b.Property<string>("ResultOutcome")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("result_outcome");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -197,7 +212,7 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
 
                     b.ToTable("idempotency_records", "transfer_management", t =>
                         {
-                            t.HasCheckConstraint("ck_idempotency_records_completion", "(status = 'Processing' AND transfer_id IS NULL AND completed_at_utc IS NULL) OR (status = 'Completed' AND transfer_id IS NOT NULL AND completed_at_utc IS NOT NULL)");
+                            t.HasCheckConstraint("ck_idempotency_records_completion", "(status = 'Processing' AND completed_at_utc IS NULL) OR (status = 'Completed' AND transfer_id IS NOT NULL AND completed_at_utc IS NOT NULL)");
                         });
                 });
 

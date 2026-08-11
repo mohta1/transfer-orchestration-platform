@@ -17,6 +17,8 @@ public sealed class TransferManagementDbContext(
 
     internal DbSet<TransferProcessState> TransferProcessStates => Set<TransferProcessState>();
 
+    internal DbSet<DailyTransferUsage> DailyTransferUsages => Set<DailyTransferUsage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

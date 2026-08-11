@@ -154,6 +154,14 @@ internal sealed class Transfer : AggregateRoot<TransferId>
             nowUtc);
     }
 
+    public void RejectDailyLimit(DateTimeOffset nowUtc)
+    {
+        Transition(
+            TransferState.Authorised,
+            TransferState.Rejected,
+            nowUtc);
+    }
+
     public void RejectForFraud(DateTimeOffset nowUtc)
     {
         Transition(

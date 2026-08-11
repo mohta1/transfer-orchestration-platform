@@ -54,8 +54,19 @@ internal sealed class TransferSubmissionIdempotencyStore(TransferManagementDbCon
         return existing.Status == IdempotencyRecordStatus.Completed
             ? new IdempotencyClaim(
                 IdempotencyClaimOutcome.Completed,
-                Result: new TransferSubmissionResult(existing.TransferId!.Value))
+                Result: new TransferSubmissionResult(existing.TransferId!.Value, existing.ResultOutcome))
             : new IdempotencyClaim(IdempotencyClaimOutcome.Processing);
+    }
+
+    public async Task LinkToTransferAsync(Guid ownerToken, Guid transferId, CancellationToken cancellationToken)
+    {
+        var affected = await context.IdempotencyRecords
+            .Where(record => record.Id == ownerToken && record.Status == IdempotencyRecordStatus.Processing)
+            .ExecuteUpdateAsync(updates => updates.SetProperty(record => record.TransferId, transferId), cancellationToken);
+        if (affected != 1)
+        {
+            throw new InvalidOperationException("Only the current Processing claim owner can link a Transfer.");
+        }
     }
 
     public async Task CompleteAsync(
@@ -71,6 +82,7 @@ internal sealed class TransferSubmissionIdempotencyStore(TransferManagementDbCon
                 updates => updates
                     .SetProperty(record => record.Status, IdempotencyRecordStatus.Completed)
                     .SetProperty(record => record.TransferId, result.TransferId)
+                    .SetProperty(record => record.ResultOutcome, result.Outcome)
                     .SetProperty(record => record.CompletedAtUtc, completedAtUtc),
                 cancellationToken);
 
