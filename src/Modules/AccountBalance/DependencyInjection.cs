@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TransferOrchestration.AccountBalance.Application.Persistence;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence;
+using TransferOrchestration.AccountBalance.Infrastructure.Persistence.Repositories;
 
 namespace TransferOrchestration.AccountBalance;
 
@@ -20,6 +22,7 @@ public static class DependencyInjection
                     npgsqlOptions.MigrationsHistoryTable(
                         "__EFMigrationsHistory",
                         AccountBalanceDbContext.Schema)));
+        services.AddScoped<IAccountRepository, AccountRepository>();
 
         return services;
     }

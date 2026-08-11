@@ -4,7 +4,7 @@
 **Stage:** Stage 1 — Domain & Persistence
 **Recommended branch:** `feature/persistence-repositories`
 **Depends on:** TASK-02
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -65,26 +65,26 @@ A Version column alone does not satisfy the concurrency requirement. The loser o
 
 ## 8. Acceptance Criteria
 
-- [ ] Repository consumers do not reference EF types.
-- [ ] Genuine optimistic concurrency conflict reproduced.
-- [ ] Winner state preserved.
-- [ ] Loser receives explicit conflict outcome.
-- [ ] 0 warnings / 0 errors.
+- [x] Repository consumers do not reference EF types.
+- [x] Genuine optimistic concurrency conflict reproduced.
+- [x] Winner state preserved.
+- [x] Loser receives explicit conflict outcome.
+- [x] 0 warnings / 0 errors.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
