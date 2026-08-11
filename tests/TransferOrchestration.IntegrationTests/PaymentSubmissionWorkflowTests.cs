@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -112,6 +114,100 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CancellationShapedProviderTimeoutWithoutCallerCancellationIsDurablyUnknown()
+    {
+        var gateway = new RecordingGateway { ThrowCancellation = true };
+        var transferId = await SeedReservedTransferAsync(TransferType.DomesticInterbank, gateway);
+
+        Assert.Equal(1, await DispatchPaymentAsync(gateway));
+        AssertUnknown(await SnapshotAsync(transferId), gateway);
+        Assert.Equal(0, await DispatchPaymentAsync(gateway));
+        Assert.Single(gateway.SubmitCalls);
+    }
+
+    [Fact]
+    public async Task CallerCancellationAfterSubmissionStartsIsPersistedBeforeCancellationEscapes()
+    {
+        var gateway = new RecordingGateway { WaitForCallerCancellation = true };
+        var transferId = await SeedReservedTransferAsync(TransferType.DomesticInterbank, gateway);
+        using var cancellation = new CancellationTokenSource();
+
+        var dispatch = DispatchPaymentAsync(gateway, cancellation.Token);
+        await gateway.SubmissionStarted.Task;
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dispatch);
+        AssertUnknown(await SnapshotAsync(transferId), gateway);
+        Assert.Equal(0, await DispatchPaymentAsync(gateway));
+        Assert.Single(gateway.SubmitCalls);
+    }
+
+    [Fact]
+    public async Task Task08MigrationBackfillsOnlyExactTask07DomesticHandoffRows()
+    {
+        await using (var connection = new NpgsqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            await using var drop = connection.CreateCommand();
+            drop.CommandText = "DROP SCHEMA IF EXISTS transfer_management CASCADE;";
+            await drop.ExecuteNonQueryAsync();
+        }
+
+        await using var provider = CreateProvider(new RecordingGateway());
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+            await context.GetService<IMigrator>()
+                .MigrateAsync("20260811170000_AddCumulativeDailyTransferUsage");
+        }
+
+        var upgradedId = Guid.NewGuid();
+        var internalId = Guid.NewGuid();
+        var unrelatedId = Guid.NewGuid();
+        await SeedTask07ProcessRowsAsync(upgradedId, internalId, unrelatedId);
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+            await context.Database.MigrateAsync();
+        }
+
+        await using var verification = new NpgsqlConnection(_connectionString);
+        await verification.OpenAsync();
+        var rows = new Dictionary<Guid, MigratedProcessRow>();
+        await using (var command = verification.CreateCommand())
+        {
+            command.CommandText =
+                """
+                SELECT transfer_id, status, current_step, next_action,
+                       next_attempt_at_utc, version, attempt_count, network_submission_reference
+                FROM transfer_management.transfer_process_states
+                WHERE transfer_id = ANY(@ids);
+                """;
+            command.Parameters.AddWithValue("ids", new[] { upgradedId, internalId, unrelatedId });
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                rows.Add(reader.GetGuid(0), new MigratedProcessRow(
+                    reader.GetString(1), reader.GetString(2), reader.GetString(3),
+                    reader.IsDBNull(4) ? null : reader.GetFieldValue<DateTimeOffset>(4),
+                    reader.GetInt64(5), reader.GetInt32(6), reader.IsDBNull(7) ? null : reader.GetString(7)));
+            }
+        }
+
+        Assert.Equal(new MigratedProcessRow(
+            "Active", "ActionScheduled", "SubmitToPaymentNetwork", rows[upgradedId].DueAtUtc,
+            8, 3, null), rows[upgradedId]);
+        Assert.NotNull(rows[upgradedId].DueAtUtc);
+        Assert.Equal(new MigratedProcessRow(
+            "Waiting", "WaitingForOutcome", "None", null, 7, 3, null), rows[internalId]);
+        Assert.Equal(new MigratedProcessRow(
+            "Active", "ActionScheduled", "ReserveBalance", rows[unrelatedId].DueAtUtc,
+            7, 3, null), rows[unrelatedId]);
+        Assert.NotNull(rows[unrelatedId].DueAtUtc);
+    }
+
+    [Fact]
     public async Task InternalBankNeverRoutesToOrCallsPaymentNetwork()
     {
         var gateway = new RecordingGateway();
@@ -155,12 +251,43 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         return transfer.Id;
     }
 
-    private async Task<int> DispatchPaymentAsync(RecordingGateway gateway)
+    private async Task<int> DispatchPaymentAsync(
+        RecordingGateway gateway,
+        CancellationToken cancellationToken = default)
     {
         await using var provider = CreateProvider(gateway);
         await using var scope = provider.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<IPaymentSubmissionDueWorkDispatcher>()
-            .DispatchDueAsync(CancellationToken.None);
+            .DispatchDueAsync(cancellationToken);
+    }
+
+    private async Task SeedTask07ProcessRowsAsync(Guid upgradedId, Guid internalId, Guid unrelatedId)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO transfer_management.transfers
+                (id, source_account_id, destination_account_id, amount, currency, type, state,
+                 created_at_utc, updated_at_utc, version)
+            VALUES
+                (@upgraded, gen_random_uuid(), gen_random_uuid(), 100, 'GBP', 'DomesticInterbank', 'BalanceReserved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 7),
+                (@internal, gen_random_uuid(), gen_random_uuid(), 100, 'GBP', 'InternalBank', 'BalanceReserved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 7),
+                (@unrelated, gen_random_uuid(), gen_random_uuid(), 100, 'GBP', 'DomesticInterbank', 'BalanceReserved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 7);
+
+            INSERT INTO transfer_management.transfer_process_states
+                (transfer_id, correlation_id, status, current_step, next_action, attempt_count,
+                 next_attempt_at_utc, version, created_at_utc, updated_at_utc)
+            VALUES
+                (@upgraded, gen_random_uuid(), 'Waiting', 'WaitingForOutcome', 'None', 3, NULL, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                (@internal, gen_random_uuid(), 'Waiting', 'WaitingForOutcome', 'None', 3, NULL, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                (@unrelated, gen_random_uuid(), 'Active', 'ActionScheduled', 'ReserveBalance', 3, CURRENT_TIMESTAMP, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+            """;
+        command.Parameters.AddWithValue("upgraded", upgradedId);
+        command.Parameters.AddWithValue("internal", internalId);
+        command.Parameters.AddWithValue("unrelated", unrelatedId);
+        await command.ExecuteNonQueryAsync();
     }
 
     private async Task<WorkflowSnapshot> SnapshotAsync(TransferId transferId)
@@ -211,21 +338,38 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
     {
         public PaymentSubmissionResult SubmissionResult { get; init; } = PaymentSubmissionResult.Accepted;
         public bool ThrowAmbiguousException { get; init; }
+        public bool ThrowCancellation { get; init; }
+        public bool WaitForCallerCancellation { get; init; }
+        public TaskCompletionSource SubmissionStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
         public List<PaymentSubmissionRequest> SubmitCalls { get; } = [];
         public List<NetworkSubmissionReference> StatusCalls { get; } = [];
 
         public NetworkSubmissionReference CreateSubmissionReference(Guid transferId) =>
             new($"TEST-{transferId:N}".ToUpperInvariant());
 
-        public Task<PaymentSubmissionResult> SubmitAsync(PaymentSubmissionRequest request, CancellationToken cancellationToken)
+        public async Task<PaymentSubmissionResult> SubmitAsync(
+            PaymentSubmissionRequest request,
+            CancellationToken cancellationToken)
         {
             SubmitCalls.Add(request);
+            SubmissionStarted.TrySetResult();
+            if (WaitForCallerCancellation)
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+
+            if (ThrowCancellation)
+            {
+                throw new TaskCanceledException("Provider timed out after submission began.");
+            }
+
             if (ThrowAmbiguousException)
             {
                 throw new TimeoutException("Provider outcome is ambiguous.");
             }
 
-            return Task.FromResult(SubmissionResult);
+            return SubmissionResult;
         }
 
         public Task<PaymentStatusResult> GetStatusAsync(NetworkSubmissionReference reference, CancellationToken cancellationToken)
@@ -243,4 +387,13 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         decimal Available,
         decimal Reserved,
         BalanceReservationStatus ReservationStatus);
+
+    private sealed record MigratedProcessRow(
+        string Status,
+        string CurrentStep,
+        string NextAction,
+        DateTimeOffset? DueAtUtc,
+        long Version,
+        int AttemptCount,
+        string? Reference);
 }
