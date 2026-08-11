@@ -97,7 +97,9 @@ internal sealed class PaymentSubmissionProcessStep(
             return await PersistAmbiguousOutcomeAsync(transferId, request.Reference);
         }
 
-        return await PersistOutcomeAsync(transferId, request.Reference, result, cancellationToken);
+        var outcome = await PersistOutcomeAsync(transferId, request.Reference, result);
+        cancellationToken.ThrowIfCancellationRequested();
+        return outcome;
     }
 
     private async Task<PaymentSubmissionStepOutcome> PersistAmbiguousOutcomeAsync(
@@ -165,15 +167,14 @@ internal sealed class PaymentSubmissionProcessStep(
     private async Task<PaymentSubmissionStepOutcome> PersistOutcomeAsync(
         TransferId transferId,
         NetworkSubmissionReference reference,
-        PaymentSubmissionResult result,
-        CancellationToken cancellationToken)
+        PaymentSubmissionResult result)
     {
         await using var outcomeScope = scopeFactory.CreateAsyncScope();
         var transferRepository = outcomeScope.ServiceProvider.GetRequiredService<ITransferRepository>();
         var processRepository = outcomeScope.ServiceProvider.GetRequiredService<ITransferProcessStateRepository>();
-        var transfer = await transferRepository.GetByIdAsync(transferId, cancellationToken)
+        var transfer = await transferRepository.GetByIdAsync(transferId, CancellationToken.None)
             ?? throw new InvalidOperationException($"Transfer '{transferId.Value}' was not found.");
-        var process = await processRepository.GetAsync(transferId, cancellationToken)
+        var process = await processRepository.GetAsync(transferId, CancellationToken.None)
             ?? throw new InvalidOperationException($"Transfer process '{transferId.Value}' was not found.");
 
         if (transfer.State != TransferState.PendingExternalSubmission
@@ -194,7 +195,7 @@ internal sealed class PaymentSubmissionProcessStep(
 
         try
         {
-            await processRepository.SaveChangesAsync(cancellationToken);
+            await processRepository.SaveChangesAsync(CancellationToken.None);
             return outcome;
         }
         catch (TransferProcessConcurrencyConflictException)

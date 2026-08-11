@@ -142,6 +142,52 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         Assert.Single(gateway.SubmitCalls);
     }
 
+    [Theory]
+    [InlineData(PaymentSubmissionResult.Accepted)]
+    [InlineData(PaymentSubmissionResult.Rejected)]
+    [InlineData(PaymentSubmissionResult.Timeout)]
+    public async Task ReturnedOutcomeIsPersistedBeforePostSubmissionCallerCancellationEscapes(
+        PaymentSubmissionResult submissionResult)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var gateway = new RecordingGateway
+        {
+            SubmissionResult = submissionResult,
+            BeforeReturningSubmissionResult = cancellation.Cancel
+        };
+        var transferId = await SeedReservedTransferAsync(TransferType.DomesticInterbank, gateway);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => DispatchPaymentAsync(gateway, cancellation.Token));
+
+        var snapshot = await SnapshotAsync(transferId);
+        switch (submissionResult)
+        {
+            case PaymentSubmissionResult.Accepted:
+                Assert.Equal(TransferState.SettlementPending, snapshot.TransferState);
+                Assert.Equal(TransferProcessStatus.Waiting, snapshot.ProcessStatus);
+                Assert.Equal(TransferProcessAction.None, snapshot.NextAction);
+                break;
+            case PaymentSubmissionResult.Rejected:
+                Assert.Equal(TransferState.Rejected, snapshot.TransferState);
+                Assert.Equal(TransferProcessStatus.Active, snapshot.ProcessStatus);
+                Assert.Equal(TransferProcessAction.ReleaseReservation, snapshot.NextAction);
+                break;
+            case PaymentSubmissionResult.Timeout:
+                Assert.Equal(TransferState.SubmissionStatusUnknown, snapshot.TransferState);
+                Assert.Equal(TransferProcessStatus.Active, snapshot.ProcessStatus);
+                Assert.Equal(TransferProcessAction.EnquirePaymentStatus, snapshot.NextAction);
+                break;
+            default:
+                throw new InvalidOperationException("Unsupported test submission result.");
+        }
+
+        AssertReservationActive(snapshot);
+        Assert.Single(gateway.SubmitCalls);
+        Assert.Equal(0, await DispatchPaymentAsync(gateway));
+        Assert.Single(gateway.SubmitCalls);
+    }
+
     [Fact]
     public async Task Task08MigrationBackfillsOnlyExactTask07DomesticHandoffRows()
     {
@@ -340,6 +386,7 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         public bool ThrowAmbiguousException { get; init; }
         public bool ThrowCancellation { get; init; }
         public bool WaitForCallerCancellation { get; init; }
+        public Action? BeforeReturningSubmissionResult { get; init; }
         public TaskCompletionSource SubmissionStarted { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         public List<PaymentSubmissionRequest> SubmitCalls { get; } = [];
@@ -369,6 +416,7 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
                 throw new TimeoutException("Provider outcome is ambiguous.");
             }
 
+            BeforeReturningSubmissionResult?.Invoke();
             return SubmissionResult;
         }
 
