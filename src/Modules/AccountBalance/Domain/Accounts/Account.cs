@@ -43,6 +43,10 @@ internal sealed class Account : AggregateRoot<AccountId>
         decimal availableBalance,
         AccountStatus status = AccountStatus.Active)
     {
+        MonetaryAmountGuard.EnsureRepresentable(
+            availableBalance,
+            "Available balance");
+
         if (id == Guid.Empty)
         {
             throw new DomainException("Account identifier is required.");
@@ -80,6 +84,10 @@ internal sealed class Account : AggregateRoot<AccountId>
         decimal amount,
         DateTimeOffset nowUtc)
     {
+        MonetaryAmountGuard.EnsureRepresentable(
+            amount,
+            "Reservation amount");
+
         var existingReservation =
             _reservations.SingleOrDefault(
                 reservation =>

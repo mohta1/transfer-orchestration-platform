@@ -15,7 +15,9 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
 {
     private readonly string _connectionString =
         Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING")
-        ?? "Host=localhost;Port=5432;Database=transfer_orchestration;Username=transfer_app;Password=transfer_test";
+        ?? throw new InvalidOperationException(
+            "Destructive PostgreSQL tests require an explicit TEST_DATABASE_CONNECTION_STRING. " +
+            "No application database fallback is allowed.");
 
     public async Task InitializeAsync()
     {
@@ -93,6 +95,49 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
         Assert.Equal(375m, reloaded.AvailableBalance);
         Assert.Equal(125m, reloaded.ReservedBalance);
         Assert.Equal(transferId, Assert.Single(reloaded.Reservations).TransferId);
+    }
+
+    [Fact]
+    public async Task FourDecimalMonetaryValuesRoundTripExactly()
+    {
+        const decimal openingBalance = 999.9999m;
+        const decimal reservedAmount = 123.4567m;
+        const decimal transferAmount = 456.7891m;
+        var transfer = Transfer.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            transferAmount,
+            "GBP",
+            TransferType.InternalBank,
+            DateTimeOffset.UtcNow);
+        var account = Account.Create(Guid.NewGuid(), "GBP", openingBalance);
+        var reservationTransferId = Guid.NewGuid();
+        account.Reserve(reservationTransferId, reservedAmount, DateTimeOffset.UtcNow);
+
+        await using (var transferContext = CreateTransferContext())
+        {
+            transferContext.Transfers.Add(transfer);
+            await transferContext.SaveChangesAsync();
+        }
+
+        await using (var accountContext = CreateAccountContext())
+        {
+            accountContext.Accounts.Add(account);
+            await accountContext.SaveChangesAsync();
+        }
+
+        await using var readTransferContext = CreateTransferContext();
+        var reloadedTransfer = await readTransferContext.Transfers.SingleAsync(
+            candidate => candidate.Id == transfer.Id);
+        await using var readAccountContext = CreateAccountContext();
+        var reloadedAccount = await readAccountContext.Accounts
+            .Include(candidate => candidate.Reservations)
+            .SingleAsync(candidate => candidate.Id == account.Id);
+
+        Assert.Equal(transferAmount, reloadedTransfer.Amount);
+        Assert.Equal(openingBalance - reservedAmount, reloadedAccount.AvailableBalance);
+        Assert.Equal(reservedAmount, reloadedAccount.ReservedBalance);
+        Assert.Equal(reservedAmount, Assert.Single(reloadedAccount.Reservations).Amount);
     }
 
     [Fact]
