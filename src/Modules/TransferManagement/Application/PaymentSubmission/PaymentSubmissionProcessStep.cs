@@ -82,8 +82,13 @@ internal sealed class PaymentSubmissionProcessStep(
         catch
         {
             // Any provider uncertainty after preparation deliberately remains on the
-            // persisted enquiry path. It is never converted into rejection or submit.
-            return PaymentSubmissionStepOutcome.StatusUnknown;
+            // persisted enquiry path. Persist the ambiguous Transfer state in a fresh
+            // scope before returning; it is never converted into rejection or submit.
+            return await PersistOutcomeAsync(
+                transferId,
+                request.Reference,
+                PaymentSubmissionResult.Timeout,
+                cancellationToken);
         }
 
         return await PersistOutcomeAsync(transferId, request.Reference, result, cancellationToken);
