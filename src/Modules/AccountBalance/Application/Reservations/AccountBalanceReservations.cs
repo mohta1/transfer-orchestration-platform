@@ -43,7 +43,8 @@ internal sealed class AccountBalanceReservations(
                 return Result(ReserveFundsOutcome.AccountNotFound);
             }
 
-            var existing = account.Reservations.SingleOrDefault();
+            var existing = account.Reservations.SingleOrDefault(
+                reservation => reservation.TransferId == request.TransferId);
             if (existing is not null)
             {
                 return Result(existing.Amount == request.Amount

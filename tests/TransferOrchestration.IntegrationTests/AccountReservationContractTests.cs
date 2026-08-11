@@ -84,6 +84,86 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SameScopedContractMatchesTrackedReservationsByTransferId()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferA = Guid.NewGuid();
+        var transferB = Guid.NewGuid();
+
+        await using var provider = CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var reservations = scope.ServiceProvider.GetRequiredService<IAccountBalanceReservations>();
+
+        Assert.Equal(ReserveFundsOutcome.Succeeded,
+            (await reservations.ReserveAsync(
+                Request(transferA, accountId, 100m), CancellationToken.None)).Outcome);
+        Assert.Equal(ReserveFundsOutcome.Succeeded,
+            (await reservations.ReserveAsync(
+                Request(transferB, accountId, 100m), CancellationToken.None)).Outcome);
+        Assert.Equal(ReserveFundsOutcome.AlreadyReserved,
+            (await reservations.ReserveAsync(
+                Request(transferA, accountId, 100m), CancellationToken.None)).Outcome);
+
+        var snapshot = await SnapshotAsync(accountId);
+        Assert.Equal((300m, 200m, 2L),
+            (snapshot.Available, snapshot.Reserved, snapshot.Version));
+        Assert.Equal(2, snapshot.Reservations.Count);
+        Assert.Single(snapshot.Reservations, reservation => reservation.TransferId == transferA);
+        Assert.Single(snapshot.Reservations, reservation => reservation.TransferId == transferB);
+    }
+
+    [Fact]
+    public async Task ConcurrentEquivalentTransferIdCreatesExactlyOneFinancialHold()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = Guid.NewGuid();
+
+        var results = await ReserveConcurrentlyAsync(
+            Request(transferId, accountId, 100m),
+            Request(transferId, accountId, 100m));
+
+        Assert.Equal(1, results.Count(result => result.Outcome == ReserveFundsOutcome.Succeeded));
+        Assert.Equal(1, results.Count(result => result.Outcome == ReserveFundsOutcome.AlreadyReserved));
+        var snapshot = await SnapshotAsync(accountId);
+        Assert.Equal((400m, 100m, 1L),
+            (snapshot.Available, snapshot.Reserved, snapshot.Version));
+        var reservation = Assert.Single(snapshot.Reservations);
+        Assert.Equal(transferId, reservation.TransferId);
+        Assert.Equal(100m, reservation.Amount);
+        Console.WriteLine(
+            "TASK-07 duplicate concurrency: succeeded=1, alreadyReserved=1, " +
+            "available=400.0000, reserved=100.0000, version=1, reservations=1.");
+    }
+
+    [Fact]
+    public async Task ConcurrentSameTransferForDifferentAccountsClassifiesUniqueConstraintRace()
+    {
+        var firstAccountId = await SeedAccountAsync(500m);
+        var secondAccountId = await SeedAccountAsync(500m);
+        var transferId = Guid.NewGuid();
+
+        var results = await ReserveConcurrentlyAsync(
+            Request(transferId, firstAccountId, 100m),
+            Request(transferId, secondAccountId, 100m));
+
+        Assert.Equal(1, results.Count(result => result.Outcome == ReserveFundsOutcome.Succeeded));
+        Assert.Equal(1, results.Count(result => result.Outcome == ReserveFundsOutcome.ConflictingReservation));
+        var first = await SnapshotAsync(firstAccountId);
+        var second = await SnapshotAsync(secondAccountId);
+        var changed = new[] { first, second }.Single(snapshot => snapshot.Reservations.Count == 1);
+        var unchanged = new[] { first, second }.Single(snapshot => snapshot.Reservations.Count == 0);
+        Assert.Equal((400m, 100m, 1L),
+            (changed.Available, changed.Reserved, changed.Version));
+        Assert.Equal((500m, 0m, 0L),
+            (unchanged.Available, unchanged.Reserved, unchanged.Version));
+        Assert.Equal(transferId, Assert.Single(changed.Reservations).TransferId);
+        Assert.Equal(1, await ReservationCountAsync(transferId));
+        Console.WriteLine(
+            "TASK-07 unique race: succeeded=1, conflictingReservation=1, " +
+            "winner=400.0000/100.0000/v1, loser=500.0000/0.0000/v0, reservations=1.");
+    }
+
+    [Fact]
     public async Task EquivalentRequestIsIdempotentAndChangedIntentConflicts()
     {
         var accountId = await SeedAccountAsync(500m);
@@ -252,6 +332,16 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         var transfer = await context.Transfers.AsNoTracking().SingleAsync(candidate => candidate.Id == transferId);
         var process = await context.TransferProcessStates.AsNoTracking().SingleAsync(candidate => candidate.TransferId == transferId);
         return new WorkflowSnapshot(transfer.State, transfer.Version, process.NextAction);
+    }
+
+    private async Task<int> ReservationCountAsync(Guid transferId)
+    {
+        await using var provider = CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<AccountBalanceDbContext>()
+            .Set<BalanceReservation>()
+            .AsNoTracking()
+            .CountAsync(reservation => reservation.TransferId == transferId);
     }
 
     private ServiceProvider CreateProvider(IReservationAttemptObserver? observer = null)
