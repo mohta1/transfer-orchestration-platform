@@ -72,8 +72,47 @@ public sealed class TransferSubmissionApiTests
     {
         Payload(amount: 0m),
         Payload(amount: 1.00001m),
-        Payload(destination: Source)
+        Payload(destination: Source),
+        new { SourceAccountId = Source, DestinationAccountId = Destination, Amount = 10m, Currency = "GBP", TransferType = "1" },
+        new { SourceAccountId = Source, DestinationAccountId = Destination, Amount = 10m, Currency = "GBP", TransferType = "2" }
     };
+
+    [Fact]
+    public async Task IdempotencyKeyHeaderContractRejectsInvalidValuesAndAllowsTwoHundredCharacters()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync();
+        using var client = factory.CreateClient();
+        foreach (var key in new[] { " ", new string('x', 201) })
+        {
+            using var invalid = Request(key, Payload());
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.SendAsync(invalid)).StatusCode);
+        }
+        using var multiple = Request("first", Payload());
+        multiple.Headers.TryAddWithoutValidation("Idempotency-Key", "second");
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.SendAsync(multiple)).StatusCode);
+        using var valid = Request(new string('x', 200), Payload());
+        Assert.Equal(HttpStatusCode.Accepted, (await client.SendAsync(valid)).StatusCode);
+    }
+
+    [Fact]
+    public async Task ValidationConflictProcessingAndRejectionEchoCurrentRequestCorrelation()
+    {
+        var correlation = Guid.NewGuid();
+        await using var factory = await SubmissionFactory.CreateAsync(authorization: DecisionOutcome.Rejected);
+        using var client = factory.CreateClient();
+        using var rejected = Request("rejected-correlation", Payload(), correlation);
+        var rejectedResponse = await client.SendAsync(rejected);
+        Assert.Equal(correlation.ToString("D"), rejectedResponse.Headers.GetValues("X-Correlation-ID").Single());
+
+        using var invalid = Request("invalid-correlation", Payload(amount: 0), correlation);
+        var invalidResponse = await client.SendAsync(invalid);
+        Assert.Equal(correlation.ToString("D"), invalidResponse.Headers.GetValues("X-Correlation-ID").Single());
+
+        await factory.SendAsync("conflict-correlation", Payload());
+        using var conflict = Request("conflict-correlation", Payload(amount: 11), correlation);
+        var conflictResponse = await client.SendAsync(conflict);
+        Assert.Equal(correlation.ToString("D"), conflictResponse.Headers.GetValues("X-Correlation-ID").Single());
+    }
 
     [Fact]
     public async Task AuthorizationRejectionStopsDailyLimitAndFraud()
@@ -134,6 +173,56 @@ public sealed class TransferSubmissionApiTests
         Assert.Equal(1, await factory.ProcessCountAsync());
     }
 
+    [Fact]
+    public async Task AuthorizationFailureLeavesOneRecoverableWorkflowAndRetryDoesNotDuplicateIt()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync(throwAuthorization: true);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => factory.SendAsync("recoverable-failure", Payload()));
+        Assert.Equal(1, await factory.TransferCountAsync());
+        Assert.Equal(1, await factory.ProcessCountAsync());
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var manager = scope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
+            Assert.Single(await manager.GetDueAsync(DateTimeOffset.UtcNow.AddMinutes(1), 10, CancellationToken.None));
+            var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+            var record = await context.IdempotencyRecords.SingleAsync();
+            Assert.NotNull(record.TransferId);
+        }
+
+        var retry = await factory.SendAsync("recoverable-failure", Payload());
+        Assert.Equal(HttpStatusCode.Accepted, retry.StatusCode);
+        Assert.Equal(1, await factory.TransferCountAsync());
+        Assert.Equal(1, await factory.ProcessCountAsync());
+    }
+
+    [Fact]
+    public async Task CumulativeDailyUsageIsDurableSeparatedByOwnerAndUtcDayAndAtomicUnderConcurrency()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync(useConfiguredDailyLimit: true);
+        var day = new DateOnly(2026, 8, 11);
+        Assert.Equal(DecisionOutcome.Approved, await factory.ConsumeAsync(Source, 6_000m, day));
+        Assert.Equal(DecisionOutcome.Rejected, await factory.ConsumeAsync(Source, 6_000m, day));
+        Assert.Equal(DecisionOutcome.Approved, await factory.ConsumeAsync(Guid.NewGuid(), 6_000m, day));
+        Assert.Equal(DecisionOutcome.Approved, await factory.ConsumeAsync(Source, 6_000m, day.AddDays(1)));
+
+        var concurrentOwner = Guid.NewGuid();
+        var outcomes = await Task.WhenAll(
+            factory.ConsumeAsync(concurrentOwner, 6_000m, day),
+            factory.ConsumeAsync(concurrentOwner, 6_000m, day));
+        Assert.Equal(1, outcomes.Count(outcome => outcome == DecisionOutcome.Approved));
+        Assert.Equal(1, outcomes.Count(outcome => outcome == DecisionOutcome.Rejected));
+    }
+
+    [Fact]
+    public async Task CumulativeDailyLimitRejectionPreventsFraud()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync(useConfiguredDailyLimit: true);
+        Assert.Equal(HttpStatusCode.Accepted, (await factory.SendAsync("daily-first", Payload(amount: 6_000m))).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await factory.SendAsync("daily-second", Payload(amount: 6_000m))).StatusCode);
+        Assert.Equal(1, factory.Fraud.CallCount);
+    }
+
     private static object Payload(decimal amount = 10m, Guid? destination = null) => new
     {
         SourceAccountId = Source,
@@ -160,10 +249,13 @@ public sealed class TransferSubmissionApiTests
         public CountingDailyLimit DailyLimit { get; }
         public CountingFraud Fraud { get; }
 
-        private SubmissionFactory(string connectionString, DecisionOutcome authorization, DecisionOutcome dailyLimit, DecisionOutcome fraud)
+        private readonly bool _useConfiguredDailyLimit;
+
+        private SubmissionFactory(string connectionString, DecisionOutcome authorization, DecisionOutcome dailyLimit, DecisionOutcome fraud, bool throwAuthorization, bool useConfiguredDailyLimit)
         {
             _connectionString = connectionString;
-            Authorization = new CountingAuthorization(authorization);
+            _useConfiguredDailyLimit = useConfiguredDailyLimit;
+            Authorization = new CountingAuthorization(authorization, throwAuthorization);
             DailyLimit = new CountingDailyLimit(dailyLimit);
             Fraud = new CountingFraud(fraud);
         }
@@ -171,7 +263,9 @@ public sealed class TransferSubmissionApiTests
         public static async Task<SubmissionFactory> CreateAsync(
             DecisionOutcome authorization = DecisionOutcome.Approved,
             DecisionOutcome dailyLimit = DecisionOutcome.Approved,
-            DecisionOutcome fraud = DecisionOutcome.Approved)
+            DecisionOutcome fraud = DecisionOutcome.Approved,
+            bool throwAuthorization = false,
+            bool useConfiguredDailyLimit = false)
         {
             var connectionString = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING")
                 ?? throw new InvalidOperationException("Destructive PostgreSQL tests require TEST_DATABASE_CONNECTION_STRING.");
@@ -180,7 +274,7 @@ public sealed class TransferSubmissionApiTests
             await using var command = connection.CreateCommand();
             command.CommandText = "DROP SCHEMA IF EXISTS transfer_management CASCADE; DROP SCHEMA IF EXISTS account_balance CASCADE;";
             await command.ExecuteNonQueryAsync();
-            var factory = new SubmissionFactory(connectionString, authorization, dailyLimit, fraud);
+            var factory = new SubmissionFactory(connectionString, authorization, dailyLimit, fraud, throwAuthorization, useConfiguredDailyLimit);
             _ = factory.Services;
             await using var scope = factory.Services.CreateAsyncScope();
             await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>().Database.MigrateAsync();
@@ -193,10 +287,10 @@ public sealed class TransferSubmissionApiTests
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<ICustomerAuthorization>();
-                services.RemoveAll<IDailyTransferLimit>();
+                if (!_useConfiguredDailyLimit) services.RemoveAll<IDailyTransferLimit>();
                 services.RemoveAll<IFraudScreening>();
                 services.AddSingleton<ICustomerAuthorization>(Authorization);
-                services.AddSingleton<IDailyTransferLimit>(DailyLimit);
+                if (!_useConfiguredDailyLimit) services.AddSingleton<IDailyTransferLimit>(DailyLimit);
                 services.AddSingleton<IFraudScreening>(Fraud);
             });
         }
@@ -212,6 +306,13 @@ public sealed class TransferSubmissionApiTests
         public async Task<int> ProcessCountAsync() => await WithContext(context => context.TransferProcessStates.CountAsync());
         public async Task<TransferState> SingleTransferStateAsync() => await WithContext(async context => (await context.Transfers.SingleAsync()).State);
 
+        public async Task<DecisionOutcome> ConsumeAsync(Guid sourceAccountId, decimal amount, DateOnly day)
+        {
+            await using var scope = Services.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<IDailyTransferLimit>()
+                .TryConsumeAsync(sourceAccountId, amount, "GBP", day, CancellationToken.None);
+        }
+
         private async Task<T> WithContext<T>(Func<TransferManagementDbContext, Task<T>> query)
         {
             await using var scope = Services.CreateAsyncScope();
@@ -219,12 +320,13 @@ public sealed class TransferSubmissionApiTests
         }
     }
 
-    private sealed class CountingAuthorization(DecisionOutcome outcome) : ICustomerAuthorization
+    private sealed class CountingAuthorization(DecisionOutcome outcome, bool throwOnCall = false) : ICustomerAuthorization
     {
         public int CallCount { get; private set; }
         public Task<DecisionOutcome> IsAuthorizedAsync(Guid sourceAccountId, CancellationToken cancellationToken)
         {
             CallCount++;
+            if (throwOnCall) throw new InvalidOperationException("Injected authorization failure.");
             return Task.FromResult(outcome);
         }
     }
@@ -232,7 +334,11 @@ public sealed class TransferSubmissionApiTests
     private sealed class CountingDailyLimit(DecisionOutcome outcome) : IDailyTransferLimit
     {
         public int CallCount { get; private set; }
-        public DecisionOutcome Evaluate(decimal amount, string currency) { CallCount++; return outcome; }
+        public Task<DecisionOutcome> TryConsumeAsync(Guid sourceAccountId, decimal amount, string currency, DateOnly utcDay, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromResult(outcome);
+        }
     }
 
     private sealed class CountingFraud(DecisionOutcome outcome) : IFraudScreening

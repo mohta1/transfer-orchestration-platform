@@ -22,9 +22,10 @@ public static class TransferSubmissionEndpoints
     {
         if (!httpContext.Request.Headers.TryGetValue("Idempotency-Key", out var values)
             || values.Count != 1
-            || string.IsNullOrWhiteSpace(values[0]))
+            || string.IsNullOrWhiteSpace(values[0])
+            || values[0]!.Length > 200)
         {
-            return Results.BadRequest(new ErrorResponse("Idempotency-Key header is required."));
+            return Results.BadRequest(new ErrorResponse("Idempotency-Key must contain one non-blank value of at most 200 characters."));
         }
 
         Guid correlationId;
@@ -53,10 +54,7 @@ public static class TransferSubmissionEndpoints
                 correlationId),
             cancellationToken);
 
-        if (result.CorrelationId is not null)
-        {
-            httpContext.Response.Headers["X-Correlation-ID"] = result.CorrelationId.Value.ToString("D");
-        }
+        httpContext.Response.Headers["X-Correlation-ID"] = correlationId.ToString("D");
 
         var response = new TransferSubmissionHttpResponse(
             result.TransferId,

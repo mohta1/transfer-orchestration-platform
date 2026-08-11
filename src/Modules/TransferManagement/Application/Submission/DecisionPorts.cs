@@ -15,7 +15,7 @@ internal interface ICustomerAuthorization
 
 internal interface IDailyTransferLimit
 {
-    DecisionOutcome Evaluate(decimal amount, string currency);
+    Task<DecisionOutcome> TryConsumeAsync(Guid sourceAccountId, decimal amount, string currency, DateOnly utcDay, CancellationToken cancellationToken);
 }
 
 internal interface IFraudScreening

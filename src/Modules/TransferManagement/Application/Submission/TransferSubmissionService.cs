@@ -33,11 +33,24 @@ internal sealed class TransferSubmissionService(
             validation.Currency!,
             validation.Type!.Value);
         var now = timeProvider.GetUtcNow();
-        var claim = await idempotencyStore.TryClaimAsync(
-            command.IdempotencyKey,
-            TransferSubmissionFingerprint.Create(request),
-            now,
-            cancellationToken);
+        IdempotencyClaim? claim = null;
+        Transfer? transfer = null;
+        await transaction.ExecuteAsync(async token =>
+        {
+            claim = await idempotencyStore.TryClaimAsync(command.IdempotencyKey, TransferSubmissionFingerprint.Create(request), now, token);
+            if (claim.Outcome != IdempotencyClaimOutcome.Owner) return;
+
+            transfer = Transfer.Create(request.SourceAccountId, request.DestinationAccountId, request.Amount, request.Currency, request.Type, now);
+            transfer.Submit(now);
+            transfer.RequestAuthorisation(now);
+            await processManager.CreateWithTransferAsync(transfer, command.CorrelationId, now, token);
+            await idempotencyStore.LinkToTransferAsync(claim.OwnerToken!.Value, transfer.Id.Value, token);
+        }, cancellationToken);
+
+        if (claim is null)
+        {
+            throw new InvalidOperationException("Idempotency claim was not evaluated.");
+        }
 
         if (claim.Outcome == IdempotencyClaimOutcome.Conflict)
         {
@@ -54,15 +67,10 @@ internal sealed class TransferSubmissionService(
             return await ReplayAsync(claim.Result!, cancellationToken);
         }
 
-        var transfer = Transfer.Create(
-            request.SourceAccountId,
-            request.DestinationAccountId,
-            request.Amount,
-            request.Currency,
-            request.Type,
-            now);
-        transfer.Submit(now);
-        transfer.RequestAuthorisation(now);
+        if (transfer is null)
+        {
+            throw new InvalidOperationException("The claim owner has no durable Transfer.");
+        }
 
         var outcome = TransferSubmissionOutcome.Accepted;
         if (await customerAuthorization.IsAuthorizedAsync(request.SourceAccountId, cancellationToken) == DecisionOutcome.Rejected)
@@ -73,7 +81,7 @@ internal sealed class TransferSubmissionService(
         else
         {
             transfer.Authorise(now);
-            if (dailyTransferLimit.Evaluate(request.Amount, request.Currency) == DecisionOutcome.Rejected)
+            if (await dailyTransferLimit.TryConsumeAsync(request.SourceAccountId, request.Amount, request.Currency, DateOnly.FromDateTime(now.UtcDateTime), cancellationToken) == DecisionOutcome.Rejected)
             {
                 transfer.RejectDailyLimit(now);
                 outcome = TransferSubmissionOutcome.DailyLimitExceeded;
@@ -95,7 +103,6 @@ internal sealed class TransferSubmissionService(
 
         await transaction.ExecuteAsync(async token =>
         {
-            await processManager.CreateWithTransferAsync(transfer, command.CorrelationId, now, token);
             if (outcome == TransferSubmissionOutcome.Accepted)
             {
                 await processManager.ScheduleAsync(transfer.Id, TransferProcessAction.ReserveBalance, now, now, token);
@@ -161,13 +168,14 @@ internal sealed class TransferSubmissionService(
         }
 
         TransferType? type = null;
-        if (!Enum.TryParse<TransferType>(command.TransferType, true, out var parsedType) || !Enum.IsDefined(parsedType))
+        if (!string.Equals(command.TransferType, nameof(TransferType.InternalBank), StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(command.TransferType, nameof(TransferType.DomesticInterbank), StringComparison.OrdinalIgnoreCase))
         {
             errors.Add("TransferType must be InternalBank or DomesticInterbank.");
         }
         else
         {
-            type = parsedType;
+            type = Enum.Parse<TransferType>(command.TransferType!, true);
         }
 
         return new ValidationResult(errors, currency, type);

@@ -144,10 +144,13 @@ Idempotency status:  Completed
 Idempotency outcome: Accepted
 ```
 
-The PostgreSQL-backed concurrent HTTP test issued eight identical requests and
-asserted exactly one Transfer and exactly one TransferProcessState. The complete
-test run passed 44 domain tests and 28 PostgreSQL integration tests. The build
-completed with 0 warnings and 0 errors.
+The PostgreSQL-backed tests also cover concurrent identical HTTP requests,
+atomic cumulative daily-limit consumption, and recovery after a decision-port
+failure. Daily usage is counted when the daily-limit decision approves a
+submission, per source account, currency, and UTC calendar day. A later fraud
+rejection does not refund that usage in TASK-06 because no refund policy is
+defined by the challenge; introducing one is deliberately deferred until a
+business policy exists.
 
 ## 11. Handoff to the Next Task
 

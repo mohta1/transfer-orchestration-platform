@@ -12,7 +12,7 @@ internal sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<
         {
             table.HasCheckConstraint(
                 "ck_idempotency_records_completion",
-                "(status = 'Processing' AND transfer_id IS NULL AND completed_at_utc IS NULL) OR " +
+                "(status = 'Processing' AND completed_at_utc IS NULL) OR " +
                 "(status = 'Completed' AND transfer_id IS NOT NULL AND completed_at_utc IS NOT NULL)");
         });
         builder.HasKey(record => record.Id);
