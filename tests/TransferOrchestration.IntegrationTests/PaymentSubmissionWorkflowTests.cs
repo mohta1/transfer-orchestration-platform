@@ -189,7 +189,7 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Task08MigrationBackfillsOnlyExactTask07DomesticHandoffRows()
+    public async Task Task08MigrationUpThenDownRestoresOnlyExactTask07DomesticHandoffRows()
     {
         await using (var connection = new NpgsqlConnection(_connectionString))
         {
@@ -251,6 +251,78 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
             "Active", "ActionScheduled", "ReserveBalance", rows[unrelatedId].DueAtUtc,
             7, 3, null), rows[unrelatedId]);
         Assert.NotNull(rows[unrelatedId].DueAtUtc);
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+            await context.GetService<IMigrator>()
+                .MigrateAsync("20260811170000_AddCumulativeDailyTransferUsage");
+        }
+
+        var downgradedRows = await ReadTask07RowsAsync(upgradedId, internalId, unrelatedId);
+        Assert.Equal(new Task07ProcessRow("Waiting", "WaitingForOutcome", "None", null, 9, 3),
+            downgradedRows[upgradedId]);
+        Assert.Equal(new Task07ProcessRow("Waiting", "WaitingForOutcome", "None", null, 7, 3),
+            downgradedRows[internalId]);
+        Assert.Equal(new Task07ProcessRow(
+            "Active", "ActionScheduled", "ReserveBalance", downgradedRows[unrelatedId].DueAtUtc, 7, 3),
+            downgradedRows[unrelatedId]);
+        Assert.NotNull(downgradedRows[unrelatedId].DueAtUtc);
+        Assert.False(await NetworkSubmissionReferenceColumnExistsAsync());
+    }
+
+    [Fact]
+    public async Task Task08MigrationDownRefusesToDiscardExternalSubmissionStateAndRollsBack()
+    {
+        var gateway = new RecordingGateway { SubmissionResult = PaymentSubmissionResult.Timeout };
+        var transferId = await SeedReservedTransferAsync(TransferType.DomesticInterbank, gateway);
+        Assert.Equal(1, await DispatchPaymentAsync(gateway));
+        var before = await SnapshotAsync(transferId);
+        AssertUnknown(before, gateway);
+
+        await using var provider = CreateProvider(gateway);
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+            var exception = await Assert.ThrowsAnyAsync<Exception>(() => context.GetService<IMigrator>()
+                .MigrateAsync("20260811170000_AddCumulativeDailyTransferUsage"));
+            Assert.Contains(
+                "Cannot downgrade TASK-08 while external payment submission state exists.",
+                exception.ToString(),
+                StringComparison.Ordinal);
+        }
+
+        Assert.True(await NetworkSubmissionReferenceColumnExistsAsync());
+        Assert.True(await Task08MigrationIsAppliedAsync());
+        Assert.Equal(before, await SnapshotAsync(transferId));
+    }
+
+    [Fact]
+    public async Task Task08MigrationDownRestoresNewPreSubmissionDomesticHandoff()
+    {
+        var transferId = await SeedReservedTransferAsync(TransferType.DomesticInterbank, new RecordingGateway());
+        var before = await ReadCurrentProcessRowAsync(transferId.Value);
+        Assert.Equal("Active", before.Status);
+        Assert.Equal("ActionScheduled", before.CurrentStep);
+        Assert.Equal("SubmitToPaymentNetwork", before.NextAction);
+        Assert.Null(before.Reference);
+
+        await using var provider = CreateProvider(new RecordingGateway());
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+            await context.GetService<IMigrator>()
+                .MigrateAsync("20260811170000_AddCumulativeDailyTransferUsage");
+        }
+
+        var row = (await ReadTask07RowsAsync(transferId.Value))[transferId.Value];
+        Assert.Equal("Waiting", row.Status);
+        Assert.Equal("WaitingForOutcome", row.CurrentStep);
+        Assert.Equal("None", row.NextAction);
+        Assert.Null(row.DueAtUtc);
+        Assert.Equal(before.Version + 1, row.Version);
+        Assert.Equal(before.AttemptCount, row.AttemptCount);
+        Assert.False(await NetworkSubmissionReferenceColumnExistsAsync());
     }
 
     [Fact]
@@ -334,6 +406,82 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         command.Parameters.AddWithValue("internal", internalId);
         command.Parameters.AddWithValue("unrelated", unrelatedId);
         await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task<Dictionary<Guid, Task07ProcessRow>> ReadTask07RowsAsync(params Guid[] ids)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT transfer_id, status, current_step, next_action, next_attempt_at_utc, version, attempt_count
+            FROM transfer_management.transfer_process_states
+            WHERE transfer_id = ANY(@ids);
+            """;
+        command.Parameters.AddWithValue("ids", ids);
+        await using var reader = await command.ExecuteReaderAsync();
+        var rows = new Dictionary<Guid, Task07ProcessRow>();
+        while (await reader.ReadAsync())
+        {
+            rows.Add(reader.GetGuid(0), new Task07ProcessRow(
+                reader.GetString(1), reader.GetString(2), reader.GetString(3),
+                reader.IsDBNull(4) ? null : reader.GetFieldValue<DateTimeOffset>(4),
+                reader.GetInt64(5), reader.GetInt32(6)));
+        }
+
+        return rows;
+    }
+
+    private async Task<MigratedProcessRow> ReadCurrentProcessRowAsync(Guid transferId)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT status, current_step, next_action, next_attempt_at_utc, version, attempt_count,
+                   network_submission_reference
+            FROM transfer_management.transfer_process_states
+            WHERE transfer_id = @transfer_id;
+            """;
+        command.Parameters.AddWithValue("transfer_id", transferId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        return new MigratedProcessRow(
+            reader.GetString(0), reader.GetString(1), reader.GetString(2),
+            reader.IsDBNull(3) ? null : reader.GetFieldValue<DateTimeOffset>(3),
+            reader.GetInt64(4), reader.GetInt32(5), reader.IsDBNull(6) ? null : reader.GetString(6));
+    }
+
+    private async Task<bool> NetworkSubmissionReferenceColumnExistsAsync()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'transfer_management'
+                  AND table_name = 'transfer_process_states'
+                  AND column_name = 'network_submission_reference');
+            """;
+        return (bool)(await command.ExecuteScalarAsync())!;
+    }
+
+    private async Task<bool> Task08MigrationIsAppliedAsync()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM transfer_management."__EFMigrationsHistory"
+                WHERE "MigrationId" = '20260811190000_AddNetworkSubmissionReference');
+            """;
+        return (bool)(await command.ExecuteScalarAsync())!;
     }
 
     private async Task<WorkflowSnapshot> SnapshotAsync(TransferId transferId)
@@ -444,4 +592,12 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         long Version,
         int AttemptCount,
         string? Reference);
+
+    private sealed record Task07ProcessRow(
+        string Status,
+        string CurrentStep,
+        string NextAction,
+        DateTimeOffset? DueAtUtc,
+        long Version,
+        int AttemptCount);
 }
