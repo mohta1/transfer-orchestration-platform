@@ -9,6 +9,7 @@ using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempotency;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
+using TransferOrchestration.TransferManagement.Infrastructure.Processing;
 using TransferOrchestration.TransferManagement.Infrastructure.Submission;
 
 namespace TransferOrchestration.TransferManagement;
@@ -38,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<ITransferManagementTransaction, TransferManagementTransaction>();
         services.AddScoped<ITransferSubmissionService, TransferSubmissionService>();
         services.AddScoped<IReserveBalanceProcessStep, ReserveBalanceProcessStep>();
+        services.AddScoped<ITransferProcessDueWorkDispatcher, TransferProcessDueWorkDispatcher>();
+        services.AddHostedService<TransferProcessWorker>();
         services.AddScoped<ICustomerAuthorization, AllowCustomerAuthorization>();
         services.AddScoped<IDailyTransferLimit, ConfiguredDailyTransferLimit>();
         services.AddScoped<IFraudScreening, AllowFraudScreening>();

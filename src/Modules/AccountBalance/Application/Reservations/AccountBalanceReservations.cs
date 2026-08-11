@@ -48,6 +48,7 @@ internal sealed class AccountBalanceReservations(
             if (existing is not null)
             {
                 return Result(existing.Amount == request.Amount
+                    && existing.Status == BalanceReservationStatus.Active
                     ? ReserveFundsOutcome.AlreadyReserved
                     : ReserveFundsOutcome.ConflictingReservation);
             }
@@ -67,11 +68,10 @@ internal sealed class AccountBalanceReservations(
                 return Result(ReserveFundsOutcome.InsufficientBalance);
             }
 
-            account.Reserve(request.TransferId, request.Amount, timeProvider.GetUtcNow());
-            await observer.AfterAccountLoadedAsync(attempt, cancellationToken);
-
             try
             {
+                account.Reserve(request.TransferId, request.Amount, timeProvider.GetUtcNow());
+                await observer.AfterAccountLoadedAsync(attempt, cancellationToken);
                 await repository.SaveChangesAsync(cancellationToken);
                 return Result(ReserveFundsOutcome.Succeeded);
             }
@@ -88,6 +88,11 @@ internal sealed class AccountBalanceReservations(
             {
                 return await ClassifyUniqueConflictAsync(request, cancellationToken);
             }
+            catch
+            {
+                repository.DiscardTrackedChanges();
+                throw;
+            }
         }
 
         return Result(ReserveFundsOutcome.ContentionRetryExhausted);
@@ -101,6 +106,7 @@ internal sealed class AccountBalanceReservations(
         return Result(intent is not null
             && intent.AccountId == request.SourceAccountId
             && intent.Amount == request.Amount
+            && intent.Status == BalanceReservationStatus.Active
                 ? ReserveFundsOutcome.AlreadyReserved
                 : ReserveFundsOutcome.ConflictingReservation);
     }

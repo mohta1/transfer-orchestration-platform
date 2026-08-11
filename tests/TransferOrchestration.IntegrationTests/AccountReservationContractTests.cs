@@ -185,6 +185,80 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(3)]
+    [InlineData(2)]
+    public async Task TerminalReservationIsNotIdempotentSuccessAndCannotAdvanceTransfer(
+        int terminalStatusValue)
+    {
+        var terminalStatus = (BalanceReservationStatus)terminalStatusValue;
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        Assert.Equal(ReserveFundsOutcome.Succeeded,
+            (await ReserveAsync(Request(transferId.Value, accountId, 100m))).Outcome);
+        await FinaliseReservationAsync(accountId, transferId.Value, terminalStatus);
+
+        var beforeRetry = await SnapshotAsync(accountId);
+        var result = await ReserveAsync(Request(transferId.Value, accountId, 100m));
+        Assert.Equal(ReserveFundsOutcome.ConflictingReservation, result.Outcome);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ReserveBalanceStepOutcome.TransferRejected, await ExecuteStepAsync(transferId));
+
+        var afterRetry = await SnapshotAsync(accountId);
+        Assert.Equal(
+            (beforeRetry.Available, beforeRetry.Reserved, beforeRetry.Version, beforeRetry.Reservations.Count),
+            (afterRetry.Available, afterRetry.Reserved, afterRetry.Version, afterRetry.Reservations.Count));
+        Assert.Single(afterRetry.Reservations);
+        Assert.NotEqual(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(2)]
+    public async Task UniqueConflictClassifierRejectsPersistedTerminalReservation(
+        int terminalStatusValue)
+    {
+        var terminalStatus = (BalanceReservationStatus)terminalStatusValue;
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = Guid.NewGuid();
+        await using var provider = CreateProvider(
+            new InsertTerminalReservationObserver(_connectionString, accountId, transferId, terminalStatus));
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IAccountBalanceReservations>()
+            .ReserveAsync(Request(transferId, accountId, 100m), CancellationToken.None);
+
+        Assert.Equal(ReserveFundsOutcome.ConflictingReservation, result.Outcome);
+        Assert.Equal((500m, 0m, 0L),
+            ((await SnapshotAsync(accountId)).Available,
+             (await SnapshotAsync(accountId)).Reserved,
+             (await SnapshotAsync(accountId)).Version));
+        Assert.Equal(1, await ReservationCountAsync(transferId));
+    }
+
+    [Fact]
+    public async Task FailedSaveDiscardsTrackedFinancialStateBeforeSameScopeRetry()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = Guid.NewGuid();
+        var observer = new FailFirstAttemptObserver();
+        await using var provider = CreateProvider(observer);
+        await using var scope = provider.CreateAsyncScope();
+        var reservations = scope.ServiceProvider.GetRequiredService<IAccountBalanceReservations>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => reservations.ReserveAsync(
+            Request(transferId, accountId, 100m), CancellationToken.None));
+        var afterFailure = await SnapshotAsync(accountId);
+        Assert.Equal((500m, 0m, 0L, 0),
+            (afterFailure.Available, afterFailure.Reserved, afterFailure.Version, afterFailure.Reservations.Count));
+
+        var retry = await reservations.ReserveAsync(Request(transferId, accountId, 100m), CancellationToken.None);
+        Assert.Equal(ReserveFundsOutcome.Succeeded, retry.Outcome);
+        var afterRetry = await SnapshotAsync(accountId);
+        Assert.Equal((400m, 100m, 1L, 1),
+            (afterRetry.Available, afterRetry.Reserved, afterRetry.Version, afterRetry.Reservations.Count));
+    }
+
+    [Theory]
     [InlineData(2, "GBP", 50, ReserveFundsOutcome.AccountInactive)]
     [InlineData(1, "USD", 50, ReserveFundsOutcome.CurrencyMismatch)]
     [InlineData(1, "GBP", 501, ReserveFundsOutcome.InsufficientBalance)]
@@ -222,7 +296,7 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
 
         var workflow = await WorkflowSnapshotAsync(transferId);
         Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
-        Assert.Equal(TransferProcessAction.ContinueWorkflow, workflow.NextAction);
+        Assert.Equal(TransferProcessAction.None, workflow.NextAction);
         Assert.Equal(6, workflow.TransferVersion);
         var account = await SnapshotAsync(accountId);
         Assert.Equal((400m, 100m, 1), (account.Available, account.Reserved, account.Reservations.Count));
@@ -245,9 +319,40 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         var workflow = await WorkflowSnapshotAsync(transferId);
         var account = await SnapshotAsync(accountId);
         Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
-        Assert.Equal(TransferProcessAction.ContinueWorkflow, workflow.NextAction);
+        Assert.Equal(TransferProcessAction.None, workflow.NextAction);
         Assert.Equal((400m, 100m, 1), (account.Available, account.Reserved, account.Reservations.Count));
         Console.WriteLine("TASK-07 crash recovery: account commit survived disposed scope; retry returned equivalent reservation; transfer=BalanceReserved; reservations=1.");
+    }
+
+    [Fact]
+    public async Task ProductionDispatcherExecutesPersistedReserveBalanceAndRestartRecoversDueWork()
+    {
+        var firstAccount = await SeedAccountAsync(500m);
+        var firstTransfer = await SeedPendingTransferAsync(firstAccount, 100m);
+        await using (var provider = CreateProvider())
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            Assert.Equal(1, await scope.ServiceProvider
+                .GetRequiredService<ITransferProcessDueWorkDispatcher>()
+                .DispatchDueAsync(CancellationToken.None));
+        }
+
+        await AssertDispatchedAsync(firstAccount, firstTransfer);
+
+        var recoveredAccount = await SeedAccountAsync(500m);
+        var recoveredTransfer = await SeedPendingTransferAsync(recoveredAccount, 100m);
+        // The provider/scope that persisted the work has already been disposed by
+        // SeedPendingTransferAsync. A newly constructed production dispatcher must
+        // rediscover the process state from PostgreSQL.
+        await using (var restartedProvider = CreateProvider())
+        await using (var restartedScope = restartedProvider.CreateAsyncScope())
+        {
+            Assert.Equal(1, await restartedScope.ServiceProvider
+                .GetRequiredService<ITransferProcessDueWorkDispatcher>()
+                .DispatchDueAsync(CancellationToken.None));
+        }
+
+        await AssertDispatchedAsync(recoveredAccount, recoveredTransfer);
     }
 
     private async Task<IReadOnlyList<ReserveFundsResult>> ReserveConcurrentlyAsync(params ReserveFundsRequest[] requests)
@@ -344,6 +449,38 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             .CountAsync(reservation => reservation.TransferId == transferId);
     }
 
+    private async Task FinaliseReservationAsync(
+        Guid accountId,
+        Guid transferId,
+        BalanceReservationStatus status)
+    {
+        await using var provider = CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<AccountBalanceDbContext>();
+        var account = await context.Accounts.Include(candidate => candidate.Reservations)
+            .SingleAsync(candidate => candidate.Id == new AccountId(accountId));
+        if (status == BalanceReservationStatus.Released)
+        {
+            account.ReleaseReservation(transferId, DateTimeOffset.UtcNow);
+        }
+        else
+        {
+            account.ConsumeReservation(transferId, DateTimeOffset.UtcNow);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task AssertDispatchedAsync(Guid accountId, TransferId transferId)
+    {
+        var account = await SnapshotAsync(accountId);
+        var workflow = await WorkflowSnapshotAsync(transferId);
+        Assert.Equal((400m, 100m, 1L, 1),
+            (account.Available, account.Reserved, account.Version, account.Reservations.Count));
+        Assert.Equal(TransferState.BalanceReserved, workflow.TransferState);
+        Assert.Equal(TransferProcessAction.None, workflow.NextAction);
+    }
+
     private ServiceProvider CreateProvider(IReservationAttemptObserver? observer = null)
     {
         var services = new ServiceCollection();
@@ -383,6 +520,53 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             }
 
             await _bothLoaded.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    private sealed class FailFirstAttemptObserver : IReservationAttemptObserver
+    {
+        private int _attempts;
+
+        public Task AfterAccountLoadedAsync(int attempt, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _attempts) == 1)
+            {
+                throw new InvalidOperationException("Deliberate failure before persistence.");
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class InsertTerminalReservationObserver(
+        string connectionString,
+        Guid accountId,
+        Guid transferId,
+        BalanceReservationStatus status) : IReservationAttemptObserver
+    {
+        private int _inserted;
+
+        public async Task AfterAccountLoadedAsync(int attempt, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Exchange(ref _inserted, 1) != 0)
+            {
+                return;
+            }
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO account_balance.balance_reservations
+                    (id, account_id, transfer_id, amount, status, created_at_utc, finalised_at_utc)
+                VALUES (@id, @account, @transfer, 100, @status, @now, @now)
+                """;
+            command.Parameters.AddWithValue("id", Guid.NewGuid());
+            command.Parameters.AddWithValue("account", accountId);
+            command.Parameters.AddWithValue("transfer", transferId);
+            command.Parameters.AddWithValue("status", status.ToString());
+            command.Parameters.AddWithValue("now", DateTimeOffset.UtcNow);
+            await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
 }

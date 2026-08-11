@@ -33,8 +33,11 @@ internal sealed class AccountRepository(AccountBalanceDbContext dbContext)
             .Where(reservation => reservation.TransferId == transferId)
             .Select(reservation => new ReservationIntent(
                 EF.Property<AccountId>(reservation, "account_id").Value,
-                reservation.Amount))
+                reservation.Amount,
+                reservation.Status))
             .SingleOrDefaultAsync(cancellationToken);
+
+    public void DiscardTrackedChanges() => dbContext.ChangeTracker.Clear();
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {

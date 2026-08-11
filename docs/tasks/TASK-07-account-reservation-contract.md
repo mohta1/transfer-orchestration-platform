@@ -4,7 +4,7 @@
 **Stage:** Stage 2 — Submission & Coordination
 **Recommended branch:** `feature/account-reservation-contract`
 **Depends on:** TASK-06
-**Status:** Done
+**Status:** In Progress
 
 ---
 
