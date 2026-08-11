@@ -177,7 +177,8 @@ public sealed class TransferSubmissionApiTests
     public async Task AuthorizationFailureLeavesOneRecoverableWorkflowAndRetryDoesNotDuplicateIt()
     {
         await using var factory = await SubmissionFactory.CreateAsync(throwAuthorization: true);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => factory.SendAsync("recoverable-failure", Payload()));
+        var failedResponse = await factory.SendAsync("recoverable-failure", Payload());
+        Assert.Equal(HttpStatusCode.InternalServerError, failedResponse.StatusCode);
         Assert.Equal(1, await factory.TransferCountAsync());
         Assert.Equal(1, await factory.ProcessCountAsync());
 
