@@ -4,7 +4,7 @@
 **Stage:** Stage 1 — Domain & Persistence
 **Recommended branch:** `feature/ef-mapping-migrations`
 **Depends on:** TASK-01
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -78,26 +78,26 @@ Domain rules alone are insufficient under concurrency or buggy callers. PostgreS
 
 ## 8. Acceptance Criteria
 
-- [ ] Clean DB creation succeeds using migrations only.
-- [ ] Both module schemas exist.
-- [ ] No cross-module table ownership.
-- [ ] Required unique/check constraints exist.
-- [ ] Build/test baseline remains green.
+- [x] Clean DB creation succeeds using migrations only.
+- [x] Both module schemas exist.
+- [x] No cross-module table ownership.
+- [x] Required unique/check constraints exist.
+- [x] Build/test baseline remains green.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 

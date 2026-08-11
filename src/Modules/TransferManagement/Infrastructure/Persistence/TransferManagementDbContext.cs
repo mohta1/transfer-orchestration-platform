@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TransferOrchestration.TransferManagement.Domain.Transfers;
 
 namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 
@@ -7,6 +8,8 @@ public sealed class TransferManagementDbContext(
     : DbContext(options)
 {
     public const string Schema = "transfer_management";
+
+    internal DbSet<Transfer> Transfers => Set<Transfer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
