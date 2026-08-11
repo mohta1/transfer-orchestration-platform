@@ -33,6 +33,21 @@ public sealed class TransferTests
     }
 
     [Fact]
+    public void CreateWithMoreThanFourFractionalDigitsThrowsDomainException()
+    {
+        Assert.Throws<DomainException>(() =>
+            CreateTransfer(amount: 1.23456m));
+    }
+
+    [Fact]
+    public void CreateWithFourDecimalAmountPreservesAmount()
+    {
+        var transfer = CreateTransfer(amount: 1.23400m);
+
+        Assert.Equal(1.23400m, transfer.Amount);
+    }
+
+    [Fact]
     public void CreateWithSameSourceAndDestinationThrowsDomainException()
     {
         var accountId = Guid.NewGuid();

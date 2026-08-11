@@ -57,6 +57,10 @@ internal sealed class Transfer : AggregateRoot<TransferId>
         TransferType type,
         DateTimeOffset nowUtc)
     {
+        MonetaryAmountGuard.EnsureRepresentable(
+            amount,
+            "Transfer amount");
+
         if (sourceAccountId == Guid.Empty)
         {
             throw new DomainException("Source account is required.");

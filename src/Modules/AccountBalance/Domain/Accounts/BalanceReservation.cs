@@ -38,6 +38,10 @@ internal sealed class BalanceReservation
         decimal amount,
         DateTimeOffset nowUtc)
     {
+        MonetaryAmountGuard.EnsureRepresentable(
+            amount,
+            "Reservation amount");
+
         if (transferId == Guid.Empty)
         {
             throw new DomainException("Transfer identifier is required.");

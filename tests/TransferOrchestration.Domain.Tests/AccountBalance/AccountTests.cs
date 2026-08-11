@@ -294,6 +294,43 @@ public sealed class AccountTests
             CreateAccount(-1m));
     }
 
+    [Fact]
+    public void CreateWithMoreThanFourFractionalDigitsThrowsDomainException()
+    {
+        Assert.Throws<DomainException>(() => CreateAccount(100.00001m));
+    }
+
+    [Fact]
+    public void BalanceReservationWithMoreThanFourFractionalDigitsThrowsDomainException()
+    {
+        Assert.Throws<DomainException>(() =>
+            BalanceReservation.Create(Guid.NewGuid(), 1.23456m, Now));
+    }
+
+    [Fact]
+    public void ReserveWithMoreThanFourFractionalDigitsDoesNotMutateAccount()
+    {
+        var account = CreateAccount(100.1234m);
+
+        Assert.Throws<DomainException>(() =>
+            account.Reserve(Guid.NewGuid(), 1.23456m, Now));
+
+        Assert.Equal(100.1234m, account.AvailableBalance);
+        Assert.Equal(0m, account.ReservedBalance);
+        Assert.Equal(0, account.Version);
+        Assert.Empty(account.Reservations);
+    }
+
+    [Fact]
+    public void FourDecimalMonetaryValuesAreAcceptedUnchanged()
+    {
+        var account = CreateAccount(100.1234m);
+        var reservation = account.Reserve(Guid.NewGuid(), 0.1234m, Now);
+
+        Assert.Equal(100.0000m, account.AvailableBalance);
+        Assert.Equal(0.1234m, reservation.Amount);
+    }
+
     private static Account CreateAccount(
         decimal availableBalance)
     {
