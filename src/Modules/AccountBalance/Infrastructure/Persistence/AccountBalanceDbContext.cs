@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TransferOrchestration.AccountBalance.Domain.Accounts;
 
 namespace TransferOrchestration.AccountBalance.Infrastructure.Persistence;
 
@@ -7,6 +8,8 @@ public sealed class AccountBalanceDbContext(
     : DbContext(options)
 {
     public const string Schema = "account_balance";
+
+    internal DbSet<Account> Accounts => Set<Account>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
