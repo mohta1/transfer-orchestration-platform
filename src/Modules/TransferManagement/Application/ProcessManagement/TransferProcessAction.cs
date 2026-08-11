@@ -4,5 +4,8 @@ internal enum TransferProcessAction
 {
     None,
     ContinueWorkflow,
-    ReserveBalance
+    ReserveBalance,
+    SubmitToPaymentNetwork,
+    EnquirePaymentStatus,
+    ReleaseReservation
 }

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
+using TransferOrchestration.TransferManagement.Application.PaymentSubmission;
 
 namespace TransferOrchestration.TransferManagement.Infrastructure.Processing;
 
@@ -27,6 +28,8 @@ internal sealed class TransferProcessWorker(
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var dispatcher = scope.ServiceProvider.GetRequiredService<ITransferProcessDueWorkDispatcher>();
                 await dispatcher.DispatchDueAsync(stoppingToken);
+                var paymentDispatcher = scope.ServiceProvider.GetRequiredService<IPaymentSubmissionDueWorkDispatcher>();
+                await paymentDispatcher.DispatchDueAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

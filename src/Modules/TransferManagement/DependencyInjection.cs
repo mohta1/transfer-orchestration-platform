@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TransferOrchestration.TransferManagement.Application.Idempotency;
 using TransferOrchestration.TransferManagement.Application.BalanceReservation;
 using TransferOrchestration.TransferManagement.Application.Persistence;
+using TransferOrchestration.TransferManagement.Application.PaymentSubmission;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
@@ -40,6 +41,8 @@ public static class DependencyInjection
         services.AddScoped<ITransferSubmissionService, TransferSubmissionService>();
         services.AddScoped<IReserveBalanceProcessStep, ReserveBalanceProcessStep>();
         services.AddScoped<ITransferProcessDueWorkDispatcher, TransferProcessDueWorkDispatcher>();
+        services.AddScoped<IPaymentSubmissionProcessStep, PaymentSubmissionProcessStep>();
+        services.AddScoped<IPaymentSubmissionDueWorkDispatcher, PaymentSubmissionDueWorkDispatcher>();
         services.AddHostedService<TransferProcessWorker>();
         services.AddScoped<ICustomerAuthorization, AllowCustomerAuthorization>();
         services.AddScoped<IDailyTransferLimit, ConfiguredDailyTransferLimit>();

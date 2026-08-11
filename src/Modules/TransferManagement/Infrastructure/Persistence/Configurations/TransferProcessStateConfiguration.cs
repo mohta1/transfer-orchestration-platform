@@ -31,6 +31,9 @@ internal sealed class TransferProcessStateConfiguration : IEntityTypeConfigurati
         builder.Property(state => state.CurrentStep).HasColumnName("current_step").HasConversion<string>().HasMaxLength(32);
         builder.Property(state => state.NextAction).HasColumnName("next_action").HasConversion<string>().HasMaxLength(40);
         builder.Property(state => state.AttemptCount).HasColumnName("attempt_count");
+        builder.Property(state => state.NetworkSubmissionReference)
+            .HasColumnName("network_submission_reference")
+            .HasMaxLength(80);
         builder.Property(state => state.NextAttemptAtUtc).HasColumnName("next_attempt_at_utc");
         builder.Property(state => state.Version).HasColumnName("version").IsConcurrencyToken();
         builder.Property(state => state.CreatedAtUtc).HasColumnName("created_at_utc");
@@ -44,5 +47,10 @@ internal sealed class TransferProcessStateConfiguration : IEntityTypeConfigurati
         builder.HasIndex(state => new { state.NextAttemptAtUtc, state.TransferId })
             .HasDatabaseName("ix_transfer_process_states_due_work")
             .HasFilter("status = 'Active' AND next_action <> 'None' AND next_attempt_at_utc IS NOT NULL");
+
+        builder.HasIndex(state => state.NetworkSubmissionReference)
+            .IsUnique()
+            .HasDatabaseName("ux_transfer_process_states_network_submission_reference")
+            .HasFilter("network_submission_reference IS NOT NULL");
     }
 }

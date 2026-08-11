@@ -67,6 +67,11 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("next_attempt_at_utc");
 
+                    b.Property<string>("NetworkSubmissionReference")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("network_submission_reference");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -87,6 +92,11 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                     b.HasIndex("NextAttemptAtUtc", "TransferId")
                         .HasDatabaseName("ix_transfer_process_states_due_work")
                         .HasFilter("status = 'Active' AND next_action <> 'None' AND next_attempt_at_utc IS NOT NULL");
+
+                    b.HasIndex("NetworkSubmissionReference")
+                        .IsUnique()
+                        .HasDatabaseName("ux_transfer_process_states_network_submission_reference")
+                        .HasFilter("network_submission_reference IS NOT NULL");
 
                     b.ToTable("transfer_process_states", "transfer_management", t =>
                         {

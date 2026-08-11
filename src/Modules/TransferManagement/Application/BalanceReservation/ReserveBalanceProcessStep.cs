@@ -69,9 +69,14 @@ internal sealed class ReserveBalanceProcessStep(
         {
             var now = timeProvider.GetUtcNow();
             transfer.MarkBalanceReserved(now);
-            // TASK-08 introduces the next executable routing action. Until then the
-            // durable process is deliberately non-due after reservation succeeds.
-            process.MarkWaiting(now);
+            if (transfer.Type == TransferType.DomesticInterbank)
+            {
+                process.Schedule(TransferProcessAction.SubmitToPaymentNetwork, now, now);
+            }
+            else
+            {
+                process.MarkWaiting(now);
+            }
             try
             {
                 await processRepository.SaveChangesAsync(cancellationToken);
