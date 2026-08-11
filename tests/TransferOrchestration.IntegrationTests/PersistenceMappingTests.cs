@@ -4,9 +4,11 @@ using TransferOrchestration.AccountBalance.Application.Persistence;
 using TransferOrchestration.AccountBalance.Domain.Accounts;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence.Repositories;
+using TransferOrchestration.TransferManagement.Application.Idempotency;
 using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
+using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempotency;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
 
 namespace TransferOrchestration.IntegrationTests;
@@ -303,6 +305,109 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SameKeyAndFingerprintSequentiallyCreatesOneProcessingRecord()
+    {
+        var key = $"sequential-{Guid.NewGuid():N}";
+        var fingerprint = Fingerprint(100m);
+        await using var context = CreateTransferContext();
+        var store = new TransferSubmissionIdempotencyStore(context);
+
+        var owner = await store.TryClaimAsync(key, fingerprint, DateTimeOffset.UtcNow, CancellationToken.None);
+        var duplicate = await store.TryClaimAsync(key, fingerprint, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        Assert.Equal(IdempotencyClaimOutcome.Owner, owner.Outcome);
+        Assert.NotNull(owner.OwnerToken);
+        Assert.Equal(IdempotencyClaimOutcome.Processing, duplicate.Outcome);
+        Assert.Equal(1, await context.IdempotencyRecords.CountAsync(record => record.Key == key));
+    }
+
+    [Fact]
+    public async Task SameKeyAndDifferentFingerprintReturnsConflictWithoutOverwrite()
+    {
+        var key = $"conflict-{Guid.NewGuid():N}";
+        await using var context = CreateTransferContext();
+        var store = new TransferSubmissionIdempotencyStore(context);
+        var original = Fingerprint(100m);
+
+        Assert.Equal(IdempotencyClaimOutcome.Owner,
+            (await store.TryClaimAsync(key, original, DateTimeOffset.UtcNow, CancellationToken.None)).Outcome);
+        var conflict = await store.TryClaimAsync(key, Fingerprint(101m), DateTimeOffset.UtcNow, CancellationToken.None);
+
+        Assert.Equal(IdempotencyClaimOutcome.Conflict, conflict.Outcome);
+        var record = await context.IdempotencyRecords.SingleAsync(candidate => candidate.Key == key);
+        Assert.Equal(original, record.Fingerprint);
+    }
+
+    [Fact]
+    public async Task CompletedClaimReplaysOriginalTransferResult()
+    {
+        var key = $"completed-{Guid.NewGuid():N}";
+        var fingerprint = Fingerprint(100m);
+        var transferId = Guid.NewGuid();
+        await using var context = CreateTransferContext();
+        var store = new TransferSubmissionIdempotencyStore(context);
+        var owner = await store.TryClaimAsync(key, fingerprint, DateTimeOffset.UtcNow, CancellationToken.None);
+        Assert.NotNull(owner.OwnerToken);
+
+        await store.CompleteAsync(
+            owner.OwnerToken.Value,
+            new TransferSubmissionResult(transferId),
+            DateTimeOffset.UtcNow,
+            CancellationToken.None);
+        var replay = await store.TryClaimAsync(key, fingerprint, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        Assert.Equal(IdempotencyClaimOutcome.Completed, replay.Outcome);
+        Assert.Equal(transferId, replay.Result?.TransferId);
+        Assert.Equal(1, await context.IdempotencyRecords.CountAsync(record => record.Key == key));
+    }
+
+    [Fact]
+    public async Task ConcurrentIdenticalClaimsProduceExactlyOneOwnerWithoutUniqueViolation()
+    {
+        var key = $"concurrent-{Guid.NewGuid():N}";
+        var fingerprint = Fingerprint(100m);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<IdempotencyClaim> ClaimAsync()
+        {
+            await using var context = CreateTransferContext();
+            var store = new TransferSubmissionIdempotencyStore(context);
+            await gate.Task;
+            return await store.TryClaimAsync(key, fingerprint, DateTimeOffset.UtcNow, CancellationToken.None);
+        }
+
+        var claims = new[] { ClaimAsync(), ClaimAsync() };
+        gate.SetResult();
+        var results = await Task.WhenAll(claims);
+
+        Assert.Equal(1, results.Count(result => result.Outcome == IdempotencyClaimOutcome.Owner));
+        Assert.Equal(1, results.Count(result => result.Outcome == IdempotencyClaimOutcome.Processing));
+        await using var verification = CreateTransferContext();
+        Assert.Equal(1, await verification.IdempotencyRecords.CountAsync(record => record.Key == key));
+        Console.WriteLine("TASK-04 concurrency evidence: two simultaneous claims; owner=1, processing duplicate=1, rows=1, PostgreSQL exceptions=0.");
+    }
+
+    [Fact]
+    public async Task PostgreSqlContainsUniqueScopeAndKeyConstraint()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT indexdef
+            FROM pg_indexes
+            WHERE schemaname = 'transfer_management'
+              AND tablename = 'idempotency_records'
+              AND indexname = 'ux_idempotency_records_scope_key';
+            """;
+
+        var definition = Assert.IsType<string>(await command.ExecuteScalarAsync());
+        Assert.Contains("UNIQUE", definition, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("scope, idempotency_key", definition, StringComparison.OrdinalIgnoreCase);
+        Console.WriteLine($"TASK-04 uniqueness evidence: {definition}");
+    }
+
+    [Fact]
     public void RepositoryAbstractionsDoNotExposeEntityFrameworkCoreTypes()
     {
         var repositoryTypes = new[] { typeof(IAccountRepository), typeof(ITransferRepository) };
@@ -316,6 +421,14 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
             exposedTypes,
             type => type.FullName?.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal) == true);
     }
+
+    private static string Fingerprint(decimal amount) =>
+        TransferSubmissionFingerprint.Create(new TransferSubmissionRequest(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            amount,
+            "GBP",
+            TransferType.InternalBank));
 
     private AccountBalanceDbContext CreateAccountContext() =>
         new(new DbContextOptionsBuilder<AccountBalanceDbContext>().UseNpgsql(
