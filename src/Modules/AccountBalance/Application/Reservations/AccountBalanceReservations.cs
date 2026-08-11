@@ -8,7 +8,8 @@ namespace TransferOrchestration.AccountBalance.Application.Reservations;
 internal sealed class AccountBalanceReservations(
     IAccountRepository repository,
     TimeProvider timeProvider,
-    IReservationAttemptObserver observer) : IAccountBalanceReservations
+    IReservationAttemptObserver observer,
+    IReservationRetryDelay retryDelay) : IAccountBalanceReservations
 {
     internal const int MaximumAttempts = 3;
 
@@ -26,14 +27,6 @@ internal sealed class AccountBalanceReservations(
         var currency = request.Currency.Trim().ToUpperInvariant();
         for (var attempt = 1; attempt <= MaximumAttempts; attempt++)
         {
-            var existingIntent = await repository.GetReservationIntentAsync(
-                request.TransferId,
-                cancellationToken);
-            if (existingIntent is not null && existingIntent.AccountId != request.SourceAccountId)
-            {
-                return Result(ReserveFundsOutcome.ConflictingReservation);
-            }
-
             var account = await repository.GetByIdAsync(
                 new AccountId(request.SourceAccountId),
                 request.TransferId,
@@ -41,6 +34,21 @@ internal sealed class AccountBalanceReservations(
             if (account is null)
             {
                 return Result(ReserveFundsOutcome.AccountNotFound);
+            }
+
+            // Currency is part of a valid reservation intent even though it is
+            // canonically owned by Account rather than duplicated on Reservation.
+            if (!string.Equals(account.Currency, currency, StringComparison.Ordinal))
+            {
+                return Result(ReserveFundsOutcome.CurrencyMismatch);
+            }
+
+            var existingIntent = await repository.GetReservationIntentAsync(
+                request.TransferId,
+                cancellationToken);
+            if (existingIntent is not null && existingIntent.AccountId != request.SourceAccountId)
+            {
+                return Result(ReserveFundsOutcome.ConflictingReservation);
             }
 
             var existing = account.Reservations.SingleOrDefault(
@@ -56,11 +64,6 @@ internal sealed class AccountBalanceReservations(
             if (account.Status != AccountStatus.Active)
             {
                 return Result(ReserveFundsOutcome.AccountInactive);
-            }
-
-            if (!string.Equals(account.Currency, currency, StringComparison.Ordinal))
-            {
-                return Result(ReserveFundsOutcome.CurrencyMismatch);
             }
 
             if (account.AvailableBalance < request.Amount)
@@ -79,6 +82,7 @@ internal sealed class AccountBalanceReservations(
             {
                 // The repository clears all losing tracked state. The next loop iteration
                 // reloads PostgreSQL state and re-evaluates every invariant.
+                await retryDelay.DelayAsync(attempt, cancellationToken);
             }
             catch (AccountConcurrencyConflictException)
             {
@@ -103,6 +107,22 @@ internal sealed class AccountBalanceReservations(
         CancellationToken cancellationToken)
     {
         var intent = await repository.GetReservationIntentAsync(request.TransferId, cancellationToken);
+        var account = await repository.GetByIdAsync(
+            new AccountId(request.SourceAccountId),
+            request.TransferId,
+            cancellationToken);
+
+        if (account is null)
+        {
+            return Result(ReserveFundsOutcome.AccountNotFound);
+        }
+
+        var currency = request.Currency.Trim().ToUpperInvariant();
+        if (!string.Equals(account.Currency, currency, StringComparison.Ordinal))
+        {
+            return Result(ReserveFundsOutcome.CurrencyMismatch);
+        }
+
         return Result(intent is not null
             && intent.AccountId == request.SourceAccountId
             && intent.Amount == request.Amount
@@ -141,4 +161,15 @@ internal interface IReservationAttemptObserver
 internal sealed class NoOpReservationAttemptObserver : IReservationAttemptObserver
 {
     public Task AfterAccountLoadedAsync(int attempt, CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
+internal interface IReservationRetryDelay
+{
+    Task DelayAsync(int failedAttempt, CancellationToken cancellationToken);
+}
+
+internal sealed class ReservationRetryDelay(TimeProvider timeProvider) : IReservationRetryDelay
+{
+    public Task DelayAsync(int failedAttempt, CancellationToken cancellationToken) =>
+        Task.Delay(TimeSpan.FromMilliseconds(25 * failedAttempt), timeProvider, cancellationToken);
 }

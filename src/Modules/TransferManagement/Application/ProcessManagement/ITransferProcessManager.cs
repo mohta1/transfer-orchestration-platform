@@ -15,4 +15,10 @@ internal interface ITransferProcessManager
     Task CompleteAsync(TransferId transferId, DateTimeOffset nowUtc, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DueTransferProcess>> GetDueAsync(DateTimeOffset dueAtUtc, int maximumCount, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<DueTransferProcess>> GetDueForActionAsync(
+        TransferProcessAction action,
+        DateTimeOffset dueAtUtc,
+        int maximumCount,
+        CancellationToken cancellationToken);
 }

@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IAccountBalanceReservations, AccountBalanceReservations>();
         services.AddScoped<IReservationAttemptObserver, NoOpReservationAttemptObserver>();
+        services.AddScoped<IReservationRetryDelay, ReservationRetryDelay>();
         services.AddSingleton(TimeProvider.System);
 
         return services;

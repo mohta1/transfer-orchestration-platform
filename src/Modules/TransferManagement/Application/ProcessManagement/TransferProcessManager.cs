@@ -60,6 +60,34 @@ internal sealed class TransferProcessManager(
         return processRepository.GetDueAsync(dueAtUtc, maximumCount, cancellationToken);
     }
 
+    public Task<IReadOnlyList<DueTransferProcess>> GetDueForActionAsync(
+        TransferProcessAction action,
+        DateTimeOffset dueAtUtc,
+        int maximumCount,
+        CancellationToken cancellationToken)
+    {
+        ValidateDueQuery(dueAtUtc, maximumCount);
+        if (action == TransferProcessAction.None)
+        {
+            throw new ArgumentOutOfRangeException(nameof(action), "A due-work action is required.");
+        }
+
+        return processRepository.GetDueForActionAsync(action, dueAtUtc, maximumCount, cancellationToken);
+    }
+
+    private static void ValidateDueQuery(DateTimeOffset dueAtUtc, int maximumCount)
+    {
+        if (dueAtUtc.Offset != TimeSpan.Zero)
+        {
+            throw new DomainException("Due-work query time must be UTC.");
+        }
+
+        if (maximumCount <= 0 || maximumCount > 1_000)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumCount), "Result count must be between 1 and 1000.");
+        }
+    }
+
     private async Task<TransferProcessState> GetRequiredAsync(TransferId transferId, CancellationToken cancellationToken) =>
         await processRepository.GetAsync(transferId, cancellationToken)
         ?? throw new DomainException($"Transfer process '{transferId.Value}' was not found.");

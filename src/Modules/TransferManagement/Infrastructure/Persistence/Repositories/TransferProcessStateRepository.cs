@@ -42,6 +42,33 @@ internal sealed class TransferProcessStateRepository(TransferManagementDbContext
                 state.UpdatedAtUtc))
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<DueTransferProcess>> GetDueForActionAsync(
+        TransferProcessAction action,
+        DateTimeOffset dueAtUtc,
+        int maximumCount,
+        CancellationToken cancellationToken) =>
+        await dbContext.TransferProcessStates
+            .AsNoTracking()
+            .Where(state =>
+                state.Status == TransferProcessStatus.Active &&
+                state.NextAction == action &&
+                state.NextAttemptAtUtc != null &&
+                state.NextAttemptAtUtc <= dueAtUtc)
+            .OrderBy(state => state.NextAttemptAtUtc)
+            .ThenBy(state => state.TransferId)
+            .Take(maximumCount)
+            .Select(state => new DueTransferProcess(
+                state.TransferId,
+                state.CorrelationId,
+                state.Status,
+                state.CurrentStep,
+                state.NextAction,
+                state.AttemptCount,
+                state.NextAttemptAtUtc!.Value,
+                state.CreatedAtUtc,
+                state.UpdatedAtUtc))
+            .ToListAsync(cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         try
