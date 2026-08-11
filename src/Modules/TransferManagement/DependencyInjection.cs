@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TransferOrchestration.TransferManagement.Application.Idempotency;
 using TransferOrchestration.TransferManagement.Application.Persistence;
+using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempotency;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
@@ -25,6 +26,8 @@ public static class DependencyInjection
                         "__EFMigrationsHistory",
                         TransferManagementDbContext.Schema)));
         services.AddScoped<ITransferRepository, TransferRepository>();
+        services.AddScoped<ITransferProcessStateRepository, TransferProcessStateRepository>();
+        services.AddScoped<ITransferProcessManager, TransferProcessManager>();
         services.AddScoped<ITransferSubmissionIdempotencyStore, TransferSubmissionIdempotencyStore>();
 
         return services;
