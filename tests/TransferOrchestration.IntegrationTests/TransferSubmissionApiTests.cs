@@ -215,6 +215,38 @@ public sealed class TransferSubmissionApiTests
     }
 
     [Fact]
+    public async Task ConcurrentDailyLimitClaimsDoNotExceedMaximum()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync(useConfiguredDailyLimit: true);
+
+        var responses = await Task.WhenAll(
+            factory.SendAsync("concurrent-limit-1", Payload(amount: 6_000m)),
+            factory.SendAsync("concurrent-limit-2", Payload(amount: 6_000m)));
+
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Accepted));
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.UnprocessableEntity));
+        var outcomes = await Task.WhenAll(responses.Select(response => response.Content.ReadFromJsonAsync<Response>()));
+        Assert.Contains(outcomes, outcome => outcome?.Outcome == nameof(TransferSubmissionOutcome.Accepted));
+        Assert.Contains(outcomes, outcome => outcome?.Outcome == nameof(TransferSubmissionOutcome.DailyLimitExceeded));
+        Assert.Equal(6_000m, await factory.ConsumedAmountAsync(Source, "GBP"));
+        Assert.Equal(1, await factory.DailyUsageCountAsync(Source, "GBP"));
+    }
+
+    [Fact]
+    public async Task ConcurrentDailyLimitClaimsAccumulateWhenBothFit()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync(useConfiguredDailyLimit: true);
+
+        var responses = await Task.WhenAll(
+            factory.SendAsync("concurrent-fit-1", Payload(amount: 4_000m)),
+            factory.SendAsync("concurrent-fit-2", Payload(amount: 4_000m)));
+
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.Accepted, response.StatusCode));
+        Assert.Equal(8_000m, await factory.ConsumedAmountAsync(Source, "GBP"));
+        Assert.Equal(1, await factory.DailyUsageCountAsync(Source, "GBP"));
+    }
+
+    [Fact]
     public async Task CumulativeDailyLimitRejectionPreventsFraud()
     {
         await using var factory = await SubmissionFactory.CreateAsync(useConfiguredDailyLimit: true);
@@ -305,6 +337,12 @@ public sealed class TransferSubmissionApiTests
         public async Task<int> TransferCountAsync() => await WithContext(context => context.Transfers.CountAsync());
         public async Task<int> ProcessCountAsync() => await WithContext(context => context.TransferProcessStates.CountAsync());
         public async Task<TransferState> SingleTransferStateAsync() => await WithContext(async context => (await context.Transfers.SingleAsync()).State);
+        public async Task<decimal> ConsumedAmountAsync(Guid sourceAccountId, string currency) =>
+            await WithContext(async context => (await context.DailyTransferUsages.SingleAsync(
+                usage => usage.SourceAccountId == sourceAccountId && usage.Currency == currency)).ConsumedAmount);
+        public async Task<int> DailyUsageCountAsync(Guid sourceAccountId, string currency) =>
+            await WithContext(context => context.DailyTransferUsages.CountAsync(
+                usage => usage.SourceAccountId == sourceAccountId && usage.Currency == currency));
 
         public async Task<DecisionOutcome> ConsumeAsync(Guid sourceAccountId, decimal amount, DateOnly day)
         {
