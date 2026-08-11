@@ -448,6 +448,100 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         Assert.Empty((await SnapshotAsync(accountId)).Reservations);
     }
 
+    [Fact]
+    public async Task DispatcherStopsAfterDurableContentionBudgetIsExhausted()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        var step = new SequencedReserveBalanceStep(
+            transferId => ExecuteStepAsync(transferId, clock),
+            ReserveBalanceStepOutcome.RetryableContention,
+            ReserveBalanceStepOutcome.RetryableContention,
+            ReserveBalanceStepOutcome.RetryableContention);
+        await using var provider = CreateProvider(processStep: step, timeProvider: clock);
+
+        Assert.Equal(1, await DispatchAsync(provider));
+        var firstRetry = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(1, firstRetry.AttemptCount);
+        Assert.Equal(TransferProcessStatus.Active, firstRetry.Status);
+        Assert.Equal(TransferProcessAction.ReserveBalance, firstRetry.NextAction);
+        Assert.True(firstRetry.NextAttemptAtUtc > clock.GetUtcNow());
+        clock.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, await DispatchAsync(provider));
+        var secondRetry = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(2, secondRetry.AttemptCount);
+        Assert.Equal(TransferProcessAction.ReserveBalance, secondRetry.NextAction);
+        clock.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, await DispatchAsync(provider));
+
+        var exhausted = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(TransferProcessStatus.Waiting, exhausted.Status);
+        Assert.Equal(TransferProcessAction.None, exhausted.NextAction);
+        Assert.Null(exhausted.NextAttemptAtUtc);
+        Assert.Equal(2, exhausted.AttemptCount);
+        Assert.Equal(TransferState.PendingBalanceReservation, (await WorkflowSnapshotAsync(transferId)).TransferState);
+        Assert.Equal(0, await DispatchAsync(provider));
+        Assert.Equal(3, step.Invocations);
+        Assert.Equal(exhausted, await ProcessSnapshotAsync(transferId));
+    }
+
+    [Fact]
+    public async Task DispatcherPreservesContentionBudgetAcrossProviderRestart()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+
+        await using (var firstProvider = CreateProvider(
+            processStep: new SequencedReserveBalanceStep(
+                ExecuteStepAsync,
+                ReserveBalanceStepOutcome.RetryableContention),
+            timeProvider: clock))
+        {
+            Assert.Equal(1, await DispatchAsync(firstProvider));
+        }
+
+        Assert.Equal(1, (await ProcessSnapshotAsync(transferId)).AttemptCount);
+        clock.Advance(TimeSpan.FromSeconds(2));
+        var restartedStep = new SequencedReserveBalanceStep(
+            ExecuteStepAsync,
+            ReserveBalanceStepOutcome.RetryableContention,
+            ReserveBalanceStepOutcome.RetryableContention);
+        await using var restartedProvider = CreateProvider(processStep: restartedStep, timeProvider: clock);
+        Assert.Equal(1, await DispatchAsync(restartedProvider));
+        Assert.Equal(2, (await ProcessSnapshotAsync(transferId)).AttemptCount);
+        clock.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, await DispatchAsync(restartedProvider));
+        Assert.Equal(TransferProcessStatus.Waiting, (await ProcessSnapshotAsync(transferId)).Status);
+        Assert.Equal(2, restartedStep.Invocations);
+    }
+
+    [Fact]
+    public async Task DispatcherSuccessBeforeContentionExhaustionSchedulesNoFurtherRetry()
+    {
+        var accountId = await SeedAccountAsync(500m);
+        var transferId = await SeedPendingTransferAsync(accountId, 100m);
+        var clock = new MutableTimeProvider(DateTimeOffset.UtcNow.AddMinutes(1));
+        var step = new SequencedReserveBalanceStep(
+            transferId => ExecuteStepAsync(transferId, clock),
+            ReserveBalanceStepOutcome.RetryableContention,
+            ReserveBalanceStepOutcome.BalanceReserved);
+        await using var provider = CreateProvider(processStep: step, timeProvider: clock);
+
+        Assert.Equal(1, await DispatchAsync(provider));
+        clock.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, await DispatchAsync(provider));
+        Assert.Equal(0, await DispatchAsync(provider));
+        Assert.Equal(2, step.Invocations);
+
+        var process = await ProcessSnapshotAsync(transferId);
+        Assert.Equal(TransferProcessStatus.Waiting, process.Status);
+        Assert.Equal(TransferProcessAction.None, process.NextAction);
+        Assert.Null(process.NextAttemptAtUtc);
+        Assert.Equal(TransferState.BalanceReserved, (await WorkflowSnapshotAsync(transferId)).TransferState);
+    }
+
     private async Task<IReadOnlyList<ReserveFundsResult>> ReserveConcurrentlyAsync(params ReserveFundsRequest[] requests)
     {
         await using var provider = CreateProvider(new TwoPartyLoadGate());
@@ -469,8 +563,11 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
     }
 
     private async Task<ReserveBalanceStepOutcome> ExecuteStepAsync(TransferId transferId)
+        => await ExecuteStepAsync(transferId, null);
+
+    private async Task<ReserveBalanceStepOutcome> ExecuteStepAsync(TransferId transferId, TimeProvider? timeProvider)
     {
-        await using var provider = CreateProvider();
+        await using var provider = CreateProvider(timeProvider: timeProvider);
         await using var scope = provider.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<IReserveBalanceProcessStep>()
             .ExecuteAsync(transferId, CancellationToken.None);
@@ -527,6 +624,13 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
     private async Task<int> DispatchAsync()
     {
         await using var provider = CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ITransferProcessDueWorkDispatcher>()
+            .DispatchDueAsync(CancellationToken.None);
+    }
+
+    private static async Task<int> DispatchAsync(ServiceProvider provider)
+    {
         await using var scope = provider.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<ITransferProcessDueWorkDispatcher>()
             .DispatchDueAsync(CancellationToken.None);
@@ -613,7 +717,9 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
 
     private ServiceProvider CreateProvider(
         IReservationAttemptObserver? observer = null,
-        IReservationRetryDelay? retryDelay = null)
+        IReservationRetryDelay? retryDelay = null,
+        IReserveBalanceProcessStep? processStep = null,
+        TimeProvider? timeProvider = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
@@ -624,10 +730,20 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             services.Replace(ServiceDescriptor.Singleton<IReservationAttemptObserver>(observer));
         }
 
-
         if (retryDelay is not null)
         {
             services.Replace(ServiceDescriptor.Singleton<IReservationRetryDelay>(retryDelay));
+        }
+
+
+        if (processStep is not null)
+        {
+            services.Replace(ServiceDescriptor.Singleton<IReserveBalanceProcessStep>(processStep));
+        }
+
+        if (timeProvider is not null)
+        {
+            services.Replace(ServiceDescriptor.Singleton<TimeProvider>(timeProvider));
         }
 
         return services.BuildServiceProvider();
@@ -647,6 +763,36 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
         DateTimeOffset? NextAttemptAtUtc,
         long Version,
         DateTimeOffset UpdatedAtUtc);
+
+    private sealed class MutableTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+
+        public void Advance(TimeSpan duration) => utcNow += duration;
+    }
+
+    private sealed class SequencedReserveBalanceStep(
+        Func<TransferId, Task<ReserveBalanceStepOutcome>>? executeSuccess = null,
+        params ReserveBalanceStepOutcome[] outcomes)
+        : IReserveBalanceProcessStep
+    {
+        private int _invocations;
+
+        public int Invocations => _invocations;
+
+        public async Task<ReserveBalanceStepOutcome> ExecuteAsync(
+            TransferId transferId,
+            CancellationToken cancellationToken)
+        {
+            var invocation = Interlocked.Increment(ref _invocations);
+            if (outcomes[invocation - 1] == ReserveBalanceStepOutcome.BalanceReserved)
+            {
+                return await (executeSuccess ?? throw new InvalidOperationException("A success executor is required."))(transferId);
+            }
+
+            return outcomes[invocation - 1];
+        }
+    }
 
     private sealed class TwoPartyLoadGate : IReservationAttemptObserver
     {

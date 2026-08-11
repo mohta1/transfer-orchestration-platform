@@ -13,6 +13,7 @@ internal sealed class TransferProcessDueWorkDispatcher(
     TimeProvider timeProvider) : ITransferProcessDueWorkDispatcher
 {
     private const int BatchSize = 100;
+    internal const int MaximumContentionReschedules = 2;
     private static readonly TimeSpan ContentionDelay = TimeSpan.FromSeconds(1);
 
     public async Task<int> DispatchDueAsync(CancellationToken cancellationToken)
@@ -38,7 +39,14 @@ internal sealed class TransferProcessDueWorkDispatcher(
             {
                 var now = timeProvider.GetUtcNow();
                 var manager = workScope.ServiceProvider.GetRequiredService<ITransferProcessManager>();
-                await manager.RecordAttemptAsync(work.TransferId, now + ContentionDelay, now, cancellationToken);
+                if (work.AttemptCount >= MaximumContentionReschedules)
+                {
+                    await manager.MarkWaitingAsync(work.TransferId, now, cancellationToken);
+                }
+                else
+                {
+                    await manager.RecordAttemptAsync(work.TransferId, now + ContentionDelay, now, cancellationToken);
+                }
             }
 
             dispatched++;
