@@ -4,7 +4,7 @@
 **Stage:** Stage 1 — Domain & Persistence
 **Recommended branch:** `feature/account-balance-domain`
 **Depends on:** Transfer domain model baseline
-**Status:** Not Started
+**Status:** Done
 
 ---
 
