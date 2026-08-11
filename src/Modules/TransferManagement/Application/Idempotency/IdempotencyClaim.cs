@@ -8,7 +8,7 @@ internal enum IdempotencyClaimOutcome
     Conflict
 }
 
-internal sealed record TransferSubmissionResult(Guid TransferId);
+internal sealed record TransferSubmissionResult(Guid TransferId, string? Outcome = null);
 
 internal sealed record IdempotencyClaim(
     IdempotencyClaimOutcome Outcome,

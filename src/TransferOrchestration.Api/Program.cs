@@ -1,5 +1,6 @@
 using TransferOrchestration.AccountBalance;
 using TransferOrchestration.TransferManagement;
+using TransferOrchestration.TransferManagement.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,7 @@ var connectionString =
         "Connection string 'Database' is not configured.");
 
 builder.Services
-    .AddTransferManagementModule(connectionString)
+    .AddTransferManagementModule(connectionString, builder.Configuration)
     .AddAccountBalanceModule(connectionString);
 
 var app = builder.Build();
@@ -18,5 +19,8 @@ app.MapGet("/health", () => Results.Ok(new
 {
     Status = "Healthy"
 }));
+app.MapTransferSubmissionEndpoints();
 
 app.Run();
+
+public partial class Program;

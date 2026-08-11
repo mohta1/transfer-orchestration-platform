@@ -22,6 +22,7 @@ internal sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<
         builder.Property(record => record.Fingerprint).HasColumnName("fingerprint").HasMaxLength(64).IsFixedLength();
         builder.Property(record => record.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
         builder.Property(record => record.TransferId).HasColumnName("transfer_id");
+        builder.Property(record => record.ResultOutcome).HasColumnName("result_outcome").HasMaxLength(32);
         builder.Property(record => record.CreatedAtUtc).HasColumnName("created_at_utc");
         builder.Property(record => record.CompletedAtUtc).HasColumnName("completed_at_utc");
         builder.HasIndex(record => new { record.Scope, record.Key })

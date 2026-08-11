@@ -54,7 +54,7 @@ internal sealed class TransferSubmissionIdempotencyStore(TransferManagementDbCon
         return existing.Status == IdempotencyRecordStatus.Completed
             ? new IdempotencyClaim(
                 IdempotencyClaimOutcome.Completed,
-                Result: new TransferSubmissionResult(existing.TransferId!.Value))
+                Result: new TransferSubmissionResult(existing.TransferId!.Value, existing.ResultOutcome))
             : new IdempotencyClaim(IdempotencyClaimOutcome.Processing);
     }
 
@@ -71,6 +71,7 @@ internal sealed class TransferSubmissionIdempotencyStore(TransferManagementDbCon
                 updates => updates
                     .SetProperty(record => record.Status, IdempotencyRecordStatus.Completed)
                     .SetProperty(record => record.TransferId, result.TransferId)
+                    .SetProperty(record => record.ResultOutcome, result.Outcome)
                     .SetProperty(record => record.CompletedAtUtc, completedAtUtc),
                 cancellationToken);
 

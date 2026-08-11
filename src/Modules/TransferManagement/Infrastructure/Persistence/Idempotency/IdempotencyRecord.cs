@@ -16,6 +16,8 @@ internal sealed class IdempotencyRecord
 
     public Guid? TransferId { get; private set; }
 
+    public string? ResultOutcome { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     public DateTimeOffset? CompletedAtUtc { get; private set; }
