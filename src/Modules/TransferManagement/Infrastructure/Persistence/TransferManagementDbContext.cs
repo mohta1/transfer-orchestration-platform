@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempotency;
 
@@ -13,6 +14,8 @@ public sealed class TransferManagementDbContext(
     internal DbSet<Transfer> Transfers => Set<Transfer>();
 
     internal DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+
+    internal DbSet<TransferProcessState> TransferProcessStates => Set<TransferProcessState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -4,7 +4,7 @@
 **Stage:** Stage 2 — Submission & Coordination
 **Recommended branch:** `feature/transfer-process-manager`
 **Depends on:** TASK-04
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -68,24 +68,24 @@ ADR-002 selected a Persistent Process Manager. Workflow progress must survive re
 
 ## 8. Acceptance Criteria
 
-- [ ] Durable workflow survives restart.
-- [ ] No in-memory-only orchestration dependency.
-- [ ] Design remains consistent with ADR-002.
+- [x] Durable workflow survives restart.
+- [x] No in-memory-only orchestration dependency.
+- [x] Design remains consistent with ADR-002.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 

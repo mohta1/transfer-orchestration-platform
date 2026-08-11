@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using TransferOrchestration.BuildingBlocks.Domain;
 using TransferOrchestration.AccountBalance.Application.Persistence;
 using TransferOrchestration.AccountBalance.Domain.Accounts;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence.Repositories;
 using TransferOrchestration.TransferManagement.Application.Idempotency;
 using TransferOrchestration.TransferManagement.Application.Persistence;
+using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempotency;
@@ -50,11 +52,12 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
             FROM information_schema.tables
             WHERE (table_schema, table_name) IN (
                 ('transfer_management', 'transfers'),
+                ('transfer_management', 'transfer_process_states'),
                 ('account_balance', 'accounts'),
                 ('account_balance', 'balance_reservations'));
             """;
 
-        Assert.Equal(3L, await command.ExecuteScalarAsync());
+        Assert.Equal(4L, await command.ExecuteScalarAsync());
     }
 
     [Fact]
@@ -408,9 +411,126 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DueProcessStateSurvivesNewApplicationScopeAndPreservesCoordinationMetadata()
+    {
+        await ClearProcessStatesAsync();
+        var createdAt = new DateTimeOffset(2026, 8, 11, 14, 0, 0, TimeSpan.Zero);
+        var attemptedAt = createdAt.AddMinutes(1);
+        var dueAt = createdAt.AddMinutes(5);
+        var correlationId = Guid.NewGuid();
+        var transfer = CreateTransfer(createdAt);
+
+        await using (var initialApplicationScope = CreateTransferContext())
+        {
+            var manager = CreateProcessManager(initialApplicationScope);
+            await manager.CreateWithTransferAsync(transfer, correlationId, createdAt, CancellationToken.None);
+            await manager.RecordAttemptAsync(transfer.Id, dueAt, attemptedAt, CancellationToken.None);
+        }
+
+        await using var restartedApplicationScope = CreateTransferContext();
+        var restartedManager = CreateProcessManager(restartedApplicationScope);
+        var recovered = Assert.Single(await restartedManager.GetDueAsync(dueAt, 10, CancellationToken.None));
+
+        Assert.Equal(transfer.Id, recovered.TransferId);
+        Assert.Equal(correlationId, recovered.CorrelationId);
+        Assert.Equal(TransferProcessStatus.Active, recovered.Status);
+        Assert.Equal(TransferProcessStep.ActionScheduled, recovered.CurrentStep);
+        Assert.Equal(TransferProcessAction.ContinueWorkflow, recovered.NextAction);
+        Assert.Equal(1, recovered.AttemptCount);
+        Assert.Equal(dueAt, recovered.NextAttemptAtUtc);
+        Assert.Equal(createdAt, recovered.CreatedAtUtc);
+        Assert.Equal(attemptedAt, recovered.UpdatedAtUtc);
+
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT next_action, attempt_count, next_attempt_at_utc
+            FROM transfer_management.transfer_process_states
+            WHERE transfer_id = @transfer_id;
+            """;
+        command.Parameters.AddWithValue("transfer_id", transfer.Id.Value);
+        await using var row = await command.ExecuteReaderAsync();
+        Assert.True(await row.ReadAsync());
+        Assert.Equal("ContinueWorkflow", row.GetString(0));
+        Assert.Equal(1, row.GetInt32(1));
+        Assert.Equal(dueAt, row.GetFieldValue<DateTimeOffset>(2));
+        Console.WriteLine($"TASK-05 restart evidence: transfer={transfer.Id.Value}, correlation={correlationId}, action={row.GetString(0)}, attempts={row.GetInt32(1)}, due={row.GetFieldValue<DateTimeOffset>(2):O}.");
+    }
+
+    [Fact]
+    public async Task DueQueryExcludesFutureWaitingAndCompletedWorkAndIsDeterministicallyBounded()
+    {
+        await ClearProcessStatesAsync();
+        var now = new DateTimeOffset(2026, 8, 11, 15, 0, 0, TimeSpan.Zero);
+        var dueEarlier = CreateTransfer(now);
+        var dueTieFirst = CreateTransfer(now);
+        var dueTieSecond = CreateTransfer(now);
+        var future = CreateTransfer(now);
+        var waiting = CreateTransfer(now);
+        var completed = CreateTransfer(now);
+        var orderedTie = new[] { dueTieFirst, dueTieSecond }.OrderBy(item => item.Id.Value).ToArray();
+
+        await using (var writeScope = CreateTransferContext())
+        {
+            var manager = CreateProcessManager(writeScope);
+            foreach (var transfer in new[] { dueEarlier, dueTieFirst, dueTieSecond, future, waiting, completed })
+            {
+                await manager.CreateWithTransferAsync(transfer, Guid.NewGuid(), now, CancellationToken.None);
+            }
+
+            await manager.ScheduleAsync(dueEarlier.Id, TransferProcessAction.ContinueWorkflow, now.AddMinutes(1), now, CancellationToken.None);
+            await manager.ScheduleAsync(dueTieFirst.Id, TransferProcessAction.ContinueWorkflow, now.AddMinutes(2), now, CancellationToken.None);
+            await manager.ScheduleAsync(dueTieSecond.Id, TransferProcessAction.ContinueWorkflow, now.AddMinutes(2), now, CancellationToken.None);
+            await manager.ScheduleAsync(future.Id, TransferProcessAction.ContinueWorkflow, now.AddMinutes(3), now, CancellationToken.None);
+            await manager.MarkWaitingAsync(waiting.Id, now, CancellationToken.None);
+            await manager.CompleteAsync(completed.Id, now, CancellationToken.None);
+        }
+
+        await using var readScope = CreateTransferContext();
+        var results = await CreateProcessManager(readScope).GetDueAsync(now.AddMinutes(2), 2, CancellationToken.None);
+
+        Assert.Equal(2, results.Count);
+        Assert.Equal(dueEarlier.Id, results[0].TransferId);
+        Assert.Equal(orderedTie[0].Id, results[1].TransferId);
+        Assert.DoesNotContain(results, item => item.TransferId == future.Id);
+        Assert.DoesNotContain(results, item => item.TransferId == waiting.Id);
+        Assert.DoesNotContain(results, item => item.TransferId == completed.Id);
+
+        var allDue = await CreateProcessManager(readScope).GetDueAsync(now.AddMinutes(2), 10, CancellationToken.None);
+        Assert.Equal(new[] { dueEarlier.Id, orderedTie[0].Id, orderedTie[1].Id }, allDue.Select(item => item.TransferId));
+    }
+
+    [Fact]
+    public async Task InvalidProcessUpdateDoesNotCorruptPersistedState()
+    {
+        await ClearProcessStatesAsync();
+        var now = new DateTimeOffset(2026, 8, 11, 16, 0, 0, TimeSpan.Zero);
+        var transfer = CreateTransfer(now);
+        await using (var writeScope = CreateTransferContext())
+        {
+            var manager = CreateProcessManager(writeScope);
+            await manager.CreateWithTransferAsync(transfer, Guid.NewGuid(), now, CancellationToken.None);
+            await Assert.ThrowsAsync<DomainException>(() => manager.ScheduleAsync(
+                transfer.Id,
+                TransferProcessAction.None,
+                now.AddMinutes(1),
+                now,
+                CancellationToken.None));
+        }
+
+        await using var readScope = CreateTransferContext();
+        var persisted = await new TransferProcessStateRepository(readScope).GetAsync(transfer.Id, CancellationToken.None);
+        Assert.NotNull(persisted);
+        Assert.Equal(TransferProcessStep.Created, persisted.CurrentStep);
+        Assert.Equal(TransferProcessAction.ContinueWorkflow, persisted.NextAction);
+        Assert.Equal(0, persisted.Version);
+    }
+
+    [Fact]
     public void RepositoryAbstractionsDoNotExposeEntityFrameworkCoreTypes()
     {
-        var repositoryTypes = new[] { typeof(IAccountRepository), typeof(ITransferRepository) };
+        var repositoryTypes = new[] { typeof(IAccountRepository), typeof(ITransferRepository), typeof(ITransferProcessStateRepository) };
 
         var exposedTypes = repositoryTypes
             .SelectMany(type => type.GetMethods())
@@ -430,6 +550,9 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
             "GBP",
             TransferType.InternalBank));
 
+    private static Transfer CreateTransfer(DateTimeOffset createdAtUtc) =>
+        Transfer.Create(Guid.NewGuid(), Guid.NewGuid(), 25m, "GBP", TransferType.InternalBank, createdAtUtc);
+
     private AccountBalanceDbContext CreateAccountContext() =>
         new(new DbContextOptionsBuilder<AccountBalanceDbContext>().UseNpgsql(
             _connectionString,
@@ -445,4 +568,13 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
 
     private static TransferRepository CreateTransferRepository(TransferManagementDbContext context) =>
         new TransferRepository(context);
+
+    private static TransferProcessManager CreateProcessManager(TransferManagementDbContext context) =>
+        new(new TransferRepository(context), new TransferProcessStateRepository(context));
+
+    private async Task ClearProcessStatesAsync()
+    {
+        await using var context = CreateTransferContext();
+        await context.TransferProcessStates.ExecuteDeleteAsync();
+    }
 }
