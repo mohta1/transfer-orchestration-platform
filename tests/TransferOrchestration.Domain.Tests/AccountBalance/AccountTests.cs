@@ -217,6 +217,34 @@ public sealed class AccountTests
                 Now.AddSeconds(2)));
     }
 
+    [Fact]
+    public void ConsumedReservationCannotBeReleased()
+    {
+        var account = CreateAccount(1000m);
+        var transferId = Guid.NewGuid();
+
+        account.Reserve(
+            transferId,
+            300m,
+            Now);
+
+        account.ConsumeReservation(
+            transferId,
+            Now.AddSeconds(1));
+
+        Assert.Throws<DomainException>(() =>
+            account.ReleaseReservation(
+                transferId,
+                Now.AddSeconds(2)));
+    }
+
+    [Fact]
+    public void CreateWithNegativeOpeningBalanceThrowsDomainException()
+    {
+        Assert.Throws<DomainException>(() =>
+            CreateAccount(-1m));
+    }
+
     private static Account CreateAccount(
         decimal availableBalance)
     {
