@@ -186,6 +186,14 @@ internal sealed class Transfer : AggregateRoot<TransferId>
             nowUtc);
     }
 
+    public void RejectBalanceReservation(DateTimeOffset nowUtc)
+    {
+        Transition(
+            TransferState.PendingBalanceReservation,
+            TransferState.Rejected,
+            nowUtc);
+    }
+
     public void BeginExternalSubmission(DateTimeOffset nowUtc)
     {
         if (Type != TransferType.DomesticInterbank)

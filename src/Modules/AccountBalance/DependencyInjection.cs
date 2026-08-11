@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TransferOrchestration.AccountBalance.Application.Persistence;
+using TransferOrchestration.AccountBalance.Application.Reservations;
+using TransferOrchestration.AccountBalance.Contracts;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence;
 using TransferOrchestration.AccountBalance.Infrastructure.Persistence.Repositories;
 
@@ -23,6 +25,9 @@ public static class DependencyInjection
                         "__EFMigrationsHistory",
                         AccountBalanceDbContext.Schema)));
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IAccountBalanceReservations, AccountBalanceReservations>();
+        services.AddScoped<IReservationAttemptObserver, NoOpReservationAttemptObserver>();
+        services.AddSingleton(TimeProvider.System);
 
         return services;
     }

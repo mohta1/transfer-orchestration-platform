@@ -4,7 +4,7 @@
 **Stage:** Stage 2 — Submission & Coordination
 **Recommended branch:** `feature/account-reservation-contract`
 **Depends on:** TASK-06
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -69,31 +69,58 @@ This is the central financial correctness proof from ADR-003.
 
 ## 8. Acceptance Criteria
 
-- [ ] One winner / one business failure after re-evaluation.
-- [ ] No negative balance.
-- [ ] No cross-module DB access.
-- [ ] Correct Transfer state progression.
+- [x] One winner / one business failure after re-evaluation.
+- [x] No negative balance.
+- [x] No cross-module DB access.
+- [x] Correct Transfer state progression.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
 - Repeated concurrency test output.
 - Final Account/Reservation rows.
 - Dependency review.
+
+### Captured TASK-07 Evidence
+
+- The genuine PostgreSQL `1000 / 750 / 600` test was executed ten times with a
+  two-party gate after both independent DbContexts loaded their first Account
+  version. Every run reported `winners=1`, `businessLosers=1`, `version=1`, and
+  `reservations=1`; five runs ended at available/reserved `400/600` and five at
+  `250/750`. All ten invocations exited `0` with one passing test.
+- The final row from run 10 was Account available/reserved `250.0000/750.0000`,
+  Version `1`, with exactly one Reservation row for `750.0000`. Other runs show
+  either contender may win while preserving the same invariants.
+- The still-valid contention test finished at available/reserved `700/300`,
+  Account Version `2`, and two distinct Reservation rows after reload/retry.
+- The crash-window test committed Account available/reserved `400/100` and one
+  Reservation, disposed that scope while Transfer remained
+  `PendingBalanceReservation` with `ReserveBalance`, then used a new scope. The
+  contract returned equivalent-reservation success and the process step persisted
+  `BalanceReserved` with `ContinueWorkflow`; the Account remained changed once.
+- Dependency inspection shows TransferManagement has one project reference to the
+  AccountBalance assembly and imports only `TransferOrchestration.AccountBalance.Contracts`.
+  AccountBalance Domain, Infrastructure, DbContext, EF types, and private tables
+  are not referenced by TransferManagement. The contract exposes only
+  `IAccountBalanceReservations`, `ReserveFundsRequest`, `ReserveFundsResult`, and
+  `ReserveFundsOutcome`.
+- No schema change or migration was required. Existing non-negative balance,
+  positive amount, monetary precision, Account Version, and unique Transfer
+  reservation constraints remain unchanged.
 
 ## 11. Handoff to the Next Task
 

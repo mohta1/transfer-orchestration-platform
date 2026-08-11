@@ -6,6 +6,22 @@ namespace TransferOrchestration.Domain.Tests.TransferManagement;
 
 public sealed class TransferTests
 {
+    [Fact]
+    public void PendingBalanceReservationCanBeExplicitlyRejected()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var transfer = Transfer.Create(Guid.NewGuid(), Guid.NewGuid(), 10m, "GBP", TransferType.DomesticInterbank, now);
+        transfer.Submit(now);
+        transfer.RequestAuthorisation(now);
+        transfer.Authorise(now);
+        transfer.BeginFraudScreening(now);
+        transfer.RequestBalanceReservation(now);
+
+        transfer.RejectBalanceReservation(now);
+
+        Assert.Equal(TransferState.Rejected, transfer.State);
+    }
+
     private static readonly DateTimeOffset Now =
         new(2026, 8, 8, 0, 0, 0, TimeSpan.Zero);
 

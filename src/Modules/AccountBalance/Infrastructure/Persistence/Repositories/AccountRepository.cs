@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using TransferOrchestration.AccountBalance.Application.Persistence;
 using TransferOrchestration.AccountBalance.Domain.Accounts;
 
@@ -24,6 +25,17 @@ internal sealed class AccountRepository(AccountBalanceDbContext dbContext)
         await dbContext.Accounts.AddAsync(account, cancellationToken);
     }
 
+    public Task<ReservationIntent?> GetReservationIntentAsync(
+        Guid transferId,
+        CancellationToken cancellationToken) =>
+        dbContext.Set<BalanceReservation>()
+            .AsNoTracking()
+            .Where(reservation => reservation.TransferId == transferId)
+            .Select(reservation => new ReservationIntent(
+                EF.Property<AccountId>(reservation, "account_id").Value,
+                reservation.Amount))
+            .SingleOrDefaultAsync(cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         try
@@ -40,6 +52,16 @@ internal sealed class AccountRepository(AccountBalanceDbContext dbContext)
             dbContext.ChangeTracker.Clear();
 
             throw new AccountConcurrencyConflictException(accountId, exception);
+        }
+        catch (DbUpdateException exception)
+            when (exception.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation,
+                ConstraintName: "ux_balance_reservations_transfer_id"
+            })
+        {
+            dbContext.ChangeTracker.Clear();
+            throw new ReservationTransferConflictException(exception);
         }
     }
 }
