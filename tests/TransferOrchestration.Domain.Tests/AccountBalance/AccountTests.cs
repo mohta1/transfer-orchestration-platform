@@ -80,6 +80,50 @@ public sealed class AccountTests
         Assert.Same(first, second);
         Assert.Equal(700m, account.AvailableBalance);
         Assert.Equal(300m, account.ReservedBalance);
+        Assert.Equal(1, account.Version);
+        Assert.Equal(BalanceReservationStatus.Active, second.Status);
+        Assert.Single(account.Reservations);
+    }
+
+    [Fact]
+    public void DuplicateConsumedReservationReturnsExistingWithoutFinancialEffect()
+    {
+        var account = CreateAccount(1000m);
+        var transferId = Guid.NewGuid();
+        var reservation = account.Reserve(transferId, 300m, Now);
+
+        account.ConsumeReservation(transferId, Now.AddSeconds(1));
+        var versionAfterConsume = account.Version;
+
+        var duplicate =
+            account.Reserve(transferId, 300m, Now.AddSeconds(2));
+
+        Assert.Same(reservation, duplicate);
+        Assert.Equal(BalanceReservationStatus.Consumed, duplicate.Status);
+        Assert.Equal(700m, account.AvailableBalance);
+        Assert.Equal(0m, account.ReservedBalance);
+        Assert.Equal(versionAfterConsume, account.Version);
+        Assert.Single(account.Reservations);
+    }
+
+    [Fact]
+    public void DuplicateReleasedReservationReturnsExistingWithoutFinancialEffect()
+    {
+        var account = CreateAccount(1000m);
+        var transferId = Guid.NewGuid();
+        var reservation = account.Reserve(transferId, 300m, Now);
+
+        account.ReleaseReservation(transferId, Now.AddSeconds(1));
+        var versionAfterRelease = account.Version;
+
+        var duplicate =
+            account.Reserve(transferId, 300m, Now.AddSeconds(2));
+
+        Assert.Same(reservation, duplicate);
+        Assert.Equal(BalanceReservationStatus.Released, duplicate.Status);
+        Assert.Equal(1000m, account.AvailableBalance);
+        Assert.Equal(0m, account.ReservedBalance);
+        Assert.Equal(versionAfterRelease, account.Version);
         Assert.Single(account.Reservations);
     }
 
@@ -89,10 +133,12 @@ public sealed class AccountTests
         var account = CreateAccount(1000m);
         var transferId = Guid.NewGuid();
 
-        account.Reserve(
+        var reservation = account.Reserve(
             transferId,
             300m,
             Now);
+
+        var versionBeforeDuplicate = account.Version;
 
         Assert.Throws<DomainException>(() =>
             account.Reserve(
@@ -102,6 +148,9 @@ public sealed class AccountTests
 
         Assert.Equal(700m, account.AvailableBalance);
         Assert.Equal(300m, account.ReservedBalance);
+        Assert.Equal(versionBeforeDuplicate, account.Version);
+        Assert.Equal(BalanceReservationStatus.Active, reservation.Status);
+        Assert.Single(account.Reservations);
     }
 
     [Fact]

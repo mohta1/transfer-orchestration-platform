@@ -73,25 +73,25 @@ The challenge explicitly requires safe reservation, non-negative available balan
 
 ## 8. Acceptance Criteria
 
-- [ ] Build has 0 warnings and 0 errors.
-- [ ] All Account domain tests pass.
-- [ ] Existing Transfer tests remain green.
-- [ ] No caller can directly mutate financial state.
+- [x] Build has 0 warnings and 0 errors.
+- [x] All Account domain tests pass.
+- [x] Existing Transfer tests remain green.
+- [x] No caller can directly mutate financial state.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
