@@ -43,6 +43,8 @@ internal sealed class Transfer : AggregateRoot<TransferId>
 
     public TransferState State { get; private set; }
 
+    public long Version { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -285,6 +287,11 @@ internal sealed class Transfer : AggregateRoot<TransferId>
     {
         State = targetState;
         UpdatedAtUtc = nowUtc;
+
+        checked
+        {
+            Version++;
+        }
     }
 
     private void ThrowInvalidTransition(

@@ -6,6 +6,7 @@ internal interface IAccountRepository
 {
     Task<Account?> GetByIdAsync(
         AccountId accountId,
+        Guid reservationTransferId,
         CancellationToken cancellationToken);
 
     Task AddAsync(

@@ -88,11 +88,38 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
 
         await using var readContext = CreateAccountContext();
         var readRepository = CreateAccountRepository(readContext);
-        var reloaded = await readRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        var reloaded = await readRepository.GetByIdAsync(account.Id, transferId, CancellationToken.None);
         Assert.NotNull(reloaded);
         Assert.Equal(375m, reloaded.AvailableBalance);
         Assert.Equal(125m, reloaded.ReservedBalance);
         Assert.Equal(transferId, Assert.Single(reloaded.Reservations).TransferId);
+    }
+
+    [Fact]
+    public async Task AccountRepositoryLoadsOnlyReservationRequestedForCurrentOperation()
+    {
+        var account = Account.Create(Guid.NewGuid(), "GBP", 500m);
+        var requestedTransferId = Guid.NewGuid();
+        var unrelatedTransferId = Guid.NewGuid();
+        account.Reserve(requestedTransferId, 25m, DateTimeOffset.UtcNow);
+        account.Reserve(unrelatedTransferId, 50m, DateTimeOffset.UtcNow);
+
+        await using (var setupContext = CreateAccountContext())
+        {
+            setupContext.Accounts.Add(account);
+            await setupContext.SaveChangesAsync();
+        }
+
+        await using var context = CreateAccountContext();
+        var repository = CreateAccountRepository(context);
+        var reloaded = await repository.GetByIdAsync(
+            account.Id,
+            requestedTransferId,
+            CancellationToken.None);
+
+        Assert.NotNull(reloaded);
+        var reservation = Assert.Single(reloaded.Reservations);
+        Assert.Equal(requestedTransferId, reservation.TransferId);
     }
 
     [Fact]
@@ -138,8 +165,10 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
         await using var secondContext = CreateAccountContext();
         var firstRepository = CreateAccountRepository(firstContext);
         var staleRepository = CreateAccountRepository(secondContext);
-        var first = await firstRepository.GetByIdAsync(account.Id, CancellationToken.None);
-        var stale = await staleRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        var winningTransferId = Guid.NewGuid();
+        var losingTransferId = Guid.NewGuid();
+        var first = await firstRepository.GetByIdAsync(account.Id, winningTransferId, CancellationToken.None);
+        var stale = await staleRepository.GetByIdAsync(account.Id, losingTransferId, CancellationToken.None);
         Assert.NotNull(first);
         Assert.NotNull(stale);
         Assert.Equal(0, first.Version);
@@ -148,16 +177,26 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
         Assert.True(firstContext.Model.FindEntityType(typeof(Account))!
             .FindProperty(nameof(Account.Version))!.IsConcurrencyToken);
 
-        first.Reserve(Guid.NewGuid(), 10m, DateTimeOffset.UtcNow);
-        stale.Reserve(Guid.NewGuid(), 20m, DateTimeOffset.UtcNow);
+        first.Reserve(winningTransferId, 10m, DateTimeOffset.UtcNow);
+        stale.Reserve(losingTransferId, 20m, DateTimeOffset.UtcNow);
         await firstRepository.SaveChangesAsync(CancellationToken.None);
         var conflict = await Assert.ThrowsAsync<AccountConcurrencyConflictException>(
             () => staleRepository.SaveChangesAsync(CancellationToken.None));
         Assert.Equal(account.Id.Value, conflict.AccountId);
 
+        var sameRepositoryReload = await staleRepository.GetByIdAsync(
+            account.Id,
+            losingTransferId,
+            CancellationToken.None);
+        Assert.NotNull(sameRepositoryReload);
+        Assert.Equal(1, sameRepositoryReload.Version);
+        Assert.Equal(90m, sameRepositoryReload.AvailableBalance);
+        Assert.Equal(10m, sameRepositoryReload.ReservedBalance);
+        Assert.Empty(sameRepositoryReload.Reservations);
+
         await using var reloadContext = CreateAccountContext();
         var reloadRepository = CreateAccountRepository(reloadContext);
-        var winner = await reloadRepository.GetByIdAsync(account.Id, CancellationToken.None);
+        var winner = await reloadRepository.GetByIdAsync(account.Id, winningTransferId, CancellationToken.None);
         Assert.NotNull(winner);
         Assert.Equal(1, winner.Version);
         Assert.Equal(90m, winner.AvailableBalance);
@@ -169,6 +208,53 @@ public sealed class PersistenceMappingTests : IAsyncLifetime
             "Concurrency evidence: both writers loaded version=0, available=100, reserved=0; " +
             "winner committed version=1, available=90, reserved=10; stale writer conflict; " +
             "reload version=1, available=90, reserved=10.");
+    }
+
+    [Fact]
+    public async Task StaleTransferRepositoryWriterGetsExplicitConflictAndCannotOverwriteWinner()
+    {
+        var transfer = Transfer.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            100m,
+            "GBP",
+            TransferType.InternalBank,
+            DateTimeOffset.UtcNow);
+        await using (var setup = CreateTransferContext())
+        {
+            setup.Transfers.Add(transfer);
+            await setup.SaveChangesAsync();
+        }
+
+        await using var firstContext = CreateTransferContext();
+        await using var staleContext = CreateTransferContext();
+        var firstRepository = CreateTransferRepository(firstContext);
+        var staleRepository = CreateTransferRepository(staleContext);
+        var first = await firstRepository.GetByIdAsync(transfer.Id, CancellationToken.None);
+        var stale = await staleRepository.GetByIdAsync(transfer.Id, CancellationToken.None);
+        Assert.NotNull(first);
+        Assert.NotNull(stale);
+        Assert.Equal(0, first.Version);
+        Assert.Equal(0, stale.Version);
+        Assert.True(firstContext.Model.FindEntityType(typeof(Transfer))!
+            .FindProperty(nameof(Transfer.Version))!.IsConcurrencyToken);
+
+        var winnerTime = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+        first.Submit(winnerTime);
+        stale.Submit(winnerTime.AddMinutes(1));
+        await firstRepository.SaveChangesAsync(CancellationToken.None);
+
+        var conflict = await Assert.ThrowsAsync<TransferConcurrencyConflictException>(
+            () => staleRepository.SaveChangesAsync(CancellationToken.None));
+        Assert.Equal(transfer.Id.Value, conflict.TransferId);
+
+        await using var reloadContext = CreateTransferContext();
+        var winner = await CreateTransferRepository(reloadContext)
+            .GetByIdAsync(transfer.Id, CancellationToken.None);
+        Assert.NotNull(winner);
+        Assert.Equal(TransferState.Submitted, winner.State);
+        Assert.Equal(1, winner.Version);
+        Assert.Equal(winnerTime, winner.UpdatedAtUtc);
     }
 
     [Fact]
