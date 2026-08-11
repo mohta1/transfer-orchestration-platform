@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\AccountBalance\TransferOrchestration.AccountBalance.csproj" />
     <ProjectReference Include="..\..\src\Modules\TransferManagement\TransferOrchestration.TransferManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\PaymentNetwork\TransferOrchestration.PaymentNetwork.csproj" />
