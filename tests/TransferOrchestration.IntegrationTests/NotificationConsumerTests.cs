@@ -90,7 +90,8 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         var integrationEvent = Event();
         var first = DispatchAsync(integrationEvent, provider);
         var second = DispatchAsync(integrationEvent, provider);
-        await Task.WhenAll(first, second);
+        try { await Task.WhenAll(first, second); }
+        catch (NotificationDeliveryInProgressException) { }
 
         Assert.Equal(1, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());

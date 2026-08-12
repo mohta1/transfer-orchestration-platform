@@ -13,7 +13,7 @@ var connectionString =
 
 builder.Services
     .AddTransferManagementModule(connectionString, builder.Configuration)
-    .AddNotificationModule(connectionString)
+    .AddNotificationModule(connectionString, builder.Configuration)
     .AddAccountBalanceModule(connectionString)
     .AddPaymentNetworkModule();
 

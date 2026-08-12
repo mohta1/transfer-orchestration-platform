@@ -99,6 +99,10 @@ Captured on 2026-08-12 against PostgreSQL through `TEST_DATABASE_CONNECTION_STRI
   `dotnet build TransferOrchestrationPlatform.sln --no-restore`, and
   `dotnet test TransferOrchestrationPlatform.sln --no-build` passed; the build reported 0 warnings and
   0 errors, and the solution reported 169 passed, 0 failed, 0 skipped.
+- Reliability follow-up validation added a bounded logging-provider cache (10,000-entry/one-hour defaults)
+  and leased durable consumer claims so provider I/O runs outside database transactions. The Notification
+  tests passed (11 PostgreSQL consumer tests and 5 bounded-provider tests), the PostgreSQL suite passed
+  twice with 124 tests, and the full solution passed 174 tests with 0 failures or skips.
 
 ## 11. Handoff to the Next Task
 
