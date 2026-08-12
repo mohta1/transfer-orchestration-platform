@@ -2,6 +2,7 @@ using TransferOrchestration.AccountBalance;
 using TransferOrchestration.PaymentNetwork;
 using TransferOrchestration.TransferManagement;
 using TransferOrchestration.TransferManagement.Api;
+using TransferOrchestration.Notification;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,7 @@ var connectionString =
 
 builder.Services
     .AddTransferManagementModule(connectionString, builder.Configuration)
+    .AddNotificationModule(connectionString)
     .AddAccountBalanceModule(connectionString)
     .AddPaymentNetworkModule();
 

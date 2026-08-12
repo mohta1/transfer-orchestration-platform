@@ -12,7 +12,6 @@ using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempo
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
 using TransferOrchestration.TransferManagement.Infrastructure.Processing;
 using TransferOrchestration.TransferManagement.Infrastructure.Submission;
-using TransferOrchestration.TransferManagement.Contracts.IntegrationEvents;
 using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 
 namespace TransferOrchestration.TransferManagement;
@@ -48,7 +47,6 @@ public static class DependencyInjection
         services.AddHostedService<TransferProcessWorker>();
         services.AddScoped<IOutboxStore, OutboxStore>();
         services.AddScoped<OutboxBatchDispatcher>();
-        services.AddSingleton<IIntegrationEventDispatcher, LoggingIntegrationEventDispatcher>();
         services.AddHostedService<OutboxWorker>();
         services.AddScoped<ICustomerAuthorization, AllowCustomerAuthorization>();
         services.AddScoped<IDailyTransferLimit, ConfiguredDailyTransferLimit>();

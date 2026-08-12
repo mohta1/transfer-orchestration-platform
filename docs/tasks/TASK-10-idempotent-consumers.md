@@ -4,7 +4,7 @@
 **Stage:** Stage 3 — Reliability & Operations
 **Recommended branch:** `feature/idempotent-consumers`
 **Depends on:** TASK-09
-**Status:** Not Started
+**Status:** Done
 
 ---
 
