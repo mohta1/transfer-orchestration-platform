@@ -152,7 +152,7 @@ internal sealed class TransferManualOperationsService(
         exception.InnerException is PostgresException
         {
             SqlState: PostgresErrorCodes.UniqueViolation,
-            ConstraintName: "ix_operations_audit_records_command_id"
+            ConstraintName: "IX_operations_audit_records_command_id"
         };
 
     private static ManualTransferOperationResult MapReservationFailure(
