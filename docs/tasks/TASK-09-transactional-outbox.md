@@ -4,7 +4,7 @@
 **Stage:** Stage 3 — Reliability & Operations
 **Recommended branch:** `feature/transactional-outbox`
 **Depends on:** TASK-08
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -96,13 +96,14 @@ This task is **DONE only when all of the following are true**:
 - Outbox lifecycle rows.
 - Worker logs with MessageId, TransferId, CorrelationId.
 
-Implementation evidence: 19 focused PostgreSQL tests cover atomic capture, retry,
+Implementation evidence: 20 focused PostgreSQL tests cover atomic capture, retry,
 restart, competing claims, stale-owner fencing, the expected at-least-once crash
-window, poison work, and safe migration downgrade. TASK-08 made the InternalBank
+window, PostgreSQL `timestamptz` lease-token renewal, poison work, and safe migration downgrade. TASK-08 made the InternalBank
 completion path reachable before TASK-09, so the forward migration safely creates
 pending `transfer.completed.v1` rows for any historical Completed transfers.
-CorrelationId is not present on the Transfer aggregate and is therefore not
-invented in the event contract or logs.
+CorrelationId is resolved from the persisted TransferProcessState when present and
+is preserved in the Outbox envelope, event contract, and structured logs; missing
+historical correlation is left null rather than invented.
 
 ## 11. Handoff to the Next Task
 

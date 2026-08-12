@@ -67,8 +67,12 @@ internal sealed class OutboxStore(TransferManagementDbContext dbContext)
         await dbContext.Database.OpenConnectionAsync(token);
         try
         {
-            var renewed = await command.ExecuteScalarAsync(token);
-            return renewed is DateTimeOffset lease ? claim with { LockedUntilUtc = lease } : null;
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, token);
+            if (!await reader.ReadAsync(token))
+                return null;
+
+            var lease = reader.GetFieldValue<DateTimeOffset>(0);
+            return claim with { LockedUntilUtc = lease };
         }
         finally { await dbContext.Database.CloseConnectionAsync(); }
     }

@@ -156,6 +156,26 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RenewBeforeDispatchReturnsPostgreSqlTimestampWithTimeZoneLeaseToken()
+    {
+        await CompleteAsync(TransferType.InternalBank);
+        await using var context = CreateContext();
+        var store = new OutboxStore(context);
+        var original = Assert.IsType<OutboxClaim>(
+            await store.ClaimOneAsync("worker", TimeSpan.FromSeconds(30), default));
+
+        var renewed = Assert.IsType<OutboxClaim>(
+            await store.RenewBeforeDispatchAsync(original, "worker", TimeSpan.FromMinutes(2), default));
+
+        Assert.True(renewed.LockedUntilUtc > original.LockedUntilUtc);
+        await using var fresh = CreateContext();
+        var persisted = await fresh.OutboxMessages.AsNoTracking()
+            .SingleAsync(item => item.MessageId == original.MessageId);
+        Assert.Equal(renewed.LockedUntilUtc, persisted.LockedUntilUtc);
+        Assert.Equal(TimeSpan.Zero, renewed.LockedUntilUtc.Offset);
+    }
+
+    [Fact]
     public async Task ConcurrentWorkersCannotOwnTheSameLease()
     {
         await CompleteAsync(TransferType.InternalBank);
