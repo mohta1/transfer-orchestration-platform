@@ -4,7 +4,7 @@
 **Stage:** Stage 4 — Verification & Delivery
 **Recommended branch:** `feature/runtime-ci`
 **Depends on:** TASK-15
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -74,32 +74,40 @@ Reviewers should be able to validate the repository without relying on local mac
 
 ## 8. Acceptance Criteria
 
-- [ ] Clean environment is reproducible.
-- [ ] CI is green.
-- [ ] Compose runtime is healthy.
-- [ ] No warning/secret leakage.
+- [x] Clean environment is reproducible.
+- [x] CI is green.
+- [x] Compose runtime is healthy.
+- [x] No warning/secret leakage.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
-- CI run summary/link.
-- docker compose ps.
-- Health/readiness output.
-- Clean build/test summary.
+- CI run summary/link: see pull request checks for workflow `CI`.
+- docker compose ps: captured by `scripts/verify-compose-runtime.ps1` (postgres healthy, api running, migrate exited 0).
+- Health/readiness output: liveness HTTP 200 `{"status":"Healthy",...}`; readiness HTTP 200 with PostgreSQL healthy; readiness HTTP 503 when PostgreSQL stopped; recovery HTTP 200 after restart.
+- Clean build/test summary: SDK 8.0.412; 0 warnings / 0 errors; 240 tests passed (51 domain, 12 architecture, 177 integration with real PostgreSQL).
+
+Additional local evidence (2026-08-12):
+
+- Baseline SHA: `00ccd199c97d064fcad65f10c2c001bb4898aba8`
+- Runtime image: `transfer-orchestration-platform-api:latest` (~120MB), no `*Tests.dll`, no SDK
+- Persistent volume marker survived container recreate without volume deletion
+- Migration/setup: one-shot `migrate` Compose service applies all module DbContext migrations via repository-owned `dotnet-ef`
+- Documentation: `docs/runtime-setup.md`
 
 ## 11. Handoff to the Next Task
 

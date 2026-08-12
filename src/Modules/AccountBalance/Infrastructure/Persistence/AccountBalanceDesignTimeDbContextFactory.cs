@@ -1,25 +1,25 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence;
+namespace TransferOrchestration.AccountBalance.Infrastructure.Persistence;
 
-internal sealed class TransferManagementDesignTimeDbContextFactory
-    : IDesignTimeDbContextFactory<TransferManagementDbContext>
+internal sealed class AccountBalanceDesignTimeDbContextFactory
+    : IDesignTimeDbContextFactory<AccountBalanceDbContext>
 {
-    public TransferManagementDbContext CreateDbContext(string[] args)
+    public AccountBalanceDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__Database")
             ?? "Host=localhost;Port=5432;Database=transfer_orchestration;Username=transfer_app;Password=transfer_test";
 
-        var optionsBuilder = new DbContextOptionsBuilder<TransferManagementDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<AccountBalanceDbContext>();
         optionsBuilder.UseNpgsql(
             connectionString,
             npgsqlOptions =>
                 npgsqlOptions.MigrationsHistoryTable(
                     "__EFMigrationsHistory",
-                    TransferManagementDbContext.Schema));
+                    AccountBalanceDbContext.Schema));
 
-        return new TransferManagementDbContext(optionsBuilder.Options);
+        return new AccountBalanceDbContext(optionsBuilder.Options);
     }
 }

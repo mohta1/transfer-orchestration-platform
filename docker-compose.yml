@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: transfer_orchestration
       POSTGRES_USER: transfer_app
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
-    ports:
-      - "5432:5432"
     volumes:
       - transfer_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,6 +16,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    environment:
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=transfer_orchestration;Username=transfer_app;Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   api:
     build:
@@ -25,12 +35,24 @@ services:
       dockerfile: Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
       ConnectionStrings__Database: Host=postgres;Port=5432;Database=transfer_orchestration;Username=transfer_app;Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      Authentication__Jwt__Issuer: transfer-orchestration
+      Authentication__Jwt__Audience: transfer-orchestration-api
+      Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set in .env}
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
 volumes:
   transfer_postgres_data:
