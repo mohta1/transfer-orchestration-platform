@@ -75,21 +75,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Prepare Compose environment
+        run: |
+          cat > .env.ci <<'EOF'
+          POSTGRES_PASSWORD=ci-compose-password
+          JWT_SIGNING_KEY=CI_COMPOSE_ONLY_32_BYTE_SIGNING_KEY
+          EOF
+
       - name: Validate Compose configuration
-        run: docker compose config > /dev/null
+        run: docker compose --env-file .env.ci config > /dev/null
 
       - name: Build runtime images
-        run: docker compose build
+        run: docker compose --env-file .env.ci build
 
       - name: Inspect runtime image excludes test artifacts
         run: |
           set -euo pipefail
-          IMAGE_ID="$(docker compose images -q api | head -n 1)"
-          if docker run --rm "$IMAGE_ID" sh -c 'ls /app/*Tests.dll 2>/dev/null | grep -q .'; then
+          IMAGE_ID="$(docker compose --env-file .env.ci images -q api | head -n 1)"
+          if docker run --rm --entrypoint sh "$IMAGE_ID" -c 'ls /app/*Tests.dll 2>/dev/null | grep -q .'; then
             echo "Test assemblies must not be present in the runtime image." >&2
             exit 1
           fi
-          SDK_VERSION="$(docker run --rm "$IMAGE_ID" dotnet --list-sdks 2>/dev/null || true)"
+          SDK_VERSION="$(docker run --rm --entrypoint sh "$IMAGE_ID" -c 'dotnet --list-sdks 2>/dev/null || true')"
           if [ -n "$SDK_VERSION" ]; then
             echo ".NET SDK must not be present in the runtime image." >&2
             exit 1
