@@ -470,7 +470,7 @@ Repeated deterministic failures move work to a terminal failed/Dead Letter state
 
 No Kafka/RabbitMQ is required initially. A broker can be introduced later without removing the Outbox if independent consumers justify it.
 
-See `docs/adr/ADR-004-reliable-messaging-outbox.md`.
+See `docs/adr/ADR-004-reliable-messaging.md`.
 
 ---
 

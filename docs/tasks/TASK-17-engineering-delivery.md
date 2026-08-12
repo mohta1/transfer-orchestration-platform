@@ -4,7 +4,7 @@
 **Stage:** Stage 4 — Verification & Delivery
 **Recommended branch:** `docs/engineering-delivery`
 **Depends on:** TASK-16
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -71,34 +71,95 @@ The challenge evaluates architecture, modernization, team guidance, and engineer
 
 ## 8. Acceptance Criteria
 
-- [ ] No required document is empty.
-- [ ] No material architecture/code contradiction.
-- [ ] Exactly five ADRs.
-- [ ] Eight mandatory diagrams present.
-- [ ] Requirement traceability is reviewable.
+- [x] No required document is empty.
+- [x] No material architecture/code contradiction.
+- [x] Exactly five ADRs.
+- [x] Eight mandatory diagrams present.
+- [x] Requirement traceability is reviewable.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
-- Final docs tree.
-- ADR count.
-- Diagram count.
-- Completed requirement-to-evidence matrix.
+### Baseline and branch
+
+- Baseline `main` SHA: `d4ad84788528987ca85a8b8a91db72b75f1c576a`
+- Branch: `docs/engineering-delivery`
+
+### Completed documents
+
+| Document | Path | Size |
+| -------- | ---- | ---- |
+| Engineering standards | `docs/engineering-standards.md` | 16 173 bytes |
+| Team engineering model | `docs/team-engineering-model.md` | 12 616 bytes |
+| AI-assisted engineering | `docs/ai-assisted-engineering.md` | 8 273 bytes |
+| Technical-debt prioritisation | `docs/technical-debt-prioritisation.md` | 8 675 bytes |
+| Requirement-to-evidence matrix | `docs/requirement-to-evidence.md` | 19 581 bytes |
+
+Architecture correction: fixed broken ADR-004 link in `docs/architecture.md` (`ADR-004-reliable-messaging.md`).
+
+### Requirement matrix summary
+
+- Path: `docs/requirement-to-evidence.md`
+- Requirements mapped: **60**
+- Verified: **57** | Partially verified: **3** | Not verified: **0**
+- Partial items: REQ-001 (Legacy runtime coexistence), REQ-049 (Legacy routing code), documented as partial — not hidden
+
+### Validation results (2026-08-13)
+
+| Check | Result |
+| ----- | ------ |
+| Empty TASK-17 documents | None — all five files substantive |
+| TODO/TBD/placeholder in new docs | None found |
+| Relative links (TASK-17 docs + architecture.md) | **0 broken** |
+| ADR count | **5** — ADR-001 … ADR-005 |
+| Diagram count | **8** — all non-empty valid Draw.io XML |
+| Ubiquitous Language consistency | Terminology aligned; Reconciliation module stub noted in debt register |
+| Modernization narrative consistency | Roadmap/ADR-005 align; Legacy routing deferred (DEBT-007) |
+| Architecture/code consistency | Cross-check complete; no material contradictions |
+| Quality-attribute/SLA wording | Remains targets in architecture.md and new docs |
+| Secret/local-path scan | No secrets committed; no local absolute paths in docs |
+| Production code changed | **No** — documentation and one ADR link fix only |
+
+### Build and test (with PostgreSQL)
+
+```text
+dotnet tool restore          → success (dotnet-ef 8.0.11)
+dotnet build (no restore)    → 0 warnings, 0 errors
+dotnet test (no build)       → 240 passed, 0 failed, 0 skipped
+  Domain.Tests               → 51
+  IntegrationTests           → 177 (TEST_DATABASE_CONNECTION_STRING)
+  ArchitectureTests          → 12
+```
+
+### Self-review findings
+
+| Finding | Classification |
+| ------- | -------------- |
+| Reconciliation module is empty stub; logic in TransferManagement | **Non-blocking improvement** (DEBT-001 registered) |
+| Legacy routing ACL not implemented in code | **Non-blocking improvement** (DEBT-007; documented partial REQ-001/049) |
+| CompensationRequired path has less test coverage than ManualReview | **Non-blocking improvement** (DEBT-003) |
+| TASK-18 README/demo still pending | **Non-blocking improvement** (out of TASK-17 scope) |
+
+No **Blocker** findings. TASK-18 not implemented.
+
+### CI
+
+CI URL for final pushed SHA: recorded in pull request description after push.
 
 ## 11. Handoff to the Next Task
 
-TASK-18 performs the final clean-room audit and submission gate.
+TASK-18 performs the final clean-room audit and submission gate using `docs/requirement-to-evidence.md`.
