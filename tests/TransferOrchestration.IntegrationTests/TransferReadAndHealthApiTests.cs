@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -18,6 +19,11 @@ namespace TransferOrchestration.IntegrationTests;
 [Collection("PostgreSQL read and health API")]
 public sealed class TransferReadAndHealthApiTests
 {
+    private const string InvalidConnectionString =
+        "Host=127.0.0.1;Port=1;Database=invalid;Username=invalid;Password=invalid;Timeout=1;Command Timeout=1";
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     private static readonly Guid Source = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Destination = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
@@ -71,7 +77,16 @@ public sealed class TransferReadAndHealthApiTests
         using var request = SubmitRequest(Guid.NewGuid().ToString(), Payload(amount: 0m));
         var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        await AssertProblemDetails(response, "validation_failed", HttpStatusCode.BadRequest);
+        await AssertProblemDetails(
+            response,
+            "validation_failed",
+            HttpStatusCode.BadRequest,
+            (body, problem) =>
+            {
+                Assert.Contains("errors", body, StringComparison.Ordinal);
+                Assert.Contains("Amount must be greater than zero.", body, StringComparison.Ordinal);
+                Assert.True(problem.Extensions.ContainsKey("errors"));
+            });
     }
 
     [Fact]
@@ -86,16 +101,41 @@ public sealed class TransferReadAndHealthApiTests
     }
 
     [Fact]
+    public async Task AuthorizationRejectionReturnsForbiddenProblemDetails()
+    {
+        await using var factory = await ApiFactory.CreateAsync(authorization: DecisionOutcome.Rejected);
+        using var client = factory.CreateClient();
+        var response = await client.SendAsync(SubmitRequest("auth-rejected-problem", Payload()));
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        await AssertProblemDetails(response, "authorization_rejected", HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task FraudRejectionReturnsUnprocessableEntityProblemDetails()
+    {
+        await using var factory = await ApiFactory.CreateAsync(fraud: DecisionOutcome.Rejected);
+        using var client = factory.CreateClient();
+        var response = await client.SendAsync(SubmitRequest("fraud-rejected-problem", Payload()));
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await AssertProblemDetails(response, "fraud_rejected", HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
     public async Task InternalExceptionDoesNotLeakImplementationDetails()
     {
         await using var factory = await ApiFactory.CreateAsync(throwAuthorization: true);
         using var client = factory.CreateClient();
         var response = await client.SendAsync(SubmitRequest("internal-error", Payload()));
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        var body = await response.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("Injected authorization failure.", body);
-        Assert.DoesNotContain("InvalidOperationException", body);
-        await AssertProblemDetails(response, "internal_error", HttpStatusCode.InternalServerError);
+        await AssertProblemDetails(
+            response,
+            "internal_error",
+            HttpStatusCode.InternalServerError,
+            (body, _) =>
+            {
+                Assert.DoesNotContain("Injected authorization failure.", body);
+                Assert.DoesNotContain("InvalidOperationException", body);
+            });
     }
 
     [Fact]
@@ -131,12 +171,12 @@ public sealed class TransferReadAndHealthApiTests
         using var client = factory.CreateClient();
         var response = await client.GetAsync("/health/ready");
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<HealthResponse>();
+        var body = await response.Content.ReadAsStringAsync();
+        var payload = JsonSerializer.Deserialize<HealthResponse>(body, JsonOptions);
         Assert.NotNull(payload);
         Assert.Equal("Unhealthy", payload.Status);
         Assert.True(payload.Entries.ContainsKey("postgresql"));
         Assert.Equal("Unhealthy", payload.Entries["postgresql"].Status);
-        var body = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("Password", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("connection", body, StringComparison.OrdinalIgnoreCase);
     }
@@ -165,15 +205,19 @@ public sealed class TransferReadAndHealthApiTests
     private static async Task AssertProblemDetails(
         HttpResponseMessage response,
         string expectedCode,
-        HttpStatusCode expectedStatus)
+        HttpStatusCode expectedStatus,
+        Action<string, ProblemDetails>? additionalAssertions = null)
     {
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        var body = await response.Content.ReadAsStringAsync();
+        var problem = JsonSerializer.Deserialize<ProblemDetails>(body, JsonOptions);
         Assert.NotNull(problem);
         Assert.Equal((int)expectedStatus, problem.Status);
         Assert.Equal(expectedCode, problem.Extensions["code"]?.ToString());
+        Assert.Equal($"https://transfer-orchestration/errors/{expectedCode}", problem.Type);
         Assert.False(string.IsNullOrWhiteSpace(problem.Title));
         Assert.False(string.IsNullOrWhiteSpace(problem.Detail));
+        additionalAssertions?.Invoke(body, problem);
     }
 
     private sealed record SubmissionResponse(Guid? TransferId, Guid? CorrelationId, string? State, string Outcome);
@@ -184,37 +228,45 @@ public sealed class TransferReadAndHealthApiTests
 
     private sealed class ApiFactory : WebApplicationFactory<Program>
     {
-        private string _connectionString;
+        private readonly string _connectionString;
         private readonly bool _throwAuthorization;
+        private readonly DecisionOutcome _authorization;
+        private readonly DecisionOutcome _fraud;
 
-        private ApiFactory(string connectionString, bool throwAuthorization)
+        private ApiFactory(
+            string connectionString,
+            bool throwAuthorization,
+            DecisionOutcome authorization,
+            DecisionOutcome fraud)
         {
             _connectionString = connectionString;
             _throwAuthorization = throwAuthorization;
+            _authorization = authorization;
+            _fraud = fraud;
         }
 
         public static async Task<ApiFactory> CreateAsync(
             bool throwAuthorization = false,
-            bool useInvalidDatabase = false)
+            bool useInvalidDatabase = false,
+            DecisionOutcome authorization = DecisionOutcome.Approved,
+            DecisionOutcome fraud = DecisionOutcome.Approved)
         {
+            if (useInvalidDatabase)
+            {
+                var invalidFactory = new ApiFactory(InvalidConnectionString, throwAuthorization, authorization, fraud);
+                _ = invalidFactory.Services;
+                return invalidFactory;
+            }
+
             var connectionString = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING")
                 ?? throw new InvalidOperationException("Destructive PostgreSQL tests require TEST_DATABASE_CONNECTION_STRING.");
-            if (!useInvalidDatabase)
-            {
-                await ResetSchemasAsync(connectionString);
-            }
+            await ResetSchemasAsync(connectionString);
 
-            var factory = new ApiFactory(
-                useInvalidDatabase ? "Host=127.0.0.1;Port=1;Database=invalid;Username=invalid;Password=invalid;Timeout=1;Command Timeout=1" : connectionString,
-                throwAuthorization);
+            var factory = new ApiFactory(connectionString, throwAuthorization, authorization, fraud);
             _ = factory.Services;
-            if (!useInvalidDatabase)
-            {
-                await using var scope = factory.Services.CreateAsyncScope();
-                await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>().Database.MigrateAsync();
-                await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>().Database.MigrateAsync();
-            }
-
+            await using var scope = factory.Services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>().Database.MigrateAsync();
+            await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>().Database.MigrateAsync();
             return factory;
         }
 
@@ -226,9 +278,9 @@ public sealed class TransferReadAndHealthApiTests
                 services.RemoveAll<ICustomerAuthorization>();
                 services.RemoveAll<IDailyTransferLimit>();
                 services.RemoveAll<IFraudScreening>();
-                services.AddSingleton<ICustomerAuthorization>(new ThrowingAuthorization(_throwAuthorization));
+                services.AddSingleton<ICustomerAuthorization>(new ConfigurableAuthorization(_authorization, _throwAuthorization));
                 services.AddSingleton<IDailyTransferLimit>(new AllowDailyLimit());
-                services.AddSingleton<IFraudScreening>(new AllowFraud());
+                services.AddSingleton<IFraudScreening>(new ConfigurableFraud(_fraud));
             });
         }
 
@@ -241,7 +293,7 @@ public sealed class TransferReadAndHealthApiTests
             await command.ExecuteNonQueryAsync();
         }
 
-        private sealed class ThrowingAuthorization(bool throwOnCall) : ICustomerAuthorization
+        private sealed class ConfigurableAuthorization(DecisionOutcome outcome, bool throwOnCall) : ICustomerAuthorization
         {
             public Task<DecisionOutcome> IsAuthorizedAsync(Guid sourceAccountId, CancellationToken cancellationToken)
             {
@@ -250,7 +302,7 @@ public sealed class TransferReadAndHealthApiTests
                     throw new InvalidOperationException("Injected authorization failure.");
                 }
 
-                return Task.FromResult(DecisionOutcome.Approved);
+                return Task.FromResult(outcome);
             }
         }
 
@@ -260,10 +312,10 @@ public sealed class TransferReadAndHealthApiTests
                 Task.FromResult(DecisionOutcome.Approved);
         }
 
-        private sealed class AllowFraud : IFraudScreening
+        private sealed class ConfigurableFraud(DecisionOutcome outcome) : IFraudScreening
         {
             public Task<DecisionOutcome> ScreenAsync(TransferSubmissionRequest request, CancellationToken cancellationToken) =>
-                Task.FromResult(DecisionOutcome.Approved);
+                Task.FromResult(outcome);
         }
     }
 }

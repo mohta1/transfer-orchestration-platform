@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\TransferOrchestration.BuildingBlocks\TransferOrchestration.BuildingBlocks.csproj" />
     <ProjectReference Include="..\Modules\TransferManagement\TransferOrchestration.TransferManagement.csproj" />
     <ProjectReference Include="..\Modules\AccountBalance\TransferOrchestration.AccountBalance.csproj" />
     <ProjectReference Include="..\Modules\PaymentNetwork\TransferOrchestration.PaymentNetwork.csproj" />

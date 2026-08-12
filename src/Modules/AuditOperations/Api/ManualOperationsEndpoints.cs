@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TransferOrchestration.AuditOperations.Contracts;
+using TransferOrchestration.BuildingBlocks.Api;
 using TransferOrchestration.TransferManagement.Contracts.ManualOperations;
-using TransferOrchestration.TransferManagement.Api;
 
 namespace TransferOrchestration.AuditOperations.Api;
 

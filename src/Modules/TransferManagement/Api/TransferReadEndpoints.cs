@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using TransferOrchestration.BuildingBlocks.Api;
 using TransferOrchestration.TransferManagement.Contracts.Queries;
 
 namespace TransferOrchestration.TransferManagement.Api;

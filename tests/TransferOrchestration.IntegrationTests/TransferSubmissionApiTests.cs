@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -227,9 +228,13 @@ public sealed class TransferSubmissionApiTests
 
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Accepted));
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.UnprocessableEntity));
-        var outcomes = await Task.WhenAll(responses.Select(response => response.Content.ReadFromJsonAsync<Response>()));
-        Assert.Contains(outcomes, outcome => outcome?.Outcome == nameof(TransferSubmissionOutcome.Accepted));
-        Assert.Contains(outcomes, outcome => outcome?.Outcome == nameof(TransferSubmissionOutcome.DailyLimitExceeded));
+        var accepted = responses.Single(response => response.StatusCode == HttpStatusCode.Accepted);
+        var rejected = responses.Single(response => response.StatusCode == HttpStatusCode.UnprocessableEntity);
+        var acceptedBody = await accepted.Content.ReadFromJsonAsync<Response>();
+        Assert.Equal(nameof(TransferSubmissionOutcome.Accepted), acceptedBody?.Outcome);
+        var rejectedProblem = await rejected.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(rejectedProblem);
+        Assert.Equal("daily_limit_exceeded", rejectedProblem.Extensions["code"]?.ToString());
         Assert.Equal(6_000m, await factory.ConsumedAmountAsync(Source, "GBP"));
         Assert.Equal(1, await factory.DailyUsageCountAsync(Source, "GBP"));
     }

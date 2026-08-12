@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TransferOrchestration.AuditOperations.Contracts;
+using TransferOrchestration.BuildingBlocks.Api;
 using TransferOrchestration.TransferManagement.Application.Submission;
 
 namespace TransferOrchestration.TransferManagement.Api;
@@ -73,8 +74,15 @@ public static class TransferSubmissionEndpoints
                 "idempotency_conflict",
                 "Idempotency-Key was already used with a different semantic request."),
             TransferSubmissionOutcome.ValidationFailed => ApiProblemResults.ValidationFailed(result.Errors ?? []),
-            TransferSubmissionOutcome.AuthorizationRejected => Results.Json(response, statusCode: StatusCodes.Status403Forbidden),
-            TransferSubmissionOutcome.DailyLimitExceeded or TransferSubmissionOutcome.FraudRejected => Results.UnprocessableEntity(response),
+            TransferSubmissionOutcome.AuthorizationRejected => ApiProblemResults.Forbidden(
+                "authorization_rejected",
+                "Customer is not authorized to use the source account."),
+            TransferSubmissionOutcome.DailyLimitExceeded => ApiProblemResults.UnprocessableEntity(
+                "daily_limit_exceeded",
+                "Transfer exceeds the daily transfer limit."),
+            TransferSubmissionOutcome.FraudRejected => ApiProblemResults.UnprocessableEntity(
+                "fraud_rejected",
+                "Transfer was rejected by fraud screening."),
             _ => throw new InvalidOperationException($"Unsupported submission outcome '{result.Outcome}'.")
         };
     }
