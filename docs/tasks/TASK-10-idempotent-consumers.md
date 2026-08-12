@@ -62,29 +62,43 @@ At-least-once delivery necessarily permits duplicates; consumers must therefore 
 
 ## 8. Acceptance Criteria
 
-- [ ] Duplicate delivery has one effect.
-- [ ] Durable processed marker exists.
-- [ ] Retry after failure works.
+- [x] Duplicate delivery has one effect.
+- [x] Durable processed marker exists.
+- [x] Retry after failure works.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
 - ProcessedMessages row.
 - Fake provider call count for duplicate delivery.
+
+Captured on 2026-08-12 against PostgreSQL through `TEST_DATABASE_CONNECTION_STRING`:
+
+- Sequential and concurrent duplicate tests each passed with one actual provider invocation, one durable
+  provider effect, and one `ProcessedMessage` row.
+- Provider-success/local-save-failure, provider-success/local-commit-failure, and post-provider-cancellation
+  tests passed; retries reused the provider key and retained one durable effect before committing one marker.
+- `NotificationConsumerTests` passed: 11 passed, 0 failed, 0 skipped.
+- The complete PostgreSQL integration suite passed twice in fresh test processes: 119 passed, 0 failed,
+  0 skipped on each run.
+- `dotnet restore TransferOrchestrationPlatform.sln`,
+  `dotnet build TransferOrchestrationPlatform.sln --no-restore`, and
+  `dotnet test TransferOrchestrationPlatform.sln --no-build` passed; the build reported 0 warnings and
+  0 errors, and the solution reported 169 passed, 0 failed, 0 skipped.
 
 ## 11. Handoff to the Next Task
 

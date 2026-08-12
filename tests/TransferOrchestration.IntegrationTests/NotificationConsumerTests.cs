@@ -41,6 +41,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         await DispatchAsync(integrationEvent, provider);
         await DispatchAsync(integrationEvent, provider);
 
+        Assert.Equal(1, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
         var marker = Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
         Assert.Equal(TransferCompletedNotificationConsumer.ConsumerName, marker.ConsumerName);
@@ -55,6 +56,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         await DispatchAsync(integrationEvent, provider, "notification.consumer-a.v1");
         await DispatchAsync(integrationEvent, provider, "notification.consumer-b.v1");
 
+        Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(2, await provider.EffectCountAsync());
         Assert.Equal(
             new[]
@@ -76,6 +78,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
 
         provider.Failure = null;
         await DispatchAsync(integrationEvent, provider);
+        Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
@@ -89,6 +92,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         var second = DispatchAsync(integrationEvent, provider);
         await Task.WhenAll(first, second);
 
+        Assert.Equal(1, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
@@ -133,6 +137,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
 
         await DispatchAsync(integrationEvent, provider);
 
+        Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
@@ -148,6 +153,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
 
         await DispatchAsync(integrationEvent, provider);
 
+        Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
@@ -165,6 +171,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         provider.AfterEffect = null;
         await DispatchAsync(integrationEvent, provider);
 
+        Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
@@ -192,6 +199,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
     [Fact]
     public async Task OutboxDispatchPathReachesIdempotentNotificationConsumer()
     {
+        await DropTransferManagementSchemaAsync();
         await using var transferContext = CreateTransferContext();
         await transferContext.Database.MigrateAsync();
         var integrationEvent = Event();
@@ -215,7 +223,11 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
             NullLogger<OutboxBatchDispatcher>.Instance);
 
         Assert.Equal(1, await dispatcher.DispatchBatchAsync("notification-test", default));
+        Assert.Equal(1, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
+        Assert.Equal(
+            $"{TransferCompletedNotificationConsumer.ConsumerName}:{integrationEvent.MessageId:D}",
+            Assert.Single(await provider.KeysAsync()));
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
         await using var verificationContext = CreateTransferContext();
         Assert.Equal(OutboxStatus.Published, (await verificationContext.OutboxMessages
@@ -259,6 +271,15 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         new DbContextOptionsBuilder<TransferManagementDbContext>().UseNpgsql(_connectionString,
             options => options.MigrationsHistoryTable("__EFMigrationsHistory", TransferManagementDbContext.Schema)).Options);
 
+    private async Task DropTransferManagementSchemaAsync()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "DROP SCHEMA IF EXISTS transfer_management CASCADE";
+        await command.ExecuteNonQueryAsync();
+    }
+
     private async Task CreateProviderLedgerAsync()
     {
         await using var connection = new NpgsqlConnection(_connectionString);
@@ -276,6 +297,8 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
 
     private sealed class DurableRecordingProvider(string connectionString) : INotificationProvider
     {
+        private int _invocationCount;
+        public int InvocationCount => Volatile.Read(ref _invocationCount);
         public Exception? Failure { get; set; }
         public Action? AfterEffect { get; set; }
 
@@ -284,6 +307,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
             TransferCompletedIntegrationEvent integrationEvent,
             CancellationToken cancellationToken)
         {
+            Interlocked.Increment(ref _invocationCount);
             cancellationToken.ThrowIfCancellationRequested();
             if (Failure is not null) throw Failure;
             await using var connection = new NpgsqlConnection(connectionString);
