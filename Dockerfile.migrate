@@ -1,8 +1,9 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 WORKDIR /src
 
 COPY ["Directory.Build.props", "."]
+COPY [".config/dotnet-tools.json", ".config/"]
 
 COPY ["src/TransferOrchestration.Api/TransferOrchestration.Api.csproj", "src/TransferOrchestration.Api/"]
 COPY ["src/BuildingBlocks/TransferOrchestration.BuildingBlocks/TransferOrchestration.BuildingBlocks.csproj", "src/BuildingBlocks/TransferOrchestration.BuildingBlocks/"]
@@ -17,34 +18,10 @@ COPY ["src/Modules/AuditOperations/TransferOrchestration.AuditOperations.Contrac
 RUN dotnet restore "src/TransferOrchestration.Api/TransferOrchestration.Api.csproj"
 
 COPY src/ src/
+COPY scripts/apply-database-migrations.sh scripts/
 
-WORKDIR "/src/src/TransferOrchestration.Api"
+RUN sed -i '1s/^\xEF\xBB\xBF//' scripts/apply-database-migrations.sh \
+    && sed -i 's/\r$//' scripts/apply-database-migrations.sh \
+    && chmod +x scripts/apply-database-migrations.sh
 
-RUN dotnet publish \
-    "TransferOrchestration.Api.csproj" \
-    -c Release \
-    --no-restore \
-    -o /app/publish \
-    /p:UseAppHost=false
-
-
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime-base
-
-FROM curlimages/curl:8.12.1 AS curl
-
-FROM runtime-base AS runtime
-
-COPY --from=curl /usr/bin/curl /usr/bin/curl
-
-WORKDIR /app
-
-COPY --from=build /app/publish .
-
-ENV ASPNETCORE_URLS=http://0.0.0.0:8080
-
-EXPOSE 8080
-
-HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 \
-    CMD curl -fsS http://127.0.0.1:8080/health/live || exit 1
-
-ENTRYPOINT ["dotnet", "TransferOrchestration.Api.dll"]
+ENTRYPOINT ["bash", "scripts/apply-database-migrations.sh"]

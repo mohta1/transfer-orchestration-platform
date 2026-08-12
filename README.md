@@ -8,6 +8,10 @@ interbank transfer workflow.
 
 Work in progress.
 
+## Local runtime
+
+See [docs/runtime-setup.md](docs/runtime-setup.md) for Docker Compose, database migrations, health checks, and clean build/test gates.
+
 ## Main objectives
 
 - Domain-driven transfer model

@@ -16,7 +16,9 @@ public sealed class AuditOperationsDesignTimeDbContextFactory
             .Build();
 
         var connectionString = configuration.GetConnectionString("Database")
-            ?? "Host=localhost;Database=transfer_orchestration;Username=postgres;Password=postgres";
+            ?? Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__Database")
+            ?? "Host=localhost;Port=5432;Database=transfer_orchestration;Username=transfer_app;Password=transfer_test";
 
         var optionsBuilder = new DbContextOptionsBuilder<AuditOperationsDbContext>();
         optionsBuilder.UseNpgsql(

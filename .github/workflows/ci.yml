@@ -39,10 +39,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
@@ -64,3 +64,44 @@ jobs:
           TransferOrchestrationPlatform.sln
           --no-build
           --logger "console;verbosity=normal"
+
+  runtime-verification:
+    name: Runtime Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Compose environment
+        run: |
+          cat > .env.ci <<'EOF'
+          POSTGRES_PASSWORD=ci-compose-password
+          JWT_SIGNING_KEY=CI_COMPOSE_ONLY_32_BYTE_SIGNING_KEY
+          EOF
+
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.ci config > /dev/null
+
+      - name: Build runtime images
+        run: docker compose --env-file .env.ci build
+
+      - name: Inspect runtime image excludes test artifacts
+        run: |
+          set -euo pipefail
+          IMAGE_REF="transfer-orchestration-platform-api:latest"
+          if docker run --rm --entrypoint sh "$IMAGE_REF" -c 'ls /app/*Tests.dll 2>/dev/null | grep -q .'; then
+            echo "Test assemblies must not be present in the runtime image." >&2
+            exit 1
+          fi
+          SDK_VERSION="$(docker run --rm --entrypoint sh "$IMAGE_REF" -c 'dotnet --list-sdks 2>/dev/null || true')"
+          if [ -n "$SDK_VERSION" ]; then
+            echo ".NET SDK must not be present in the runtime image." >&2
+            exit 1
+          fi
+          echo "Runtime image content inspection passed."
+
+      - name: Verify Compose runtime
+        run: bash scripts/verify-compose-runtime.sh
