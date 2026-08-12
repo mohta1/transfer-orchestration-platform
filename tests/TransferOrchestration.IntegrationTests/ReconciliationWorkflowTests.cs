@@ -258,6 +258,51 @@ public sealed class ReconciliationWorkflowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task EnquiryFailureTruncatesLongErrorMessageBeforePersisting()
+    {
+        var longError = new string('x', ReconciliationRecord.MaxLastErrorLength + 100);
+        var gateway = new RecordingGateway
+        {
+            SubmissionResult = PaymentSubmissionResult.Timeout,
+            ThrowStatusException = true,
+            StatusExceptionMessage = longError
+        };
+        var transferId = await SeedUnknownTransferAsync(gateway, retryDelaySeconds: 8);
+
+        Assert.Equal(1, await DispatchReconciliationAsync(gateway, retryDelaySeconds: 8));
+
+        await using var context = CreateScopeContext();
+        var reconciliation = await context.ReconciliationRecords.AsNoTracking()
+            .SingleAsync(x => x.TransferId == transferId);
+        Assert.Equal(ReconciliationStatus.Active, reconciliation.Status);
+        Assert.Equal(ReconciliationRecord.MaxLastErrorLength, reconciliation.LastError!.Length);
+        Assert.Equal(longError[..ReconciliationRecord.MaxLastErrorLength], reconciliation.LastError);
+    }
+
+    [Fact]
+    public async Task EnquiryFailureThresholdEscalatesToManualReviewRequired()
+    {
+        var gateway = new RecordingGateway
+        {
+            SubmissionResult = PaymentSubmissionResult.Timeout,
+            ThrowStatusException = true
+        };
+        var transferId = await SeedUnknownTransferAsync(gateway, escalationThreshold: 2, retryDelaySeconds: 5);
+
+        Assert.Equal(1, await DispatchReconciliationAsync(gateway, escalationThreshold: 2, retryDelaySeconds: 5));
+        _clock.Advance(TimeSpan.FromSeconds(6));
+        Assert.Equal(1, await DispatchReconciliationAsync(gateway, escalationThreshold: 2, retryDelaySeconds: 5));
+
+        var snapshot = await SnapshotAsync(transferId);
+        Assert.Equal(TransferState.ManualReviewRequired, snapshot.TransferState);
+        Assert.Equal(ReconciliationStatus.ManualReviewRequired, snapshot.ReconciliationStatus);
+        Assert.Null(snapshot.ReconciliationNextAttemptAtUtc);
+        Assert.Equal(BalanceReservationStatus.Active, snapshot.ReservationStatus);
+        Assert.Equal(2, gateway.StatusCalls.Count);
+        Assert.Single(gateway.SubmitCalls);
+    }
+
+    [Fact]
     public async Task ExpiredClaimBecomesRecoverable()
     {
         var gateway = new RecordingGateway
@@ -473,6 +518,7 @@ public sealed class ReconciliationWorkflowTests : IAsyncLifetime
         public PaymentSubmissionResult SubmissionResult { get; init; } = PaymentSubmissionResult.Accepted;
         public PaymentStatusResult StatusResult { get; set; } = PaymentStatusResult.Unknown;
         public bool ThrowStatusException { get; set; }
+        public string StatusExceptionMessage { get; set; } = "Simulated status enquiry failure.";
         public TaskCompletionSource? StatusGate { get; set; }
         public TaskCompletionSource StatusStarted { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -503,7 +549,7 @@ public sealed class ReconciliationWorkflowTests : IAsyncLifetime
 
             if (ThrowStatusException)
             {
-                throw new InvalidOperationException("Simulated status enquiry failure.");
+                throw new InvalidOperationException(StatusExceptionMessage);
             }
 
             return StatusResult;

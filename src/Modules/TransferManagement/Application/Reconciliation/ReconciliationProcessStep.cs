@@ -53,8 +53,17 @@ internal sealed class ReconciliationProcessStep(
             var transferRepository = preparationScope.ServiceProvider.GetRequiredService<ITransferRepository>();
             var transfer = await transferRepository.GetByIdAsync(claim.TransferId, cancellationToken);
             if (transfer is null
-                || transfer.State != TransferState.SubmissionStatusUnknown
                 || transfer.Type != TransferType.DomesticInterbank)
+            {
+                return ReconciliationStepOutcome.NotActionable;
+            }
+
+            if (transfer.State == TransferState.SettlementPending)
+            {
+                return await PersistOutcomeAsync(claim, PaymentStatusResult.Settled, cancellationToken);
+            }
+
+            if (transfer.State != TransferState.SubmissionStatusUnknown)
             {
                 return ReconciliationStepOutcome.NotActionable;
             }
@@ -73,8 +82,7 @@ internal sealed class ReconciliationProcessStep(
         }
         catch (Exception exception)
         {
-            await PersistEnquiryFailureAsync(claim, exception.Message, cancellationToken);
-            return ReconciliationStepOutcome.EnquiryFailed;
+            return await PersistEnquiryFailureAsync(claim, exception.Message, cancellationToken);
         }
 
         return await PersistOutcomeAsync(claim, enquiryResult, cancellationToken);
@@ -124,6 +132,17 @@ internal sealed class ReconciliationProcessStep(
             record.EscalateToManualReview(timeProvider.GetUtcNow());
             await processRepository.SaveChangesAsync(cancellationToken);
             return ReconciliationStepOutcome.ManualReviewRequired;
+        }
+
+        if (transfer.State == TransferState.SettlementPending)
+        {
+            if (enquiryResult != PaymentStatusResult.Settled)
+            {
+                return ReconciliationStepOutcome.NotActionable;
+            }
+
+            return await PersistSettledAsync(
+                record, transfer, process, finalization, timeProvider.GetUtcNow(), processRepository, cancellationToken);
         }
 
         if (transfer.State != TransferState.SubmissionStatusUnknown)
@@ -194,6 +213,7 @@ internal sealed class ReconciliationProcessStep(
         CancellationToken cancellationToken)
     {
         transfer.RejectExternalSubmission(now);
+
         var release = await finalization.ReleaseAsync(
             new FinalizeFundsRequest(transfer.Id.Value, transfer.SourceAccountId),
             cancellationToken);
@@ -239,24 +259,54 @@ internal sealed class ReconciliationProcessStep(
         return ReconciliationStepOutcome.StillUnknown;
     }
 
-    private async Task PersistEnquiryFailureAsync(
+    private async Task<ReconciliationStepOutcome> PersistEnquiryFailureAsync(
         ReconciliationClaim claim,
         string error,
         CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var recordRepository = scope.ServiceProvider.GetRequiredService<IReconciliationRecordRepository>();
+        var transferRepository = scope.ServiceProvider.GetRequiredService<ITransferRepository>();
+        var processRepository = scope.ServiceProvider.GetRequiredService<ITransferProcessStateRepository>();
         var record = await recordRepository.GetByTransferIdAsync(claim.TransferId, cancellationToken);
         if (record is null
             || record.Id != claim.Id
             || record.Version != claim.Version
             || record.Status != ReconciliationStatus.Active)
         {
-            return;
+            return ReconciliationStepOutcome.LostClaim;
+        }
+
+        var transfer = await transferRepository.GetByIdAsync(claim.TransferId, cancellationToken)
+            ?? throw new InvalidOperationException($"Transfer '{claim.TransferId.Value}' was not found.");
+        var process = await processRepository.GetAsync(claim.TransferId, cancellationToken)
+            ?? throw new InvalidOperationException($"Transfer process '{claim.TransferId.Value}' was not found.");
+
+        if (transfer.State != TransferState.SubmissionStatusUnknown)
+        {
+            return ReconciliationStepOutcome.NotActionable;
         }
 
         var now = timeProvider.GetUtcNow();
-        record.RecordEnquiryFailure(now + options.Value.RetryDelay, error, now);
-        await recordRepository.SaveChangesAsync(cancellationToken);
+        var nextAttemptCount = record.AttemptCount + 1;
+        if (nextAttemptCount >= options.Value.EscalationAttemptThreshold)
+        {
+            transfer.RequireManualReview(now);
+            record.EscalateToManualReview(now);
+            process.MarkWaiting(now);
+            await processRepository.SaveChangesAsync(cancellationToken);
+            return ReconciliationStepOutcome.ManualReviewRequired;
+        }
+
+        var nextAttemptAt = now + TimeSpan.FromTicks(options.Value.RetryDelay.Ticks * nextAttemptCount);
+        record.RecordEnquiryFailure(nextAttemptAt, error, now);
+        if (process.Status == TransferProcessStatus.Active
+            && process.NextAction == TransferProcessAction.EnquirePaymentStatus)
+        {
+            process.RecordAttempt(nextAttemptAt, now);
+        }
+
+        await processRepository.SaveChangesAsync(cancellationToken);
+        return ReconciliationStepOutcome.EnquiryFailed;
     }
 }

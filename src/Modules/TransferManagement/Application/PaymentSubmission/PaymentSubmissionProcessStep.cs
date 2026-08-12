@@ -98,7 +98,9 @@ internal sealed class PaymentSubmissionProcessStep(
             return await PersistAmbiguousOutcomeAsync(transferId, request.Reference);
         }
 
-        var outcome = await PersistOutcomeAsync(transferId, request.Reference, result);
+        var outcome = result == PaymentSubmissionResult.Timeout
+            ? await PersistAmbiguousOutcomeAsync(transferId, request.Reference)
+            : await PersistOutcomeAsync(transferId, request.Reference, result);
         cancellationToken.ThrowIfCancellationRequested();
         return outcome;
     }
@@ -192,8 +194,6 @@ internal sealed class PaymentSubmissionProcessStep(
         {
             PaymentSubmissionResult.Accepted => Accept(transfer, process, now),
             PaymentSubmissionResult.Rejected => Reject(transfer, process, now),
-            PaymentSubmissionResult.Timeout => await MarkUnknown(
-                transfer, process, reference, outcomeScope.ServiceProvider, now),
             _ => throw new InvalidOperationException("Unsupported payment submission result.")
         };
 
@@ -222,18 +222,5 @@ internal sealed class PaymentSubmissionProcessStep(
         transfer.RejectExternalSubmission(now);
         process.Schedule(TransferProcessAction.ReleaseReservation, now, now);
         return PaymentSubmissionStepOutcome.Rejected;
-    }
-
-    private static async Task<PaymentSubmissionStepOutcome> MarkUnknown(
-        Transfer transfer,
-        TransferProcessState process,
-        NetworkSubmissionReference reference,
-        IServiceProvider services,
-        DateTimeOffset now)
-    {
-        transfer.MarkSubmissionStatusUnknown(now);
-        await services.GetRequiredService<IReconciliationScheduling>()
-            .EnsureScheduledAsync(transfer.Id, reference.Value, now, CancellationToken.None);
-        return PaymentSubmissionStepOutcome.StatusUnknown;
     }
 }

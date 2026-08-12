@@ -5,6 +5,8 @@ namespace TransferOrchestration.TransferManagement.Application.Reconciliation;
 
 internal sealed class ReconciliationRecord
 {
+    internal const int MaxLastErrorLength = 512;
+
     private ReconciliationRecord(
         TransferId transferId,
         string networkSubmissionReference,
@@ -128,7 +130,7 @@ internal sealed class ReconciliationRecord
         }
 
         LastAttemptAtUtc = nowUtc;
-        LastError = error;
+        LastError = TruncateError(error);
         NextAttemptAtUtc = nextAttemptAtUtc;
         ReleaseClaim(nowUtc);
         Touch(nowUtc);
@@ -178,6 +180,9 @@ internal sealed class ReconciliationRecord
             throw new DomainException("Reconciliation update time cannot move backwards.");
         }
     }
+
+    private static string TruncateError(string error) =>
+        error.Length <= MaxLastErrorLength ? error : error[..MaxLastErrorLength];
 
     private static void EnsureUtc(DateTimeOffset value, string? parameterName = null)
     {
