@@ -47,9 +47,20 @@ internal sealed class TransferCompletedNotificationConsumer(
 
         var providerKey = new NotificationIdempotencyKey(_consumerName, integrationEvent.MessageId);
         await provider.NotifyTransferCompletedAsync(providerKey, integrationEvent, cancellationToken);
-        dbContext.ProcessedMessages.Add(new ProcessedMessage(
-            integrationEvent.MessageId, _consumerName, timeProvider.GetUtcNow()));
-        await dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        var processedMessage = new ProcessedMessage(
+            integrationEvent.MessageId, _consumerName, timeProvider.GetUtcNow());
+        dbContext.ProcessedMessages.Add(processedMessage);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            // A scoped consumer can be retried after a failed save/commit. Do not leave the rolled-back
+            // marker tracked as Added or Unchanged, because either state would poison that retry.
+            dbContext.Entry(processedMessage).State = EntityState.Detached;
+            throw;
+        }
     }
 }

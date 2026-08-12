@@ -131,11 +131,13 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
     {
         var provider = new DurableRecordingProvider(_connectionString);
         var integrationEvent = Event();
+        await using var context = CreateContext([new FailOnceSaveInterceptor()]);
+        var consumer = CreateConsumer(context, provider);
         await Assert.ThrowsAsync<InjectedFailureException>(() =>
-            DispatchAsync(integrationEvent, provider, interceptors: [new FailOnceSaveInterceptor()]));
+            consumer.DispatchAsync(integrationEvent, default));
         Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
 
-        await DispatchAsync(integrationEvent, provider);
+        await consumer.DispatchAsync(integrationEvent, default);
 
         Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
@@ -147,11 +149,13 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
     {
         var provider = new DurableRecordingProvider(_connectionString);
         var integrationEvent = Event();
+        await using var context = CreateContext([new FailOnceCommitInterceptor()]);
+        var consumer = CreateConsumer(context, provider);
         await Assert.ThrowsAsync<InjectedFailureException>(() =>
-            DispatchAsync(integrationEvent, provider, interceptors: [new FailOnceCommitInterceptor()]));
+            consumer.DispatchAsync(integrationEvent, default));
         Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
 
-        await DispatchAsync(integrationEvent, provider);
+        await consumer.DispatchAsync(integrationEvent, default);
 
         Assert.Equal(2, provider.InvocationCount);
         Assert.Equal(1, await provider.EffectCountAsync());
@@ -242,11 +246,16 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         CancellationToken cancellationToken = default)
     {
         await using var context = CreateContext(interceptors);
-        var consumer = consumerName is null
-            ? new TransferCompletedNotificationConsumer(context, provider, new FixedTimeProvider(_now))
-            : new TransferCompletedNotificationConsumer(context, provider, new FixedTimeProvider(_now), consumerName);
+        var consumer = CreateConsumer(context, provider, consumerName);
         await consumer.DispatchAsync(integrationEvent, cancellationToken);
     }
+
+    private TransferCompletedNotificationConsumer CreateConsumer(
+        NotificationDbContext context,
+        INotificationProvider provider,
+        string? consumerName = null) => consumerName is null
+            ? new TransferCompletedNotificationConsumer(context, provider, new FixedTimeProvider(_now))
+            : new TransferCompletedNotificationConsumer(context, provider, new FixedTimeProvider(_now), consumerName);
 
     private async Task<List<ProcessedMessage>> ReadMarkersAsync(Guid messageId)
     {
