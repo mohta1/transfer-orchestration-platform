@@ -4,7 +4,7 @@
 **Stage:** Stage 3 — Reliability & Operations
 **Recommended branch:** `feature/reconciliation`
 **Depends on:** TASK-10
-**Status:** Not Started
+**Status:** Done
 
 ---
 
@@ -69,29 +69,60 @@ Timeout ambiguity is a central challenge scenario and must be recovered through 
 
 ## 8. Acceptance Criteria
 
-- [ ] All branches match timeout/reconciliation architecture.
-- [ ] No duplicate financial effects.
-- [ ] Retry metadata survives restart.
+- [x] All branches match timeout/reconciliation architecture.
+- [x] No duplicate financial effects.
+- [x] Retry metadata survives restart.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
-- Database timeline from timeout to final resolution.
-- Provider call log proving no resubmit.
+### Database timeline (timeout → resolution)
+
+Verified in `ReconciliationWorkflowTests` against PostgreSQL:
+
+1. Payment submission timeout persists `SubmissionStatusUnknown` and creates `reconciliation_records` row (`status=Active`, `attempt_count=0`, `next_attempt_at_utc=now`).
+2. Status enquiry `Unknown` increments `attempt_count`, sets `last_enquiry_result`, advances `next_attempt_at_utc` deterministically (`RetryDelaySeconds * attempt`), keeps reservation `Active`.
+3. Status enquiry `Settled` consumes reservation once, completes Transfer, closes reconciliation (`status=Closed`), persists Outbox atomically.
+4. Status enquiry `Rejected` releases reservation once, rejects Transfer, closes reconciliation.
+5. Escalation at configured threshold transitions Transfer to `ManualReviewRequired` and reconciliation to `ManualReviewRequired` without releasing reservation.
+
+### Provider call log (no resubmit)
+
+`RecordingGateway` in integration tests records:
+
+- Exactly one `SubmitAsync` call per unknown transfer.
+- Only `GetStatusAsync` calls during reconciliation dispatch (never a second submission).
+- Duplicate settled enquiries after closure perform zero additional financial effects.
+
+### Verification commands and results (2026-08-12)
+
+```text
+dotnet restore TransferOrchestrationPlatform.sln
+dotnet build TransferOrchestrationPlatform.sln --no-restore
+=> 0 warnings, 0 errors
+
+dotnet test TransferOrchestrationPlatform.sln --no-build
+=> Passed: 187 (Domain 47, Architecture 3, Integration 137), Failed: 0
+
+dotnet test ... --filter FullyQualifiedName~ReconciliationWorkflowTests (run twice)
+=> Passed: 13/13 each run
+```
+
+Migration: `20260812120000_AddReconciliationRecords` verified on PostgreSQL.
 
 ## 11. Handoff to the Next Task
 

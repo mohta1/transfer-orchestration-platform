@@ -12,7 +12,9 @@ using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempo
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
 using TransferOrchestration.TransferManagement.Infrastructure.Processing;
 using TransferOrchestration.TransferManagement.Infrastructure.Submission;
+using TransferOrchestration.TransferManagement.Application.Reconciliation;
 using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
+using TransferOrchestration.TransferManagement.Infrastructure.Reconciliation;
 
 namespace TransferOrchestration.TransferManagement;
 
@@ -44,7 +46,13 @@ public static class DependencyInjection
         services.AddScoped<ITransferProcessDueWorkDispatcher, TransferProcessDueWorkDispatcher>();
         services.AddScoped<IPaymentSubmissionProcessStep, PaymentSubmissionProcessStep>();
         services.AddScoped<IPaymentSubmissionDueWorkDispatcher, PaymentSubmissionDueWorkDispatcher>();
+        services.AddScoped<IReconciliationRecordRepository, ReconciliationRecordRepository>();
+        services.AddScoped<IReconciliationStore, ReconciliationStore>();
+        services.AddScoped<IReconciliationScheduling, ReconciliationScheduling>();
+        services.AddScoped<IReconciliationProcessStep, ReconciliationProcessStep>();
+        services.AddScoped<IReconciliationDueWorkDispatcher, ReconciliationDueWorkDispatcher>();
         services.AddHostedService<TransferProcessWorker>();
+        services.AddHostedService<ReconciliationWorker>();
         services.AddScoped<IOutboxStore, OutboxStore>();
         services.AddScoped<OutboxBatchDispatcher>();
         services.AddHostedService<OutboxWorker>();
@@ -58,6 +66,10 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .Validate(options => options.InitialRetryDelaySeconds <= options.MaxRetryDelaySeconds,
                 "InitialRetryDelay must not exceed MaxRetryDelay.")
+            .ValidateOnStart();
+        services.AddOptions<ReconciliationOptions>()
+            .Bind(configuration.GetSection(ReconciliationOptions.SectionName))
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         return services;

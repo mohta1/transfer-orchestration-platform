@@ -280,6 +280,14 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         var before = await SnapshotAsync(transferId);
         AssertUnknown(before, gateway);
 
+        await using (var connection = new NpgsqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            await using var deleteReconciliation = connection.CreateCommand();
+            deleteReconciliation.CommandText = "DELETE FROM transfer_management.reconciliation_records;";
+            await deleteReconciliation.ExecuteNonQueryAsync();
+        }
+
         await using var provider = CreateProvider(gateway);
         await using (var scope = provider.CreateAsyncScope())
         {

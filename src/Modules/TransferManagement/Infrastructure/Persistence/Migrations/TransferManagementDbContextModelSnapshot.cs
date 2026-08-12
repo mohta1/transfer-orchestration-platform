@@ -328,11 +328,107 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                         });
                 });
 
+            modelBuilder.Entity("TransferOrchestration.TransferManagement.Application.Reconciliation.ReconciliationRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("LastEnquiryResult")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("last_enquiry_result");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("LastAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_attempt_at_utc");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("locked_by");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until_utc");
+
+                    b.Property<string>("NetworkSubmissionReference")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("network_submission_reference");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at_utc");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transfer_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransferId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_reconciliation_records_transfer_id");
+
+                    b.HasIndex("NextAttemptAtUtc", "Id")
+                        .HasDatabaseName("ix_reconciliation_records_due_work")
+                        .HasFilter("status = 1 AND next_attempt_at_utc IS NOT NULL");
+
+                    b.ToTable("reconciliation_records", "transfer_management", t =>
+                        {
+                            t.HasCheckConstraint("ck_reconciliation_records_attempt_count", "attempt_count >= 0");
+
+                            t.HasCheckConstraint("ck_reconciliation_records_status", "(status = 1 AND next_attempt_at_utc IS NOT NULL) OR (status = 2 AND next_attempt_at_utc IS NULL) OR (status = 3 AND next_attempt_at_utc IS NULL)");
+
+                            t.HasCheckConstraint("ck_reconciliation_records_timestamps", "updated_at_utc >= created_at_utc");
+                        });
+                });
+
             modelBuilder.Entity("TransferOrchestration.TransferManagement.Application.ProcessManagement.TransferProcessState", b =>
                 {
                     b.HasOne("TransferOrchestration.TransferManagement.Domain.Transfers.Transfer", null)
                         .WithOne()
                         .HasForeignKey("TransferOrchestration.TransferManagement.Application.ProcessManagement.TransferProcessState", "TransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransferOrchestration.TransferManagement.Application.Reconciliation.ReconciliationRecord", b =>
+                {
+                    b.HasOne("TransferOrchestration.TransferManagement.Domain.Transfers.Transfer", null)
+                        .WithOne()
+                        .HasForeignKey("TransferOrchestration.TransferManagement.Application.Reconciliation.ReconciliationRecord", "TransferId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
