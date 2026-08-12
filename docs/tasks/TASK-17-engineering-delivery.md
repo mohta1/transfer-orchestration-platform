@@ -158,7 +158,9 @@ No **Blocker** findings. TASK-18 not implemented.
 
 ### CI
 
-CI URL for final pushed SHA: recorded in pull request description after push.
+- Workflow: `CI` — https://github.com/mohta1/transfer-orchestration-platform/actions/runs/31645790970
+- Head SHA: `0020bf49d1d1d5f9f9f18e941f39095d2197a5cd` (matches local/remote branch)
+- Jobs: `Build and Test` ✓, `Runtime Verification` ✓
 
 ## 11. Handoff to the Next Task
 
