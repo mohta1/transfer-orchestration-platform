@@ -12,6 +12,8 @@ using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempo
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Repositories;
 using TransferOrchestration.TransferManagement.Infrastructure.Processing;
 using TransferOrchestration.TransferManagement.Infrastructure.Submission;
+using TransferOrchestration.TransferManagement.Contracts.IntegrationEvents;
+using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 
 namespace TransferOrchestration.TransferManagement;
 
@@ -44,11 +46,21 @@ public static class DependencyInjection
         services.AddScoped<IPaymentSubmissionProcessStep, PaymentSubmissionProcessStep>();
         services.AddScoped<IPaymentSubmissionDueWorkDispatcher, PaymentSubmissionDueWorkDispatcher>();
         services.AddHostedService<TransferProcessWorker>();
+        services.AddScoped<IOutboxStore, OutboxStore>();
+        services.AddScoped<OutboxBatchDispatcher>();
+        services.AddSingleton<IIntegrationEventDispatcher, LoggingIntegrationEventDispatcher>();
+        services.AddHostedService<OutboxWorker>();
         services.AddScoped<ICustomerAuthorization, AllowCustomerAuthorization>();
         services.AddScoped<IDailyTransferLimit, ConfiguredDailyTransferLimit>();
         services.AddScoped<IFraudScreening, AllowFraudScreening>();
         services.AddSingleton(TimeProvider.System);
         services.Configure<SubmissionPolicyOptions>(configuration.GetSection(SubmissionPolicyOptions.SectionName));
+        services.AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection(OutboxOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(options => options.InitialRetryDelaySeconds <= options.MaxRetryDelaySeconds,
+                "InitialRetryDelay must not exceed MaxRetryDelay.")
+            .ValidateOnStart();
 
         return services;
     }
