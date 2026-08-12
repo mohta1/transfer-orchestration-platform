@@ -23,6 +23,7 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     MessageId = table.Column<Guid>(type: "uuid", nullable: false),
                     TransferId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CorrelationId = table.Column<Guid>(type: "uuid", nullable: true),
                     Type = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Payload = table.Column<string>(type: "jsonb", nullable: false),
                     OccurredAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -32,13 +33,18 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                     LockedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     LockedUntilUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     PublishedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    LastError = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
+                    LastError = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    FirstFailureAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    LastFailureAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_outbox_messages", x => x.Id);
                     table.CheckConstraint("ck_outbox_attempts", "\"Attempts\" >= 0");
                     table.CheckConstraint("ck_outbox_dead_letter", "\"Status\" <> 2 OR (\"LockedBy\" IS NULL AND \"LockedUntilUtc\" IS NULL)");
+                    table.CheckConstraint("ck_outbox_failure_pair", "(\"FirstFailureAtUtc\" IS NULL) = (\"LastFailureAtUtc\" IS NULL)");
+                    table.CheckConstraint("ck_outbox_failure_order", "\"FirstFailureAtUtc\" IS NULL OR \"FirstFailureAtUtc\" <= \"LastFailureAtUtc\"");
+                    table.CheckConstraint("ck_outbox_dead_letter_failure", "\"Status\" <> 2 OR \"FirstFailureAtUtc\" IS NOT NULL");
                     table.CheckConstraint("ck_outbox_lock", "(\"LockedBy\" IS NULL) = (\"LockedUntilUtc\" IS NULL)");
                     table.CheckConstraint("ck_outbox_published", "\"Status\" <> 1 OR \"PublishedAtUtc\" IS NOT NULL");
                 });
@@ -59,15 +65,17 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
             migrationBuilder.Sql(
                 """
                 INSERT INTO transfer_management.outbox_messages
-                    ("MessageId", "TransferId", "Type", "Payload", "OccurredAtUtc", "Status",
+                    ("MessageId", "TransferId", "CorrelationId", "Type", "Payload", "OccurredAtUtc", "Status",
                      "Attempts", "NextAttemptAtUtc")
                 SELECT message_id,
                        transfer.id,
+                       process.correlation_id,
                        'transfer.completed.v1',
                        jsonb_build_object(
                            'MessageId', message_id,
                            'TransferId', transfer.id,
-                           'CompletedAtUtc', transfer.updated_at_utc),
+                           'CompletedAtUtc', transfer.updated_at_utc,
+                           'CorrelationId', process.correlation_id),
                        transfer.updated_at_utc,
                        0,
                        0,
@@ -77,6 +85,7 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                     SELECT gen_random_uuid() AS message_id
                     WHERE transfer.id IS NOT NULL
                 ) AS generated
+                LEFT JOIN transfer_management.transfer_process_states AS process ON process.transfer_id = transfer.id
                 WHERE transfer.state = 'Completed';
                 """);
         }

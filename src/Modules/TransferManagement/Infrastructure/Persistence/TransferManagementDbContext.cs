@@ -35,7 +35,7 @@ public sealed class TransferManagementDbContext(
 
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
-        AddOutboxMessages();
+        await AddOutboxMessagesAsync(cancellationToken);
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         ClearDomainEvents();
         return result;
@@ -43,26 +43,45 @@ public sealed class TransferManagementDbContext(
 
     private void AddOutboxMessages()
     {
+        foreach (var (domainEvent, correlationId) in PendingCompletionEvents()
+            .Select(item => (item, ResolveCorrelationId(item.TransferId))))
+            AddOutboxMessage(domainEvent, correlationId);
+    }
+
+    private async Task AddOutboxMessagesAsync(CancellationToken token)
+    {
+        foreach (var domainEvent in PendingCompletionEvents())
+            AddOutboxMessage(domainEvent, await ResolveCorrelationIdAsync(domainEvent.TransferId, token));
+    }
+
+    private TransferCompletedDomainEvent[] PendingCompletionEvents()
+    {
         var trackedMessageIds = ChangeTracker.Entries<OutboxMessage>()
             .Select(entry => entry.Entity.MessageId)
             .ToHashSet();
+        return ChangeTracker.Entries<Transfer>().SelectMany(entry => entry.Entity.DomainEvents)
+            .OfType<TransferCompletedDomainEvent>().Where(item => trackedMessageIds.Add(item.Id)).ToArray();
+    }
 
-        foreach (var aggregate in ChangeTracker.Entries<Transfer>().Select(entry => entry.Entity))
-        {
-            foreach (var domainEvent in aggregate.DomainEvents.OfType<TransferCompletedDomainEvent>())
-            {
-                if (!trackedMessageIds.Add(domainEvent.Id)) continue;
+    private Guid? ResolveCorrelationId(TransferId transferId) =>
+        TrackedCorrelationId(transferId) ?? TransferProcessStates.AsNoTracking()
+            .Where(item => item.TransferId == transferId).Select(item => (Guid?)item.CorrelationId).SingleOrDefault();
 
-                var integrationEvent = new TransferCompletedIntegrationEvent(
-                    domainEvent.Id, domainEvent.TransferId.Value, domainEvent.OccurredOnUtc);
-                OutboxMessages.Add(new OutboxMessage(
-                    integrationEvent.MessageId,
-                    integrationEvent.TransferId,
-                    TransferCompletedIntegrationEvent.EventType,
-                    JsonSerializer.Serialize(integrationEvent),
-                    domainEvent.OccurredOnUtc));
-            }
-        }
+    private async Task<Guid?> ResolveCorrelationIdAsync(TransferId transferId, CancellationToken token) =>
+        TrackedCorrelationId(transferId) ?? await TransferProcessStates.AsNoTracking()
+            .Where(item => item.TransferId == transferId).Select(item => (Guid?)item.CorrelationId).SingleOrDefaultAsync(token);
+
+    private Guid? TrackedCorrelationId(TransferId transferId) => ChangeTracker.Entries<TransferProcessState>()
+        .Where(entry => entry.State != EntityState.Deleted && entry.Entity.TransferId == transferId)
+        .Select(entry => (Guid?)entry.Entity.CorrelationId).SingleOrDefault();
+
+    private void AddOutboxMessage(TransferCompletedDomainEvent domainEvent, Guid? correlationId)
+    {
+        var integrationEvent = new TransferCompletedIntegrationEvent(
+            domainEvent.Id, domainEvent.TransferId.Value, domainEvent.OccurredOnUtc, correlationId);
+        OutboxMessages.Add(new OutboxMessage(integrationEvent.MessageId, integrationEvent.TransferId,
+            correlationId, TransferCompletedIntegrationEvent.EventType,
+            JsonSerializer.Serialize(integrationEvent), domainEvent.OccurredOnUtc));
     }
 
     private void ClearDomainEvents()

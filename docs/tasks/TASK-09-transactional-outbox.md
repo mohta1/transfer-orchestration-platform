@@ -4,7 +4,7 @@
 **Stage:** Stage 3 — Reliability & Operations
 **Recommended branch:** `feature/transactional-outbox`
 **Depends on:** TASK-08
-**Status:** Done
+**Status:** Not Started
 
 ---
 

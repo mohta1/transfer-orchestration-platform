@@ -10,29 +10,31 @@ internal sealed class OutboxBatchDispatcher(
     OutboxStore store,
     IIntegrationEventDispatcher dispatcher,
     IOptions<OutboxOptions> options,
-    TimeProvider timeProvider,
     ILogger<OutboxBatchDispatcher> logger)
 {
-    private static readonly Action<ILogger, string, Guid, Guid, string, int, string, Exception?> DispatchResult =
-        LoggerMessage.Define<string, Guid, Guid, string, int, string>(LogLevel.Information,
+    private static readonly Action<ILogger, string, Guid, Guid, Guid?, int, string, Exception?> DispatchResult =
+        LoggerMessage.Define<string, Guid, Guid, Guid?, int, string>(LogLevel.Information,
             new EventId(1, nameof(DispatchResult)),
-            "Outbox dispatch {Status}: {MessageId} {TransferId} {Type} attempt {Attempt} worker {WorkerInstanceId}");
-    private static readonly Action<ILogger, string, Guid, Guid, string, int, string, Exception?> DispatchFailure =
-        LoggerMessage.Define<string, Guid, Guid, string, int, string>(LogLevel.Warning,
+            "Outbox dispatch {Status}: {MessageId} {TransferId} correlation {CorrelationId} attempt {Attempt} worker {WorkerInstanceId}");
+    private static readonly Action<ILogger, string, Guid, Guid, Guid?, int, string, Exception?> DispatchFailure =
+        LoggerMessage.Define<string, Guid, Guid, Guid?, int, string>(LogLevel.Warning,
             new EventId(2, nameof(DispatchFailure)),
-            "Outbox dispatch {Status}: {MessageId} {TransferId} {Type} attempt {Attempt} worker {WorkerInstanceId}");
+            "Outbox dispatch {Status}: {MessageId} {TransferId} correlation {CorrelationId} attempt {Attempt} worker {WorkerInstanceId}");
     private readonly OutboxOptions _options = options.Value;
 
     public async Task<int> DispatchBatchAsync(string workerId, CancellationToken cancellationToken)
     {
-        var claims = await store.ClaimAsync(workerId, _options.BatchSize, timeProvider.GetUtcNow(),
-            _options.LeaseDuration, cancellationToken);
-        foreach (var claim in claims)
+        var processed = 0;
+        while (processed < _options.BatchSize)
         {
-            await DispatchOneAsync(claim, workerId, cancellationToken);
+            var claim = await store.ClaimOneAsync(workerId, _options.LeaseDuration, cancellationToken);
+            if (claim is null) break;
+            var renewed = await store.RenewBeforeDispatchAsync(claim, workerId, _options.LeaseDuration, cancellationToken);
+            if (renewed is null) continue;
+            await DispatchOneAsync(renewed, workerId, cancellationToken);
+            processed++;
         }
-
-        return claims.Count;
+        return processed;
     }
 
     private async Task DispatchOneAsync(OutboxClaim claim, string workerId, CancellationToken token)
@@ -44,13 +46,14 @@ internal sealed class OutboxBatchDispatcher(
 
             var integrationEvent = JsonSerializer.Deserialize<TransferCompletedIntegrationEvent>(claim.Payload)
                 ?? throw new PermanentOutboxException("Integration event payload is null.");
-            if (integrationEvent.MessageId != claim.MessageId || integrationEvent.TransferId != claim.TransferId)
+            if (integrationEvent.MessageId != claim.MessageId || integrationEvent.TransferId != claim.TransferId
+                || integrationEvent.CorrelationId != claim.CorrelationId)
                 throw new PermanentOutboxException("Integration event envelope does not match its payload.");
 
             await dispatcher.DispatchAsync(integrationEvent, token);
-            var updated = await store.MarkPublishedAsync(claim, workerId, timeProvider.GetUtcNow(), token);
+            var updated = await store.MarkPublishedAsync(claim, workerId, token);
             DispatchResult(logger,
-                updated == 1 ? "Published" : "LeaseLost", claim.MessageId, claim.TransferId, claim.Type,
+                updated == 1 ? "Published" : "LeaseLost", claim.MessageId, claim.TransferId, claim.CorrelationId,
                 claim.Attempts + 1, workerId, null);
         }
         catch (Exception exception) when (exception is JsonException or PermanentOutboxException)
@@ -67,13 +70,12 @@ internal sealed class OutboxBatchDispatcher(
     {
         var attempt = claim.Attempts + 1;
         var deadLetter = permanent || attempt >= _options.MaxAttempts;
-        var now = timeProvider.GetUtcNow();
-        var nextAttempt = deadLetter ? now : now + RetryDelay(claim.MessageId, attempt);
+        var retryDelay = deadLetter ? TimeSpan.Zero : RetryDelay(claim.MessageId, attempt);
         var safeError = error.Length <= 1000 ? error : error[..1000];
-        var updated = await store.MarkRetryableFailureAsync(claim, workerId, nextAttempt, safeError, deadLetter, token);
+        var updated = await store.MarkFailureAsync(claim, workerId, retryDelay, safeError, deadLetter, token);
         DispatchFailure(logger,
             updated == 0 ? "LeaseLost" : deadLetter ? "DeadLetter" : "RetryScheduled",
-            claim.MessageId, claim.TransferId, claim.Type, attempt, workerId, null);
+            claim.MessageId, claim.TransferId, claim.CorrelationId, attempt, workerId, null);
     }
 
     internal TimeSpan RetryDelay(Guid messageId, int attempt)

@@ -61,11 +61,18 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         await context.SaveChangesAsync();
         transfer.CompleteInternalTransfer(_clock.GetUtcNow());
         var original = Assert.IsType<TransferCompletedDomainEvent>(Assert.Single(transfer.DomainEvents));
-        context.OutboxMessages.Add(new OutboxMessage(Guid.NewGuid(), transfer.Id.Value,
+        context.OutboxMessages.Add(new OutboxMessage(Guid.NewGuid(), transfer.Id.Value, null,
             new string('x', 101), "{}", _clock.GetUtcNow()));
 
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
         Assert.Equal(original.Id, Assert.IsType<TransferCompletedDomainEvent>(Assert.Single(transfer.DomainEvents)).Id);
+        await using (var rolledBack = CreateContext())
+        {
+            Assert.Equal(TransferState.BalanceReserved, (await rolledBack.Transfers.AsNoTracking()
+                .SingleAsync(item => item.Id == transfer.Id)).State);
+            Assert.Empty(await rolledBack.OutboxMessages.AsNoTracking()
+                .Where(item => item.TransferId == transfer.Id.Value || item.MessageId == original.Id).ToListAsync());
+        }
         context.ChangeTracker.Entries<OutboxMessage>().Single(entry => entry.Entity.Type.Length == 101).State = EntityState.Detached;
         await context.SaveChangesAsync();
 
@@ -82,7 +89,7 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         context.Transfers.Add(transfer);
         await context.SaveChangesAsync();
         transfer.CompleteInternalTransfer(_clock.GetUtcNow());
-        context.OutboxMessages.Add(new OutboxMessage(Guid.NewGuid(), transfer.Id.Value,
+        context.OutboxMessages.Add(new OutboxMessage(Guid.NewGuid(), transfer.Id.Value, null,
             new string('x', 101), "{}", _clock.GetUtcNow()));
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
@@ -122,7 +129,7 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         var (_, domainEvent) = await CompleteAsync(TransferType.InternalBank);
         await DispatchAsync("one", new RecordingDispatcher { Failure = new IOException("temporary") });
         Assert.Equal(0, await DispatchAsync("two", new RecordingDispatcher()));
-        _clock.Set((await ReadMessageAsync(domainEvent.Id)).NextAttemptAtUtc);
+        await MakeRetriesDueAsync();
         var retry = new RecordingDispatcher();
         Assert.Equal(1, await DispatchAsync("two", retry));
         Assert.Equal(domainEvent.Id, Assert.Single(retry.Deliveries).MessageId);
@@ -142,10 +149,10 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
     {
         await CompleteAsync(TransferType.InternalBank);
         await using (var context = CreateContext())
-            Assert.Single(await new OutboxStore(context).ClaimAsync("crashed", 1, _clock.GetUtcNow(), TimeSpan.FromSeconds(30), default));
-        _clock.Advance(TimeSpan.FromSeconds(31));
+            Assert.NotNull(await new OutboxStore(context).ClaimOneAsync("crashed", TimeSpan.FromSeconds(30), default));
+        await ExpireAllLeasesAsync();
         await using var reclaimContext = CreateContext();
-        Assert.Single(await new OutboxStore(reclaimContext).ClaimAsync("replacement", 1, _clock.GetUtcNow(), TimeSpan.FromSeconds(30), default));
+        Assert.NotNull(await new OutboxStore(reclaimContext).ClaimOneAsync("replacement", TimeSpan.FromSeconds(30), default));
     }
 
     [Fact]
@@ -171,11 +178,11 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
     {
         await CompleteAsync(TransferType.InternalBank);
         var stale = Assert.Single(await ClaimAsync("a", 1));
-        _clock.Advance(TimeSpan.FromSeconds(31));
+        await ExpireAllLeasesAsync();
         var current = Assert.Single(await ClaimAsync("b", 1));
         await using var context = CreateContext();
-        Assert.Equal(0, await new OutboxStore(context).MarkPublishedAsync(stale, "a", _clock.GetUtcNow(), default));
-        Assert.Equal(1, await new OutboxStore(context).MarkPublishedAsync(current, "b", _clock.GetUtcNow(), default));
+        Assert.Equal(0, await new OutboxStore(context).MarkPublishedAsync(stale, "a", default));
+        Assert.Equal(1, await new OutboxStore(context).MarkPublishedAsync(current, "b", default));
     }
 
     [Fact]
@@ -185,7 +192,7 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         var first = Assert.Single(await ClaimAsync("crashed", 1));
         var receiver = new RecordingDispatcher();
         await receiver.DispatchAsync(System.Text.Json.JsonSerializer.Deserialize<TransferCompletedIntegrationEvent>(first.Payload)!, default);
-        _clock.Advance(TimeSpan.FromSeconds(31));
+        await ExpireAllLeasesAsync();
         await DispatchAsync("restart", receiver);
         Assert.Equal(new[] { domainEvent.Id, domainEvent.Id }, receiver.Deliveries.Select(item => item.MessageId));
     }
@@ -196,7 +203,7 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         var (_, domainEvent) = await CompleteAsync(TransferType.InternalBank);
         var options = TestOptions(maxAttempts: 2);
         await DispatchAsync("one", new RecordingDispatcher { Failure = new IOException("poison") }, options);
-        _clock.Set((await ReadMessageAsync(domainEvent.Id)).NextAttemptAtUtc);
+        await MakeRetriesDueAsync();
         await DispatchAsync("two", new RecordingDispatcher { Failure = new IOException("poison") }, options);
         Assert.Equal(OutboxStatus.DeadLetter, (await ReadMessageAsync(domainEvent.Id)).Status);
         _clock.Advance(TimeSpan.FromDays(1));
@@ -301,14 +308,36 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
     {
         await using var context = CreateContext();
         var batch = new OutboxBatchDispatcher(new OutboxStore(context), dispatcher, Options.Create(options ?? TestOptions()),
-            _clock, NullLogger<OutboxBatchDispatcher>.Instance);
+            NullLogger<OutboxBatchDispatcher>.Instance);
         return await batch.DispatchBatchAsync(worker, default);
     }
 
     private async Task<IReadOnlyList<OutboxClaim>> ClaimAsync(string worker, int batchSize)
     {
         await using var context = CreateContext();
-        return await new OutboxStore(context).ClaimAsync(worker, batchSize, _clock.GetUtcNow(), TimeSpan.FromSeconds(30), default);
+        var claims = new List<OutboxClaim>();
+        for (var i = 0; i < batchSize; i++)
+        {
+            var claim = await new OutboxStore(context).ClaimOneAsync(worker, TimeSpan.FromSeconds(30), default);
+            if (claim is null) break;
+            claims.Add(claim);
+        }
+        return claims;
+    }
+
+    private Task ExpireAllLeasesAsync() => ExecuteSqlAsync(
+        "UPDATE transfer_management.outbox_messages SET \"LockedUntilUtc\" = CURRENT_TIMESTAMP - interval '1 second' WHERE \"LockedUntilUtc\" IS NOT NULL");
+
+    private Task MakeRetriesDueAsync() => ExecuteSqlAsync(
+        "UPDATE transfer_management.outbox_messages SET \"NextAttemptAtUtc\" = CURRENT_TIMESTAMP - interval '1 second' WHERE \"Status\" = 0");
+
+    private async Task ExecuteSqlAsync(string sql)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync();
     }
 
     private async Task<OutboxMessage> ReadMessageAsync(Guid id)

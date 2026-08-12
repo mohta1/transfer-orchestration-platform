@@ -170,9 +170,18 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                     b.Property<int>("Attempts")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("FirstFailureAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("LastError")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTimeOffset?>("LastFailureAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LockedBy")
                         .HasMaxLength(100)
@@ -221,6 +230,12 @@ namespace TransferOrchestration.TransferManagement.Infrastructure.Persistence.Mi
                             t.HasCheckConstraint("ck_outbox_attempts", "\"Attempts\" >= 0");
 
                             t.HasCheckConstraint("ck_outbox_dead_letter", "\"Status\" <> 2 OR (\"LockedBy\" IS NULL AND \"LockedUntilUtc\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_outbox_dead_letter_failure", "\"Status\" <> 2 OR \"FirstFailureAtUtc\" IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_outbox_failure_order", "\"FirstFailureAtUtc\" IS NULL OR \"FirstFailureAtUtc\" <= \"LastFailureAtUtc\"");
+
+                            t.HasCheckConstraint("ck_outbox_failure_pair", "(\"FirstFailureAtUtc\" IS NULL) = (\"LastFailureAtUtc\" IS NULL)");
 
                             t.HasCheckConstraint("ck_outbox_lock", "(\"LockedBy\" IS NULL) = (\"LockedUntilUtc\" IS NULL)");
 
