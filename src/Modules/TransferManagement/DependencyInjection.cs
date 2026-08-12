@@ -16,7 +16,9 @@ using TransferOrchestration.TransferManagement.Application.Reconciliation;
 using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 using TransferOrchestration.TransferManagement.Infrastructure.Reconciliation;
 using TransferOrchestration.TransferManagement.Application.ManualOperations;
+using TransferOrchestration.TransferManagement.Application.Queries;
 using TransferOrchestration.TransferManagement.Contracts.ManualOperations;
+using TransferOrchestration.TransferManagement.Contracts.Queries;
 
 namespace TransferOrchestration.TransferManagement;
 
@@ -54,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IReconciliationProcessStep, ReconciliationProcessStep>();
         services.AddScoped<IReconciliationDueWorkDispatcher, ReconciliationDueWorkDispatcher>();
         services.AddScoped<ITransferManualOperations, TransferManualOperationsService>();
+        services.AddScoped<ITransferQueries, TransferQueries>();
         services.AddHostedService<TransferProcessWorker>();
         services.AddHostedService<ReconciliationWorker>();
         services.AddScoped<IOutboxStore, OutboxStore>();
