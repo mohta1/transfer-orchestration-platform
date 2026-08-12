@@ -50,7 +50,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
     {
         await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
         var transferId = await SeedManualReviewTransferAsync(factory);
-        var operatorHeader = $"operator-{_operatorId:D}";
+        var operatorSubject = $"operator-{_operatorId:D}";
 
         using var client = factory.CreateClient();
         using var request = ManualRequest(
@@ -58,7 +58,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
             "manual-reject-1",
             new { Reason = "Customer confirmed cancellation" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
 
         var response = await client.SendAsync(request);
 
@@ -66,7 +66,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         await using var scope = factory.Services.CreateAsyncScope();
         var audit = await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>()
             .OperationsAuditRecords.AsNoTracking().SingleAsync();
-        Assert.Equal(operatorHeader, audit.ActorId);
+        Assert.Equal(operatorSubject, audit.ActorId);
         Assert.Equal("RejectFromManualReview", audit.Action);
         Assert.Equal(transferId, audit.TransferId);
         Assert.Equal("ManualReviewRequired", audit.PreviousState);
@@ -102,7 +102,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MissingOperatorIdentityIsRejectedWithoutAuditRecord()
+    public async Task UnauthenticatedManualCommandIsRejectedWithoutAuditRecord()
     {
         await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
         var transferId = await SeedManualReviewTransferAsync(factory);
@@ -119,7 +119,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
 
         var response = await client.SendAsync(request);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         await using var scope = factory.Services.CreateAsyncScope();
         Assert.Equal(0, await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>()
             .OperationsAuditRecords.CountAsync());
@@ -130,7 +130,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
     {
         await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
         var transferId = await SeedManualReviewTransferAsync(factory);
-        var operatorHeader = $"operator-{_operatorId:D}";
+        var operatorSubject = $"operator-{_operatorId:D}";
 
         using var client = factory.CreateClient();
         using var first = ManualRequest(
@@ -138,13 +138,13 @@ public sealed class ManualOperationsTests : IAsyncLifetime
             "manual-reject-replay",
             new { Reason = "Duplicate command test" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
         using var second = ManualRequest(
             transferId,
             "manual-reject-replay",
             new { Reason = "Duplicate command test" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
 
         Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(first)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(second)).StatusCode);
@@ -191,7 +191,8 @@ public sealed class ManualOperationsTests : IAsyncLifetime
     [Fact]
     public async Task StructuredLogsDoNotContainSensitiveValues()
     {
-        const string secretToken = "super-secret-bearer-token-12345";
+        var operatorSubject = $"operator-{_operatorId:D}";
+        var bearerToken = TestJwtTokenFactory.CreateOperatorToken(operatorSubject);
         const string accountNumber = "1234567890123456";
         var sink = new List<string>();
         await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock, sink);
@@ -203,14 +204,14 @@ public sealed class ManualOperationsTests : IAsyncLifetime
             "manual-reject-sensitive-log",
             new { Reason = $"Reviewed account {accountNumber}" },
             _correlationId,
-            $"operator-{_operatorId:D}");
-        request.Headers.Add("Authorization", $"Bearer {secretToken}");
+            operatorSubject);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
 
         var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var combined = string.Join('\n', sink);
-        Assert.DoesNotContain(secretToken, combined, StringComparison.Ordinal);
+        Assert.DoesNotContain(bearerToken, combined, StringComparison.Ordinal);
         Assert.DoesNotContain(accountNumber, combined, StringComparison.Ordinal);
     }
 
@@ -252,7 +253,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
     {
         await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
         var transferId = await SeedManualReviewTransferAsync(factory);
-        var operatorHeader = $"operator-{_operatorId:D}";
+        var operatorSubject = $"operator-{_operatorId:D}";
 
         using var client = factory.CreateClient();
         var first = ManualRequest(
@@ -260,13 +261,13 @@ public sealed class ManualOperationsTests : IAsyncLifetime
             "manual-reject-concurrent",
             new { Reason = "Concurrent duplicate test" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
         var second = ManualRequest(
             transferId,
             "manual-reject-concurrent",
             new { Reason = "Concurrent duplicate test" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
 
         var responses = await Task.WhenAll(
             client.SendAsync(first),
@@ -317,7 +318,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
     {
         await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
         var transferId = await SeedManualReviewTransferAsync(factory);
-        var operatorHeader = $"operator-{_operatorId:D}";
+        var operatorSubject = $"operator-{_operatorId:D}";
 
         using var client = factory.CreateClient();
         using var reject = ManualRequest(
@@ -325,7 +326,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
             "manual-reject-first",
             new { Reason = "First rejection" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
         Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(reject)).StatusCode);
 
         using var invalid = ManualRequest(
@@ -333,7 +334,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
             "manual-reject-second",
             new { Reason = "Second rejection should fail" },
             _correlationId,
-            operatorHeader);
+            operatorSubject);
         var response = await client.SendAsync(invalid);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
@@ -406,7 +407,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         string idempotencyKey,
         object body,
         Guid correlationId,
-        string operatorHeader,
+        string operatorSubject,
         bool confirmSettlement = false)
     {
         var path = confirmSettlement
@@ -418,7 +419,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         };
         request.Headers.Add("Idempotency-Key", idempotencyKey);
         request.Headers.Add("X-Correlation-ID", correlationId.ToString("D"));
-        request.Headers.Add("X-Operator-ID", operatorHeader);
+        request.AuthorizeAsOperator(operatorSubject);
         return request;
     }
 
@@ -458,6 +459,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseSetting("ConnectionStrings:Database", _connectionString);
+            TestSecurityDefaults.ConfigureWebHost(builder);
             builder.UseSetting("TransferManagement:Reconciliation:EscalationAttemptThreshold", "1");
             builder.UseSetting("TransferManagement:Reconciliation:RetryDelaySeconds", "5");
             builder.UseSetting("TransferManagement:Reconciliation:BatchSize", "20");

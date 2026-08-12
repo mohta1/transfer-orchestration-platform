@@ -5,6 +5,8 @@ using TransferOrchestration.AuditOperations.Contracts;
 using TransferOrchestration.BuildingBlocks.Api;
 using TransferOrchestration.TransferManagement.Contracts.ManualOperations;
 
+using TransferOrchestration.BuildingBlocks.Security;
+
 namespace TransferOrchestration.AuditOperations.Api;
 
 public static class ManualOperationsEndpoints
@@ -12,7 +14,8 @@ public static class ManualOperationsEndpoints
     public static IEndpointRouteBuilder MapManualOperationsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        var group = endpoints.MapGroup("/api/transfers/{transferId:guid}/manual");
+        var group = endpoints.MapGroup("/api/transfers/{transferId:guid}/manual")
+            .RequireAuthorization(AuthorizationPolicies.Operator);
         group.MapPost("/reject", RejectAsync);
         group.MapPost("/confirm-settlement", ConfirmSettlementAsync);
         return endpoints;
@@ -102,9 +105,9 @@ public static class ManualOperationsEndpoints
 
         if (string.IsNullOrWhiteSpace(operatorContext.OperatorId))
         {
-            return ApiProblemResults.BadRequest(
-                "operator_id_required",
-                "X-Operator-ID must contain one non-blank operator identity.");
+            return ApiProblemResults.Forbidden(
+                "operator_identity_missing",
+                "Operator identity is required for manual operations.");
         }
 
         return null;

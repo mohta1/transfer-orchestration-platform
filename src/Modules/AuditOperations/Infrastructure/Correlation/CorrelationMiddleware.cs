@@ -36,13 +36,6 @@ internal sealed class CorrelationMiddleware(
             correlationContext.SetCausationId(causationId);
         }
 
-        if (httpContext.Request.Headers.TryGetValue("X-Operator-ID", out var operatorValues)
-            && operatorValues.Count == 1
-            && !string.IsNullOrWhiteSpace(operatorValues[0]))
-        {
-            operatorContext.SetOperatorId(operatorValues[0]!);
-        }
-
         var transferId = ResolveTransferId(httpContext);
         using (logger.BeginScope(new Dictionary<string, object?>
         {

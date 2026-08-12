@@ -53,7 +53,12 @@ public sealed class TransferSubmissionApiTests
     {
         await using var factory = await SubmissionFactory.CreateAsync();
         using var client = factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/transfers", Payload());
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/transfers")
+        {
+            Content = JsonContent.Create(Payload())
+        };
+        request.AuthorizeAsCustomer(Source);
+        var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(0, await factory.TransferCountAsync());
     }
@@ -275,6 +280,7 @@ public sealed class TransferSubmissionApiTests
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/transfers") { Content = JsonContent.Create(payload) };
         request.Headers.Add("Idempotency-Key", key);
+        request.AuthorizeAsCustomer(Source);
         if (correlation is not null) request.Headers.Add("X-Correlation-ID", correlation.Value.ToString("D"));
         return request;
     }
@@ -324,6 +330,7 @@ public sealed class TransferSubmissionApiTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseSetting("ConnectionStrings:Database", _connectionString);
+            TestSecurityDefaults.ConfigureWebHost(builder);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<ICustomerAuthorization>();

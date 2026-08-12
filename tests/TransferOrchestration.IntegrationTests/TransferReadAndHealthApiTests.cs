@@ -39,8 +39,7 @@ public sealed class TransferReadAndHealthApiTests
         var submitBody = await submitResponse.Content.ReadFromJsonAsync<SubmissionResponse>();
         Assert.NotNull(submitBody?.TransferId);
 
-        using var getRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/transfers/{submitBody.TransferId:D}");
-        getRequest.Headers.Add("X-Correlation-ID", correlation.ToString("D"));
+        using var getRequest = GetTransferRequest(submitBody.TransferId.Value, correlation);
         var getResponse = await client.SendAsync(getRequest);
 
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
@@ -64,7 +63,8 @@ public sealed class TransferReadAndHealthApiTests
     {
         await using var factory = await ApiFactory.CreateAsync();
         using var client = factory.CreateClient();
-        var response = await client.GetAsync($"/api/transfers/{Guid.NewGuid():D}");
+        using var request = GetTransferRequest(Guid.NewGuid());
+        var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await AssertProblemDetails(response, "transfer_not_found", HttpStatusCode.NotFound);
     }
@@ -194,6 +194,19 @@ public sealed class TransferReadAndHealthApiTests
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/transfers") { Content = JsonContent.Create(payload) };
         request.Headers.Add("Idempotency-Key", key);
+        request.AuthorizeAsCustomer(Source);
+        if (correlation is not null)
+        {
+            request.Headers.Add("X-Correlation-ID", correlation.Value.ToString("D"));
+        }
+
+        return request;
+    }
+
+    private static HttpRequestMessage GetTransferRequest(Guid transferId, Guid? correlation = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/transfers/{transferId:D}");
+        request.AuthorizeAsCustomer(Source);
         if (correlation is not null)
         {
             request.Headers.Add("X-Correlation-ID", correlation.Value.ToString("D"));
@@ -273,6 +286,7 @@ public sealed class TransferReadAndHealthApiTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseSetting("ConnectionStrings:Database", _connectionString);
+            TestSecurityDefaults.ConfigureWebHost(builder);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<ICustomerAuthorization>();
