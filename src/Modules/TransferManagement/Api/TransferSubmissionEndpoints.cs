@@ -5,6 +5,8 @@ using TransferOrchestration.AuditOperations.Contracts;
 using TransferOrchestration.BuildingBlocks.Api;
 using TransferOrchestration.TransferManagement.Application.Submission;
 
+using TransferOrchestration.BuildingBlocks.Security;
+
 namespace TransferOrchestration.TransferManagement.Api;
 
 public static class TransferSubmissionEndpoints
@@ -12,7 +14,8 @@ public static class TransferSubmissionEndpoints
     public static IEndpointRouteBuilder MapTransferSubmissionEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        endpoints.MapPost("/api/transfers", SubmitAsync);
+        endpoints.MapPost("/api/transfers", SubmitAsync)
+            .RequireAuthorization(AuthorizationPolicies.Customer);
         return endpoints;
     }
 

@@ -62,7 +62,7 @@ public static class DependencyInjection
         services.AddScoped<IOutboxStore, OutboxStore>();
         services.AddScoped<OutboxBatchDispatcher>();
         services.AddHostedService<OutboxWorker>();
-        services.AddScoped<ICustomerAuthorization, AllowCustomerAuthorization>();
+        services.AddScoped<ICustomerAuthorization, AuthenticatedCustomerAuthorization>();
         services.AddScoped<IDailyTransferLimit, ConfiguredDailyTransferLimit>();
         services.AddScoped<IFraudScreening, AllowFraudScreening>();
         services.AddSingleton(TimeProvider.System);

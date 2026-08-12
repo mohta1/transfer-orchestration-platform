@@ -4,6 +4,7 @@ using TransferOrchestration.AuditOperations;
 using TransferOrchestration.AuditOperations.Api;
 using TransferOrchestration.AuditOperations.Infrastructure;
 using TransferOrchestration.Api.Infrastructure;
+using TransferOrchestration.Api.Infrastructure.Security;
 using TransferOrchestration.PaymentNetwork;
 using TransferOrchestration.TransferManagement;
 using TransferOrchestration.TransferManagement.Api;
@@ -23,6 +24,8 @@ builder.Services
     .AddPaymentNetworkModule()
     .AddAuditOperationsModule(connectionString);
 
+builder.Services.AddApiSecurity(builder.Configuration);
+
 builder.Services
     .AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy("Application process is running."), tags: ["live"])
@@ -32,6 +35,9 @@ var app = builder.Build();
 
 app.UseSafeExceptionHandling();
 app.UseCorrelationContext();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseOperatorIdentity();
 
 app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

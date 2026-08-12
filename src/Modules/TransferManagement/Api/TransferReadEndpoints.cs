@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Routing;
 using TransferOrchestration.BuildingBlocks.Api;
 using TransferOrchestration.TransferManagement.Contracts.Queries;
 
+using TransferOrchestration.BuildingBlocks.Security;
+
 namespace TransferOrchestration.TransferManagement.Api;
 
 public static class TransferReadEndpoints
@@ -11,17 +13,19 @@ public static class TransferReadEndpoints
     public static IEndpointRouteBuilder MapTransferReadEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        endpoints.MapGet("/api/transfers/{transferId:guid}", GetByIdAsync);
+        endpoints.MapGet("/api/transfers/{transferId:guid}", GetByIdAsync)
+            .RequireAuthorization(AuthorizationPolicies.Customer);
         return endpoints;
     }
 
     private static async Task<IResult> GetByIdAsync(
         Guid transferId,
         ITransferQueries queries,
+        ICallerIdentity callerIdentity,
         CancellationToken cancellationToken)
     {
         var transfer = await queries.GetByIdAsync(transferId, cancellationToken);
-        if (transfer is null)
+        if (transfer is null || callerIdentity.AccountId != transfer.SourceAccountId)
         {
             return ApiProblemResults.NotFound(
                 "transfer_not_found",
