@@ -96,7 +96,7 @@ This task is **DONE only when all of the following are true**:
 
 ## 10. Evidence to Capture Before Moving On
 
-- CI run summary/link: https://github.com/mohta1/transfer-orchestration-platform/actions/runs/31643000229 (workflow `CI`, head SHA `892796f04d3db45fb491613a1efdf9a5a6d1ae29`, jobs `Build and Test` and `Runtime Verification` passed).
+- CI run summary/link: https://github.com/mohta1/transfer-orchestration-platform/actions/runs/31643633864 (workflow `CI`, head SHA `2c1bb6006acb0b8b9a7ceab71214cb9639bc6125`, jobs `Build and Test` and `Runtime Verification` passed).
 - docker compose ps: captured by `scripts/verify-compose-runtime.ps1` (postgres healthy, api running, migrate exited 0).
 - Health/readiness output: liveness HTTP 200 `{"status":"Healthy",...}`; readiness HTTP 200 with PostgreSQL healthy; readiness HTTP 503 when PostgreSQL stopped; recovery HTTP 200 after restart.
 - Clean build/test summary: SDK 8.0.412; 0 warnings / 0 errors; 240 tests passed (51 domain, 12 architecture, 177 integration with real PostgreSQL).
