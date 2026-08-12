@@ -104,4 +104,4 @@ jobs:
           echo "Runtime image content inspection passed."
 
       - name: Verify Compose runtime
-        run: ./scripts/verify-compose-runtime.sh
+        run: bash scripts/verify-compose-runtime.sh
