@@ -158,7 +158,7 @@ Captured on 2026-08-12 against PostgreSQL through `TEST_DATABASE_CONNECTION_STRI
 
 #### Negative architecture proof
 
-1. **Temporary violation:** Added `src/Modules/TransferManagement/ArchitectureNegativeProofFixture.cs` referencing `AccountBalanceDbContext`.
+1. **Temporary violation:** Added `src/Modules/TransferManagement/ArchitectureNegativeProofFixture.cs` with a primary constructor parameter of type `AccountBalanceDbContext` (must compile under TreatWarningsAsErrors — unused fields/parameters fail the build).
 2. **Focused command:** `dotnet test tests/TransferOrchestration.ArchitectureTests/TransferOrchestration.ArchitectureTests.csproj --filter "FullyQualifiedName~TransferManagementAccountBalanceInfrastructureTests" --verbosity normal`
 3. **Expected failure:** `TransferOrchestration.TransferManagement.ArchitectureNegativeProofFixture must not reference TransferOrchestration.AccountBalance.Infrastructure.Persistence.AccountBalanceDbContext.`
 4. **Reverted:** Temporary file deleted; `git status` clean of forbidden dependency.
@@ -180,6 +180,8 @@ PostgreSQL integration suite repeated in fresh processes: **177 passed, 0 failed
 #### TASK-15 code changes
 
 - Added architecture enforcement tests under `tests/TransferOrchestration.ArchitectureTests/` (`ArchitectureTestHelpers`, `DomainLayerDependencyTests`, `NotificationBoundaryTests`, `BuildingBlocksDependencyTests`, `ApiCompositionRootTests`, `TransferManagementAccountBalanceInfrastructureTests`).
+- Fixed `ApiCompositionRootTests` for Linux CI by resolving repository paths with `Path.Combine` segments and normalizing backslash `ProjectReference` include paths before extracting the project filename.
+- Consolidated duplicate signature-scan helpers in `AccountBalanceBoundaryTests` and `PaymentNetworkBoundaryTests` onto `ArchitectureTestHelpers`.
 - No production-code blocker fixes were required; behavioral coverage from TASK-01 through TASK-14 was already sufficient.
 
 #### Self-review findings

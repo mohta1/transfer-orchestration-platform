@@ -61,4 +61,33 @@ internal static class ArchitectureTestHelpers
 
     internal static string FormatViolation(Type source, Type forbidden) =>
         $"{source.FullName} must not reference {forbidden.FullName}.";
+
+    internal static string GetProjectReferenceFileName(string? includePath)
+    {
+        if (string.IsNullOrWhiteSpace(includePath))
+        {
+            return string.Empty;
+        }
+
+        var normalized = includePath.Replace('\\', Path.DirectorySeparatorChar);
+        return Path.GetFileName(normalized);
+    }
+
+    internal static string FindRepositoryFile(params string[] relativePathSegments)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var candidate = Path.Combine([directory.FullName, .. relativePathSegments]);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException(
+            $"Could not locate repository file '{Path.Combine(relativePathSegments)}'.");
+    }
 }
