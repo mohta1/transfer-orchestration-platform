@@ -18,7 +18,7 @@ public sealed class ApiCompositionRootTests
     [Fact]
     public void ApiProjectReferencesEveryModuleProject()
     {
-        var apiProjectPath = FindRepositoryFile(@"src\TransferOrchestration.Api\TransferOrchestration.Api.csproj");
+        var apiProjectPath = FindRepositoryFile("src", "TransferOrchestration.Api", "TransferOrchestration.Api.csproj");
         var projectReferences = XDocument.Load(apiProjectPath)
             .Descendants("ProjectReference")
             .Select(element => Path.GetFileName(element.Attribute("Include")?.Value ?? string.Empty))
@@ -52,16 +52,17 @@ public sealed class ApiCompositionRootTests
         Assert.True(violations.Count == 0, string.Join(Environment.NewLine, violations));
     }
 
-    private static string FindRepositoryFile(string relativePath)
+    private static string FindRepositoryFile(params string[] relativePathSegments)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, relativePath);
+            var candidate = Path.Combine([directory.FullName, .. relativePathSegments]);
             if (File.Exists(candidate)) return candidate;
             directory = directory.Parent;
         }
 
-        throw new InvalidOperationException($"Could not locate repository file '{relativePath}'.");
+        throw new InvalidOperationException(
+            $"Could not locate repository file '{Path.Combine(relativePathSegments)}'.");
     }
 }
