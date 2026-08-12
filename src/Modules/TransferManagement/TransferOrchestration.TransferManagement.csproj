@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\BuildingBlocks\TransferOrchestration.BuildingBlocks\TransferOrchestration.BuildingBlocks.csproj" />
     <ProjectReference Include="..\AccountBalance\TransferOrchestration.AccountBalance.csproj" />
+    <ProjectReference Include="..\AuditOperations\TransferOrchestration.AuditOperations.Contracts\TransferOrchestration.AuditOperations.Contracts.csproj" />
     <ProjectReference Include="..\PaymentNetwork\TransferOrchestration.PaymentNetwork.csproj" />
   </ItemGroup>
 

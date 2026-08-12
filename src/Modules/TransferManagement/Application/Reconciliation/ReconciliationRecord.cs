@@ -114,6 +114,23 @@ internal sealed class ReconciliationRecord
         Touch(nowUtc);
     }
 
+    public void CloseFromManualReview(DateTimeOffset nowUtc, string resolution)
+    {
+        if (Status != ReconciliationStatus.ManualReviewRequired)
+        {
+            throw new DomainException("Only manual-review reconciliation records can be closed manually.");
+        }
+
+        EnsureUpdateTime(nowUtc);
+        Status = ReconciliationStatus.Closed;
+        LastAttemptAtUtc = nowUtc;
+        LastEnquiryResult = resolution;
+        LastError = null;
+        NextAttemptAtUtc = null;
+        ReleaseClaim(nowUtc);
+        Touch(nowUtc);
+    }
+
     public void RecordEnquiryFailure(DateTimeOffset nextAttemptAtUtc, string error, DateTimeOffset nowUtc)
     {
         EnsureActive();

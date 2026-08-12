@@ -205,6 +205,42 @@ public sealed class TransferTests
         return transfer;
     }
 
+    [Fact]
+    public void ManualReviewRequiredCanBeRejectedManually()
+    {
+        var transfer = CreateDomesticTransferReadyForExternalSubmission();
+        transfer.BeginExternalSubmission(Now.AddSeconds(7));
+        transfer.MarkSubmissionStatusUnknown(Now.AddSeconds(8));
+        transfer.RequireManualReview(Now.AddSeconds(9));
+
+        transfer.RejectManually(Now.AddSeconds(10));
+
+        Assert.Equal(TransferState.Rejected, transfer.State);
+    }
+
+    [Fact]
+    public void ManualReviewRequiredCanBeConfirmedSettledManually()
+    {
+        var transfer = CreateDomesticTransferReadyForExternalSubmission();
+        transfer.BeginExternalSubmission(Now.AddSeconds(7));
+        transfer.MarkSubmissionStatusUnknown(Now.AddSeconds(8));
+        transfer.RequireManualReview(Now.AddSeconds(9));
+
+        transfer.ConfirmSettlementManually(Now.AddSeconds(10));
+
+        Assert.Equal(TransferState.Completed, transfer.State);
+        Assert.Contains(transfer.DomainEvents, item => item is TransferCompletedDomainEvent);
+    }
+
+    [Fact]
+    public void RejectManuallyFromInvalidStateThrowsDomainException()
+    {
+        var transfer = CreateTransfer();
+        transfer.Submit(Now.AddSeconds(1));
+
+        Assert.Throws<DomainException>(() => transfer.RejectManually(Now.AddSeconds(2)));
+    }
+
     private static Transfer CreateTransfer(decimal amount = 100m)
     {
         return Transfer.Create(

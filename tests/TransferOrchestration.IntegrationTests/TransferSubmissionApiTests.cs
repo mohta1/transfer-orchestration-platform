@@ -11,6 +11,7 @@ using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
+using TransferOrchestration.AuditOperations.Infrastructure.Persistence;
 
 namespace TransferOrchestration.IntegrationTests;
 
@@ -305,12 +306,13 @@ public sealed class TransferSubmissionApiTests
             await using var connection = new NpgsqlConnection(connectionString);
             await connection.OpenAsync();
             await using var command = connection.CreateCommand();
-            command.CommandText = "DROP SCHEMA IF EXISTS transfer_management CASCADE; DROP SCHEMA IF EXISTS account_balance CASCADE;";
+            command.CommandText = "DROP SCHEMA IF EXISTS audit_operations CASCADE; DROP SCHEMA IF EXISTS transfer_management CASCADE; DROP SCHEMA IF EXISTS account_balance CASCADE;";
             await command.ExecuteNonQueryAsync();
             var factory = new SubmissionFactory(connectionString, authorization, dailyLimit, fraud, throwAuthorization, useConfiguredDailyLimit);
             _ = factory.Services;
             await using var scope = factory.Services.CreateAsyncScope();
             await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>().Database.MigrateAsync();
+            await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>().Database.MigrateAsync();
             return factory;
         }
 

@@ -96,6 +96,21 @@ public sealed class TransferProcessStateTests
     }
 
     [Fact]
+    public void CompletedProcessCanAdoptManualOperationCorrelation()
+    {
+        var originalCorrelationId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var manualCorrelationId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var state = TransferProcessState.Create(TransferId.New(), originalCorrelationId, Now);
+        state.Complete(Now.AddMinutes(1));
+
+        state.AdoptCorrelation(manualCorrelationId, Now.AddMinutes(2));
+
+        Assert.Equal(manualCorrelationId, state.CorrelationId);
+        Assert.Equal(TransferProcessStatus.Completed, state.Status);
+        Assert.Equal(2, state.Version);
+    }
+
+    [Fact]
     public void PreparingSubmissionPersistsImmutableReferenceAndFencesSubmitAction()
     {
         var state = TransferProcessState.Create(TransferId.New(), Guid.NewGuid(), Now);

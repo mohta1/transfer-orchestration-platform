@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using TransferOrchestration.AuditOperations.Contracts;
 using TransferOrchestration.TransferManagement.Application.Submission;
 
 namespace TransferOrchestration.TransferManagement.Api;
@@ -18,6 +19,7 @@ public static class TransferSubmissionEndpoints
         TransferSubmissionHttpRequest request,
         HttpContext httpContext,
         ITransferSubmissionService service,
+        ICorrelationContext correlationContext,
         CancellationToken cancellationToken)
     {
         if (!httpContext.Request.Headers.TryGetValue("Idempotency-Key", out var values)
@@ -28,20 +30,20 @@ public static class TransferSubmissionEndpoints
             return Results.BadRequest(new ErrorResponse("Idempotency-Key must contain one non-blank value of at most 200 characters."));
         }
 
-        Guid correlationId;
         if (httpContext.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationValues))
         {
             if (correlationValues.Count != 1
-                || !Guid.TryParse(correlationValues[0], out correlationId)
-                || correlationId == Guid.Empty)
+                || !Guid.TryParse(correlationValues[0], out var suppliedCorrelationId)
+                || suppliedCorrelationId == Guid.Empty)
             {
                 return Results.BadRequest(new ErrorResponse("X-Correlation-ID must be a non-empty GUID."));
             }
+
+            correlationContext.SetCorrelationId(suppliedCorrelationId);
         }
-        else
-        {
-            correlationId = Guid.NewGuid();
-        }
+
+        var correlationId = correlationContext.CorrelationId;
+        httpContext.Response.Headers["X-Correlation-ID"] = correlationId.ToString("D");
 
         var result = await service.SubmitAsync(
             new SubmitTransferCommand(
@@ -53,8 +55,6 @@ public static class TransferSubmissionEndpoints
                 values[0]!,
                 correlationId),
             cancellationToken);
-
-        httpContext.Response.Headers["X-Correlation-ID"] = correlationId.ToString("D");
 
         var response = new TransferSubmissionHttpResponse(
             result.TransferId,

@@ -1,4 +1,7 @@
 using TransferOrchestration.AccountBalance;
+using TransferOrchestration.AuditOperations;
+using TransferOrchestration.AuditOperations.Api;
+using TransferOrchestration.AuditOperations.Infrastructure;
 using TransferOrchestration.PaymentNetwork;
 using TransferOrchestration.TransferManagement;
 using TransferOrchestration.TransferManagement.Api;
@@ -15,15 +18,19 @@ builder.Services
     .AddTransferManagementModule(connectionString, builder.Configuration)
     .AddNotificationModule(connectionString, builder.Configuration)
     .AddAccountBalanceModule(connectionString)
-    .AddPaymentNetworkModule();
+    .AddPaymentNetworkModule()
+    .AddAuditOperationsModule(connectionString);
 
 var app = builder.Build();
+
+app.UseCorrelationContext();
 
 app.MapGet("/health", () => Results.Ok(new
 {
     Status = "Healthy"
 }));
 app.MapTransferSubmissionEndpoints();
+app.MapManualOperationsEndpoints();
 
 app.Run();
 
