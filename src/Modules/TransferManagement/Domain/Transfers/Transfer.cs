@@ -288,6 +288,25 @@ internal sealed class Transfer : AggregateRoot<TransferId>
             nowUtc);
     }
 
+    public void RejectManually(DateTimeOffset nowUtc)
+    {
+        Transition(
+            TransferState.ManualReviewRequired,
+            TransferState.Rejected,
+            nowUtc);
+    }
+
+    public void ConfirmSettlementManually(DateTimeOffset nowUtc)
+    {
+        Transition(
+            TransferState.ManualReviewRequired,
+            TransferState.Completed,
+            nowUtc);
+
+        RaiseDomainEvent(
+            new TransferCompletedDomainEvent(Id, nowUtc));
+    }
+
     private void Transition(
         TransferState expectedState,
         TransferState targetState,

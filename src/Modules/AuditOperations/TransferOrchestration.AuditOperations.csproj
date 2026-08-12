@@ -2,6 +2,20 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\BuildingBlocks\TransferOrchestration.BuildingBlocks\TransferOrchestration.BuildingBlocks.csproj" />
+    <ProjectReference Include="TransferOrchestration.AuditOperations.Contracts\TransferOrchestration.AuditOperations.Contracts.csproj" />
+    <ProjectReference Include="..\TransferManagement\TransferOrchestration.TransferManagement.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -9,5 +23,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="TransferOrchestration.AuditOperations.Contracts/**" />
+  </ItemGroup>
 
 </Project>
