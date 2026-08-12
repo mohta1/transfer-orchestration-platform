@@ -2,7 +2,7 @@
 
 **Status:** TASK-18 final audit complete (branch/PR verification)
 **Baseline main SHA:** `6d5309f649a90fcc63e33849a8936993c0c17b06` (TASK-17 merged)
-**TASK-18 branch SHA:** pending commit (see PR)
+**TASK-18 branch SHA:** `f415b220924d2ba9a1db8e2b670f8405434ddb7c`
 **Last verified:** 2026-08-13 (TASK-18 local PostgreSQL + Docker Compose + clean-room clone)
 
 This matrix maps mandatory challenge evidence to **verified** implementation, test, and documentation paths. Status meanings:
