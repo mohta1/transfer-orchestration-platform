@@ -70,6 +70,25 @@ public sealed class TransferReadAndHealthApiTests
     }
 
     [Fact]
+    public async Task GetTransferOwnedByAnotherCustomerReturnsNotFound()
+    {
+        var otherCustomerAccount = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        await using var factory = await ApiFactory.CreateAsync();
+        using var client = factory.CreateClient();
+        using var submit = SubmitRequest("read-other-customer", Payload());
+        var submitResponse = await client.SendAsync(submit);
+        Assert.Equal(HttpStatusCode.Accepted, submitResponse.StatusCode);
+        var submitBody = await submitResponse.Content.ReadFromJsonAsync<SubmissionResponse>();
+        Assert.NotNull(submitBody?.TransferId);
+
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/transfers/{submitBody.TransferId:D}");
+        getRequest.AuthorizeAsCustomer(otherCustomerAccount);
+        var getResponse = await client.SendAsync(getRequest);
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+        await AssertProblemDetails(getResponse, "transfer_not_found", HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task InvalidPostReturnsBadRequestProblemDetails()
     {
         await using var factory = await ApiFactory.CreateAsync();

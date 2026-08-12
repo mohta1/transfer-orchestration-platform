@@ -30,6 +30,7 @@ public sealed class SecurityBoundaryTests
 
     private static readonly Guid Source = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Destination = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid OtherCustomerAccount = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
     private static readonly MutableTimeProvider Clock =
         new(new DateTimeOffset(2026, 8, 12, 14, 0, 0, TimeSpan.Zero));
@@ -56,6 +57,51 @@ public sealed class SecurityBoundaryTests
         var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.Equal(1, await factory.TransferCountAsync());
+    }
+
+    [Fact]
+    public async Task PostTransferWrongAccountForbidden()
+    {
+        await using var factory = await SecurityFactory.CreateAsync();
+        using var client = factory.CreateClient();
+        using var request = SubmitRequest("wrong-account", Payload());
+        request.AuthorizeAsCustomer(OtherCustomerAccount);
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        await AssertProblemDetails(response, "authorization_rejected", HttpStatusCode.Forbidden);
+        await factory.AssertSingleTransferStateAsync(TransferState.Rejected);
+    }
+
+    [Fact]
+    public async Task PostTransferMissingAccountClaimForbidden()
+    {
+        await using var factory = await SecurityFactory.CreateAsync();
+        using var client = factory.CreateClient();
+        using var request = SubmitRequest("missing-account-claim", Payload());
+        request.AuthorizeAsCustomerWithoutAccountClaim();
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        await AssertProblemDetails(response, "authorization_rejected", HttpStatusCode.Forbidden);
+        await factory.AssertSingleTransferStateAsync(TransferState.Rejected);
+    }
+
+    [Fact]
+    public async Task GetTransferCrossCustomerReturnsNotFound()
+    {
+        await using var factory = await SecurityFactory.CreateAsync();
+        using var client = factory.CreateClient();
+        using var submit = SubmitRequest("read-cross-customer", Payload());
+        submit.AuthorizeAsCustomer(Source);
+        var submitResponse = await client.SendAsync(submit);
+        Assert.Equal(HttpStatusCode.Accepted, submitResponse.StatusCode);
+        var submitBody = await submitResponse.Content.ReadFromJsonAsync<SubmissionResponse>();
+        Assert.NotNull(submitBody?.TransferId);
+
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/transfers/{submitBody.TransferId:D}");
+        getRequest.AuthorizeAsCustomer(OtherCustomerAccount);
+        var getResponse = await client.SendAsync(getRequest);
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+        await AssertProblemDetails(getResponse, "transfer_not_found", HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -264,6 +310,8 @@ public sealed class SecurityBoundaryTests
             }
         };
 
+    private sealed record SubmissionResponse(Guid? TransferId);
+
     private static async Task AssertProblemDetails(
         HttpResponseMessage response,
         string expectedCode,
@@ -318,10 +366,8 @@ public sealed class SecurityBoundaryTests
                     StatusResult = PaymentStatusResult.Unknown
                 }));
                 services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Clock));
-                services.RemoveAll<ICustomerAuthorization>();
                 services.RemoveAll<IDailyTransferLimit>();
                 services.RemoveAll<IFraudScreening>();
-                services.AddSingleton<ICustomerAuthorization>(new AllowAllCustomerAuthorization());
                 services.AddSingleton<IDailyTransferLimit>(new AllowAllDailyLimit());
                 services.AddSingleton<IFraudScreening>(new AllowAllFraud());
                 if (_logSink is not null)
@@ -371,6 +417,14 @@ public sealed class SecurityBoundaryTests
             return await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>().Transfers.CountAsync();
         }
 
+        public async Task AssertSingleTransferStateAsync(TransferState expectedState)
+        {
+            await using var scope = Services.CreateAsyncScope();
+            var transfer = await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>()
+                .Transfers.AsNoTracking().SingleAsync();
+            Assert.Equal(expectedState, transfer.State);
+        }
+
         public async Task<int> AuditCountAsync()
         {
             await using var scope = Services.CreateAsyncScope();
@@ -386,12 +440,6 @@ public sealed class SecurityBoundaryTests
                 "DROP SCHEMA IF EXISTS audit_operations CASCADE; DROP SCHEMA IF EXISTS transfer_management CASCADE; DROP SCHEMA IF EXISTS account_balance CASCADE;";
             await command.ExecuteNonQueryAsync();
         }
-    }
-
-    private sealed class AllowAllCustomerAuthorization : ICustomerAuthorization
-    {
-        public Task<DecisionOutcome> IsAuthorizedAsync(Guid sourceAccountId, CancellationToken cancellationToken) =>
-            Task.FromResult(DecisionOutcome.Approved);
     }
 
     private sealed class AllowAllDailyLimit : IDailyTransferLimit

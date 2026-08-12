@@ -21,10 +21,11 @@ public static class TransferReadEndpoints
     private static async Task<IResult> GetByIdAsync(
         Guid transferId,
         ITransferQueries queries,
+        ICallerIdentity callerIdentity,
         CancellationToken cancellationToken)
     {
         var transfer = await queries.GetByIdAsync(transferId, cancellationToken);
-        if (transfer is null)
+        if (transfer is null || callerIdentity.AccountId != transfer.SourceAccountId)
         {
             return ApiProblemResults.NotFound(
                 "transfer_not_found",

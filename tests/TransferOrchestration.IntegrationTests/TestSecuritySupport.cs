@@ -86,6 +86,12 @@ internal static class TestJwtTokenFactory
         return TokenHandler.WriteToken(token);
     }
 
+    public static string CreateCustomerTokenWithoutAccountClaim(string subject = "customer-test") =>
+        CreateToken(
+            subject,
+            [new Claim(ClaimTypes.Role, SecurityClaimTypes.CustomerRole)],
+            DateTimeOffset.UtcNow.AddMinutes(15));
+
     public static string CreateMalformedToken() => "not-a-valid-jwt-token";
 
     private static string CreateToken(
@@ -120,4 +126,11 @@ internal static class TestHttpAuthorization
         request.Headers.Authorization = new AuthenticationHeaderValue(
             "Bearer",
             TestJwtTokenFactory.CreateOperatorToken(subject));
+
+    public static void AuthorizeAsCustomerWithoutAccountClaim(
+        this HttpRequestMessage request,
+        string subject = "customer-without-account") =>
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtTokenFactory.CreateCustomerTokenWithoutAccountClaim(subject));
 }
