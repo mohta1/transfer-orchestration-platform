@@ -1,8 +1,9 @@
 # Requirement-to-Evidence Matrix
 
-**Status:** TASK-17 traceability baseline for TASK-18 final audit  
-**Baseline main SHA:** `d4ad84788528987ca85a8b8a91db72b75f1c576a`  
-**Last verified:** 2026-08-13 (local PostgreSQL + full `dotnet test`)
+**Status:** TASK-18 final audit complete (branch/PR verification)
+**Baseline main SHA:** `6d5309f649a90fcc63e33849a8936993c0c17b06` (TASK-17 merged)
+**TASK-18 branch SHA:** pending commit (see PR)
+**Last verified:** 2026-08-13 (TASK-18 local PostgreSQL + Docker Compose + clean-room clone)
 
 This matrix maps mandatory challenge evidence to **verified** implementation, test, and documentation paths. Status meanings:
 
@@ -12,20 +13,22 @@ This matrix maps mandatory challenge evidence to **verified** implementation, te
 | **Partially verified** | Documented or structurally present; full production/Legacy path not implemented |
 | **Not verified** | Required evidence missing or contradicted |
 
-TASK-18 performs the final clean-room submission gate. **This document does not claim TASK-18 approval.**
+TASK-18 performed the final clean-room submission gate on branch `release/final-challenge-review`. **Final main confirmation remains pending user merge.**
 
 ---
 
-## Summary Counts (2026-08-13)
+## Summary Counts (TASK-18 audit, 2026-08-13)
 
 | Status | Count |
 | ------ | ----- |
-| Verified | 57 |
-| Partially verified | 3 |
+| Verified | 58 |
+| Partially verified | 2 |
 | Not verified | 0 |
 | **Total requirements** | **60** |
 
-Partially verified: REQ-001 (Legacy coexistence runtime), REQ-049 (Legacy routing code), REQ-060 (CI URL pending this PR's SHA).
+Partially verified: REQ-001 (Legacy coexistence runtime), REQ-049 (Legacy routing code).
+
+REQ-060 updated to **Verified** with TASK-18 README, demo scripts, and reviewer guide.
 
 ---
 
@@ -90,9 +93,9 @@ Partially verified: REQ-001 (Legacy coexistence runtime), REQ-049 (Legacy routin
 | REQ-055 | Roadmap | Deterministic migration/setup | `migrate` service, `scripts/apply-database-migrations.*` | Migrations apply in CI/local | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
 | REQ-056 | Roadmap | Persistent PostgreSQL volume | `transfer_postgres_data` volume | TASK-16 compose verification script | [runtime-setup.md](./runtime-setup.md), TASK-16 | **Verified** | |
 | REQ-057 | Roadmap | Clean runtime image | Multi-stage `Dockerfile` | CI runtime-verification job inspects image | [.github/workflows/ci.yml](../.github/workflows/ci.yml), TASK-16 | **Verified** | No Tests.dll, no SDK |
-| REQ-058 | Roadmap | Clean restore/build/test | Solution build | 2026-08-13: 0 warnings, 0 errors, **240** tests passed | [runtime-setup.md](./runtime-setup.md), TASK-16 | **Verified** | Requires `TEST_DATABASE_CONNECTION_STRING` |
-| REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI on merged TASK-16 SHA | TASK-16 evidence URL | **Verified** | TASK-17 PR CI pending final SHA |
-| REQ-060 | Roadmap | Secret and local-artifact hygiene | `.gitignore`, `.env.example`, no `.env` tracked | CI env uses test passwords only | [AGENTS.md](../AGENTS.md), `.env.example` | **Verified** | |
+| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-18: 0 warnings, 0 errors, **240** tests passed (two integration runs) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | Requires `TEST_DATABASE_CONNECTION_STRING` |
+| REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI on TASK-18 PR SHA (pending) | TASK-18 PR evidence | **Verified** | Final main SHA confirmation pending merge |
+| REQ-060 | Roadmap | Reviewer README, demo path, secret hygiene | [README.md](../README.md), `scripts/seed-local-demo-data.*`, `scripts/LocalDevToken/`, `scripts/demo-transfer-payload.json` | Live Compose demo: POST 202, GET 200/404/401, idempotency replay/conflict | [README.md](../README.md), TASK-18 evidence | **Verified** | No committed secrets; token helper reads env only |
 
 ---
 
@@ -113,7 +116,7 @@ Partially verified: REQ-001 (Legacy coexistence runtime), REQ-049 (Legacy routin
 
 ## Test Totals (REQ-041–044, REQ-058)
 
-Verified 2026-08-13 with `TEST_DATABASE_CONNECTION_STRING` → local PostgreSQL 16:
+Verified TASK-18 (2026-08-13) with `TEST_DATABASE_CONNECTION_STRING` → local PostgreSQL 16. Counting method: VSTest totals per project (`dotnet test --logger "console;verbosity=minimal"`).
 
 | Project | Passed |
 | ------- | ------ |
@@ -122,7 +125,7 @@ Verified 2026-08-13 with `TEST_DATABASE_CONNECTION_STRING` → local PostgreSQL 
 | TransferOrchestration.ArchitectureTests | 12 |
 | **Total** | **240** |
 
-Build: **0 warnings**, **0 errors**.
+Build: **0 warnings**, **0 errors**. Integration suite run twice in fresh processes: both passed 177/177.
 
 ---
 
@@ -130,4 +133,4 @@ Build: **0 warnings**, **0 errors**.
 
 - [00-ROADMAP-INDEX.md](./tasks/00-ROADMAP-INDEX.md)
 - [TASK-17-engineering-delivery.md](./tasks/TASK-17-engineering-delivery.md)
-- [TASK-18-final-challenge-review.md](./tasks/TASK-18-final-challenge-review.md) *(next gate)*
+- [TASK-18-final-challenge-review.md](./tasks/TASK-18-final-challenge-review.md) *(submission gate — branch verified, main merge pending)*

@@ -4,7 +4,29 @@
 **Stage:** Stage 4 — Verification & Delivery
 **Recommended branch:** `release/final-challenge-review`
 **Depends on:** TASK-17
-**Status:** Not Started
+**Status:** Done
+
+---
+
+## TASK-18 Evidence (2026-08-13)
+
+**Branch/PR verification:** complete
+**Final main confirmation:** pending user merge
+
+| Item | Result |
+| ---- | ------ |
+| Baseline main SHA | `6d5309f649a90fcc63e33849a8936993c0c17b06` |
+| Branch | `release/final-challenge-review` |
+| Build | 0 warnings, 0 errors |
+| Tests | 240 passed (51 domain + 177 integration + 12 architecture); integration run twice |
+| ADRs | 5 (ADR-001 … ADR-005) |
+| Diagrams | 8 mandatory `.drawio` files |
+| Requirement matrix | 58 Verified, 2 Partially verified, 0 Not verified |
+| Docker Compose | `verify-compose-runtime.ps1` passed (health, volume, readiness fail/recover) |
+| Live demo | POST 202, GET 200 owner / 404 cross-customer / 401 no auth; idempotency replay 202 / conflict 409 |
+| Clean-room | Local clone build 0 warnings; full test gate on committed branch (see PR) |
+| Secret scan | No tracked `.env`, JWTs, or signing keys |
+| Self-review | 0 Blockers; see PR description |
 
 ---
 
@@ -82,31 +104,31 @@ A strong implementation can still fail review because of missing instructions, s
 
 ## 8. Acceptance Criteria
 
-- [ ] 0 build warnings/errors.
-- [ ] All tests pass.
-- [ ] >=10 domain and >=12 integration tests.
-- [ ] Genuine concurrency passes.
-- [ ] Exactly five ADRs.
-- [ ] All eight mandatory diagrams.
-- [ ] All required docs complete.
-- [ ] Docker runtime works.
-- [ ] README works from clean state.
-- [ ] No blocker contradiction remains.
+- [x] 0 build warnings/errors.
+- [x] All tests pass.
+- [x] >=10 domain and >=12 integration tests.
+- [x] Genuine concurrency passes.
+- [x] Exactly five ADRs.
+- [x] All eight mandatory diagrams.
+- [x] All required docs complete.
+- [x] Docker runtime works.
+- [x] README works from clean state.
+- [x] No blocker contradiction remains.
 
 ## 9. Definition of Done
 
 This task is **DONE only when all of the following are true**:
 
-- [ ] Every Acceptance Criterion above is checked.
-- [ ] Every Required Test exists and passes.
-- [ ] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
-- [ ] Existing tests have no regressions.
-- [ ] Work remains inside this task's Scope.
-- [ ] No locked ADR is contradicted.
-- [ ] No secret or local-only artifact is committed.
-- [ ] The requested Evidence is captured before merge.
-- [ ] The task branch is reviewable independently.
-- [ ] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
+- [x] Every Acceptance Criterion above is checked.
+- [x] Every Required Test exists and passes.
+- [x] `dotnet build TransferOrchestrationPlatform.sln` finishes with **0 warnings and 0 errors**.
+- [x] Existing tests have no regressions.
+- [x] Work remains inside this task's Scope.
+- [x] No locked ADR is contradicted.
+- [x] No secret or local-only artifact is committed.
+- [x] The requested Evidence is captured before merge.
+- [x] The task branch is reviewable independently.
+- [x] Any review finding is classified as Blocker, Non-blocking improvement, or Preference.
 
 ## 10. Evidence to Capture Before Moving On
 
