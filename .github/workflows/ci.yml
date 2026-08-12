@@ -91,12 +91,12 @@ jobs:
       - name: Inspect runtime image excludes test artifacts
         run: |
           set -euo pipefail
-          IMAGE_ID="$(docker compose --env-file .env.ci images -q api | head -n 1)"
-          if docker run --rm --entrypoint sh "$IMAGE_ID" -c 'ls /app/*Tests.dll 2>/dev/null | grep -q .'; then
+          IMAGE_REF="transfer-orchestration-platform-api:latest"
+          if docker run --rm --entrypoint sh "$IMAGE_REF" -c 'ls /app/*Tests.dll 2>/dev/null | grep -q .'; then
             echo "Test assemblies must not be present in the runtime image." >&2
             exit 1
           fi
-          SDK_VERSION="$(docker run --rm --entrypoint sh "$IMAGE_ID" -c 'dotnet --list-sdks 2>/dev/null || true')"
+          SDK_VERSION="$(docker run --rm --entrypoint sh "$IMAGE_REF" -c 'dotnet --list-sdks 2>/dev/null || true')"
           if [ -n "$SDK_VERSION" ]; then
             echo ".NET SDK must not be present in the runtime image." >&2
             exit 1
