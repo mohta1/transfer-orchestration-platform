@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Npgsql;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System.Data.Common;
 using TransferOrchestration.Notification.Application;
 using TransferOrchestration.Notification.Contracts;
 using TransferOrchestration.Notification.Infrastructure.Persistence;
@@ -26,6 +28,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         await command.ExecuteNonQueryAsync();
         await using var context = CreateContext();
         await context.Database.MigrateAsync();
+        await CreateProviderLedgerAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -33,12 +36,12 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
     [Fact]
     public async Task DuplicateDeliveryCallsProviderOnceAndPersistsOneMarker()
     {
-        var provider = new RecordingProvider();
+        var provider = new DurableRecordingProvider(_connectionString);
         var integrationEvent = Event();
         await DispatchAsync(integrationEvent, provider);
         await DispatchAsync(integrationEvent, provider);
 
-        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(1, await provider.EffectCountAsync());
         var marker = Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
         Assert.Equal(TransferCompletedNotificationConsumer.ConsumerName, marker.ConsumerName);
         Assert.Equal(_now, marker.ProcessedAtUtc);
@@ -47,39 +50,46 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
     [Fact]
     public async Task SameMessageCanBeProcessedByDifferentStableConsumerNames()
     {
-        var provider = new RecordingProvider();
+        var provider = new DurableRecordingProvider(_connectionString);
         var integrationEvent = Event();
         await DispatchAsync(integrationEvent, provider, "notification.consumer-a.v1");
         await DispatchAsync(integrationEvent, provider, "notification.consumer-b.v1");
 
-        Assert.Equal(2, provider.CallCount);
+        Assert.Equal(2, await provider.EffectCountAsync());
+        Assert.Equal(
+            new[]
+            {
+                $"notification.consumer-a.v1:{integrationEvent.MessageId:D}",
+                $"notification.consumer-b.v1:{integrationEvent.MessageId:D}"
+            },
+            await provider.KeysAsync());
         Assert.Equal(2, (await ReadMarkersAsync(integrationEvent.MessageId)).Count);
     }
 
     [Fact]
     public async Task ProviderFailureRollsBackMarkerAndLaterDeliveryRetries()
     {
-        var provider = new RecordingProvider { Failure = new IOException("provider unavailable") };
+        var provider = new DurableRecordingProvider(_connectionString) { Failure = new IOException("provider unavailable") };
         var integrationEvent = Event();
         await Assert.ThrowsAsync<IOException>(() => DispatchAsync(integrationEvent, provider));
         Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
 
         provider.Failure = null;
         await DispatchAsync(integrationEvent, provider);
-        Assert.Equal(2, provider.CallCount);
+        Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
 
     [Fact]
     public async Task ConcurrentDuplicateDeliveryHasOneEffectAndOneMarker()
     {
-        var provider = new RecordingProvider();
+        var provider = new DurableRecordingProvider(_connectionString);
         var integrationEvent = Event();
         var first = DispatchAsync(integrationEvent, provider);
         var second = DispatchAsync(integrationEvent, provider);
         await Task.WhenAll(first, second);
 
-        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
 
@@ -108,8 +118,55 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         using var source = new CancellationTokenSource();
         source.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            DispatchAsync(integrationEvent, new RecordingProvider(), cancellationToken: source.Token));
+            DispatchAsync(integrationEvent, new DurableRecordingProvider(_connectionString), cancellationToken: source.Token));
         Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
+    }
+
+    [Fact]
+    public async Task ProviderSuccessSurvivesLocalSaveFailureWithoutRepeatingEffect()
+    {
+        var provider = new DurableRecordingProvider(_connectionString);
+        var integrationEvent = Event();
+        await Assert.ThrowsAsync<InjectedFailureException>(() =>
+            DispatchAsync(integrationEvent, provider, interceptors: [new FailOnceSaveInterceptor()]));
+        Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
+
+        await DispatchAsync(integrationEvent, provider);
+
+        Assert.Equal(1, await provider.EffectCountAsync());
+        Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
+    }
+
+    [Fact]
+    public async Task ProviderSuccessSurvivesLocalCommitFailureWithoutRepeatingEffect()
+    {
+        var provider = new DurableRecordingProvider(_connectionString);
+        var integrationEvent = Event();
+        await Assert.ThrowsAsync<InjectedFailureException>(() =>
+            DispatchAsync(integrationEvent, provider, interceptors: [new FailOnceCommitInterceptor()]));
+        Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
+
+        await DispatchAsync(integrationEvent, provider);
+
+        Assert.Equal(1, await provider.EffectCountAsync());
+        Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
+    }
+
+    [Fact]
+    public async Task ProviderSuccessSurvivesPostProviderCancellationWithoutRepeatingEffect()
+    {
+        using var source = new CancellationTokenSource();
+        var provider = new DurableRecordingProvider(_connectionString) { AfterEffect = source.Cancel };
+        var integrationEvent = Event();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            DispatchAsync(integrationEvent, provider, cancellationToken: source.Token));
+        Assert.Empty(await ReadMarkersAsync(integrationEvent.MessageId));
+
+        provider.AfterEffect = null;
+        await DispatchAsync(integrationEvent, provider);
+
+        Assert.Equal(1, await provider.EffectCountAsync());
+        Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
     }
 
     [Fact]
@@ -142,7 +199,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
             integrationEvent.CorrelationId, TransferCompletedIntegrationEvent.EventType,
             System.Text.Json.JsonSerializer.Serialize(integrationEvent), integrationEvent.CompletedAtUtc));
         await transferContext.SaveChangesAsync();
-        var provider = new RecordingProvider();
+        var provider = new DurableRecordingProvider(_connectionString);
         await using var notificationContext = CreateContext();
         var consumer = new TransferCompletedNotificationConsumer(
             notificationContext, provider, new FixedTimeProvider(_now));
@@ -158,7 +215,7 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
             NullLogger<OutboxBatchDispatcher>.Instance);
 
         Assert.Equal(1, await dispatcher.DispatchBatchAsync("notification-test", default));
-        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(1, await provider.EffectCountAsync());
         Assert.Single(await ReadMarkersAsync(integrationEvent.MessageId));
         await using var verificationContext = CreateTransferContext();
         Assert.Equal(OutboxStatus.Published, (await verificationContext.OutboxMessages
@@ -169,9 +226,10 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
         TransferCompletedIntegrationEvent integrationEvent,
         INotificationProvider provider,
         string? consumerName = null,
+        IEnumerable<IInterceptor>? interceptors = null,
         CancellationToken cancellationToken = default)
     {
-        await using var context = CreateContext();
+        await using var context = CreateContext(interceptors);
         var consumer = consumerName is null
             ? new TransferCompletedNotificationConsumer(context, provider, new FixedTimeProvider(_now))
             : new TransferCompletedNotificationConsumer(context, provider, new FixedTimeProvider(_now), consumerName);
@@ -188,29 +246,106 @@ public sealed class NotificationConsumerTests : IAsyncLifetime
     private TransferCompletedIntegrationEvent Event() =>
         new(Guid.NewGuid(), Guid.NewGuid(), _now, Guid.NewGuid());
 
-    private NotificationDbContext CreateContext() => new(
-        new DbContextOptionsBuilder<NotificationDbContext>().UseNpgsql(_connectionString,
-            options => options.MigrationsHistoryTable("__EFMigrationsHistory", NotificationDbContext.Schema)).Options);
+    private NotificationDbContext CreateContext(IEnumerable<IInterceptor>? interceptors = null)
+    {
+        var builder = new DbContextOptionsBuilder<NotificationDbContext>().UseNpgsql(_connectionString,
+            options => options.MigrationsHistoryTable("__EFMigrationsHistory", NotificationDbContext.Schema));
+        if (interceptors is not null)
+            builder.AddInterceptors(interceptors);
+        return new NotificationDbContext(builder.Options);
+    }
 
     private TransferManagementDbContext CreateTransferContext() => new(
         new DbContextOptionsBuilder<TransferManagementDbContext>().UseNpgsql(_connectionString,
             options => options.MigrationsHistoryTable("__EFMigrationsHistory", TransferManagementDbContext.Schema)).Options);
 
-    private sealed class RecordingProvider : INotificationProvider
+    private async Task CreateProviderLedgerAsync()
     {
-        private int _callCount;
-        public int CallCount => Volatile.Read(ref _callCount);
-        public Exception? Failure { get; set; }
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE SCHEMA IF NOT EXISTS notification_provider_test;
+            DROP TABLE IF EXISTS notification_provider_test.effects;
+            CREATE TABLE notification_provider_test.effects (
+                idempotency_key text PRIMARY KEY,
+                message_id uuid NOT NULL);
+            """;
+        await command.ExecuteNonQueryAsync();
+    }
 
-        public Task NotifyTransferCompletedAsync(
+    private sealed class DurableRecordingProvider(string connectionString) : INotificationProvider
+    {
+        public Exception? Failure { get; set; }
+        public Action? AfterEffect { get; set; }
+
+        public async Task NotifyTransferCompletedAsync(
+            NotificationIdempotencyKey idempotencyKey,
             TransferCompletedIntegrationEvent integrationEvent,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Interlocked.Increment(ref _callCount);
-            return Failure is null ? Task.CompletedTask : Task.FromException(Failure);
+            if (Failure is not null) throw Failure;
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO notification_provider_test.effects (idempotency_key, message_id)
+                VALUES (@key, @message_id)
+                ON CONFLICT (idempotency_key) DO NOTHING
+                """;
+            command.Parameters.AddWithValue("key", idempotencyKey.ToString());
+            command.Parameters.AddWithValue("message_id", integrationEvent.MessageId);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            AfterEffect?.Invoke();
+        }
+
+        public async Task<long> EffectCountAsync() => await ScalarAsync<long>(
+            "SELECT COUNT(*) FROM notification_provider_test.effects");
+
+        public async Task<string[]> KeysAsync()
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT idempotency_key FROM notification_provider_test.effects ORDER BY idempotency_key";
+            await using var reader = await command.ExecuteReaderAsync();
+            var keys = new List<string>();
+            while (await reader.ReadAsync()) keys.Add(reader.GetString(0));
+            return keys.ToArray();
+        }
+
+        private async Task<T> ScalarAsync<T>(string sql)
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            return (T)(await command.ExecuteScalarAsync())!;
         }
     }
+
+    private sealed class FailOnceSaveInterceptor : SaveChangesInterceptor
+    {
+        private int _failed;
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+            InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            Interlocked.Exchange(ref _failed, 1) == 0
+                ? ValueTask.FromException<InterceptionResult<int>>(new InjectedFailureException())
+                : ValueTask.FromResult(result);
+    }
+
+    private sealed class FailOnceCommitInterceptor : DbTransactionInterceptor
+    {
+        private int _failed;
+        public override ValueTask<InterceptionResult> TransactionCommittingAsync(DbTransaction transaction,
+            TransactionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default) =>
+            Interlocked.Exchange(ref _failed, 1) == 0
+                ? ValueTask.FromException<InterceptionResult>(new InjectedFailureException())
+                : ValueTask.FromResult(result);
+    }
+
+    private sealed class InjectedFailureException : Exception;
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {

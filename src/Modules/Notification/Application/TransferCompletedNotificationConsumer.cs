@@ -45,7 +45,8 @@ internal sealed class TransferCompletedNotificationConsumer(
             return;
         }
 
-        await provider.NotifyTransferCompletedAsync(integrationEvent, cancellationToken);
+        var providerKey = new NotificationIdempotencyKey(_consumerName, integrationEvent.MessageId);
+        await provider.NotifyTransferCompletedAsync(providerKey, integrationEvent, cancellationToken);
         dbContext.ProcessedMessages.Add(new ProcessedMessage(
             integrationEvent.MessageId, _consumerName, timeProvider.GetUtcNow()));
         await dbContext.SaveChangesAsync(cancellationToken);

@@ -16,7 +16,7 @@ public static class DependencyInjection
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
         services.AddDbContext<NotificationDbContext>(options => options.UseNpgsql(connectionString,
             npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", NotificationDbContext.Schema)));
-        services.AddScoped<INotificationProvider, LoggingNotificationProvider>();
+        services.AddSingleton<INotificationProvider, LoggingNotificationProvider>();
         services.AddScoped<IIntegrationEventDispatcher, TransferCompletedNotificationConsumer>();
         services.AddSingleton(TimeProvider.System);
         return services;
