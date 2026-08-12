@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TransferOrchestration.AuditOperations.Contracts;
 using TransferOrchestration.TransferManagement.Contracts.ManualOperations;
+using TransferOrchestration.TransferManagement.Api;
 
 namespace TransferOrchestration.AuditOperations.Api;
 
@@ -82,7 +83,9 @@ public static class ManualOperationsEndpoints
         commandId = null;
         if (string.IsNullOrWhiteSpace(request.Reason))
         {
-            return Results.BadRequest(new ErrorResponse("Reason is required for manual operations."));
+            return ApiProblemResults.BadRequest(
+                "manual_operation_reason_required",
+                "Reason is required for manual operations.");
         }
 
         if (!httpContext.Request.Headers.TryGetValue("Idempotency-Key", out var values)
@@ -90,14 +93,18 @@ public static class ManualOperationsEndpoints
             || string.IsNullOrWhiteSpace(values[0])
             || values[0]!.Length > 200)
         {
-            return Results.BadRequest(new ErrorResponse("Idempotency-Key must contain one non-blank value of at most 200 characters."));
+            return ApiProblemResults.BadRequest(
+                "idempotency_key_invalid",
+                "Idempotency-Key must contain one non-blank value of at most 200 characters.");
         }
 
         commandId = values[0]!;
 
         if (string.IsNullOrWhiteSpace(operatorContext.OperatorId))
         {
-            return Results.BadRequest(new ErrorResponse("X-Operator-ID must contain one non-blank operator identity."));
+            return ApiProblemResults.BadRequest(
+                "operator_id_required",
+                "X-Operator-ID must contain one non-blank operator identity.");
         }
 
         return null;
@@ -114,13 +121,21 @@ public static class ManualOperationsEndpoints
                     result.CorrelationId,
                     result.Outcome.ToString())),
             ManualTransferOperationOutcome.MissingReason =>
-                Results.BadRequest(new ErrorResponse("Reason is required for manual operations.")),
+                ApiProblemResults.BadRequest(
+                    "manual_operation_reason_required",
+                    "Reason is required for manual operations."),
             ManualTransferOperationOutcome.InvalidState =>
-                Results.Conflict(new ErrorResponse("Manual operation is not permitted from the current transfer state.")),
+                ApiProblemResults.Conflict(
+                    "manual_operation_invalid_state",
+                    "Manual operation is not permitted from the current transfer state."),
             ManualTransferOperationOutcome.TransferNotFound =>
-                Results.NotFound(new ErrorResponse("Transfer was not found.")),
+                ApiProblemResults.NotFound(
+                    "transfer_not_found",
+                    "Transfer was not found."),
             ManualTransferOperationOutcome.ReservationConflict or ManualTransferOperationOutcome.ContentionRetryExhausted =>
-                Results.Conflict(new ErrorResponse("Reservation could not be finalized for this manual operation.")),
+                ApiProblemResults.Conflict(
+                    "reservation_conflict",
+                    "Reservation could not be finalized for this manual operation."),
             _ => throw new InvalidOperationException($"Unsupported manual operation outcome '{result.Outcome}'.")
         };
 
@@ -132,6 +147,4 @@ public static class ManualOperationsEndpoints
         string? NewState,
         Guid? CorrelationId,
         string Outcome);
-
-    internal sealed record ErrorResponse(string Error);
 }

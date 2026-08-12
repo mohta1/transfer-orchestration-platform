@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TransferOrchestration.AccountBalance;
 using TransferOrchestration.AuditOperations;
 using TransferOrchestration.AuditOperations.Api;
 using TransferOrchestration.AuditOperations.Infrastructure;
+using TransferOrchestration.Api.Infrastructure;
 using TransferOrchestration.PaymentNetwork;
 using TransferOrchestration.TransferManagement;
 using TransferOrchestration.TransferManagement.Api;
@@ -21,15 +23,30 @@ builder.Services
     .AddPaymentNetworkModule()
     .AddAuditOperationsModule(connectionString);
 
+builder.Services
+    .AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy("Application process is running."), tags: ["live"])
+    .AddCheck<PostgreSqlHealthCheck>("postgresql", tags: ["ready"]);
+
 var app = builder.Build();
 
+app.UseSafeExceptionHandling();
 app.UseCorrelationContext();
 
-app.MapGet("/health", () => Results.Ok(new
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    Status = "Healthy"
-}));
+    Predicate = registration => registration.Tags.Contains("live"),
+    ResponseWriter = HealthCheckResponseWriter.WriteAsync
+});
+
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = HealthCheckResponseWriter.WriteAsync
+});
+
 app.MapTransferSubmissionEndpoints();
+app.MapTransferReadEndpoints();
 app.MapManualOperationsEndpoints();
 
 app.Run();

@@ -27,7 +27,9 @@ public static class TransferSubmissionEndpoints
             || string.IsNullOrWhiteSpace(values[0])
             || values[0]!.Length > 200)
         {
-            return Results.BadRequest(new ErrorResponse("Idempotency-Key must contain one non-blank value of at most 200 characters."));
+            return ApiProblemResults.BadRequest(
+                "idempotency_key_invalid",
+                "Idempotency-Key must contain one non-blank value of at most 200 characters.");
         }
 
         if (httpContext.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationValues))
@@ -36,7 +38,9 @@ public static class TransferSubmissionEndpoints
                 || !Guid.TryParse(correlationValues[0], out var suppliedCorrelationId)
                 || suppliedCorrelationId == Guid.Empty)
             {
-                return Results.BadRequest(new ErrorResponse("X-Correlation-ID must be a non-empty GUID."));
+                return ApiProblemResults.BadRequest(
+                    "correlation_id_invalid",
+                    "X-Correlation-ID must be a non-empty GUID.");
             }
 
             correlationContext.SetCorrelationId(suppliedCorrelationId);
@@ -65,8 +69,10 @@ public static class TransferSubmissionEndpoints
         {
             TransferSubmissionOutcome.Accepted or TransferSubmissionOutcome.Replay => Results.Accepted(value: response),
             TransferSubmissionOutcome.Processing => Results.Accepted(value: response),
-            TransferSubmissionOutcome.Conflict => Results.Conflict(new ErrorResponse("Idempotency-Key was already used with a different semantic request.")),
-            TransferSubmissionOutcome.ValidationFailed => Results.BadRequest(new ValidationErrorResponse(result.Errors ?? [])),
+            TransferSubmissionOutcome.Conflict => ApiProblemResults.Conflict(
+                "idempotency_conflict",
+                "Idempotency-Key was already used with a different semantic request."),
+            TransferSubmissionOutcome.ValidationFailed => ApiProblemResults.ValidationFailed(result.Errors ?? []),
             TransferSubmissionOutcome.AuthorizationRejected => Results.Json(response, statusCode: StatusCodes.Status403Forbidden),
             TransferSubmissionOutcome.DailyLimitExceeded or TransferSubmissionOutcome.FraudRejected => Results.UnprocessableEntity(response),
             _ => throw new InvalidOperationException($"Unsupported submission outcome '{result.Outcome}'.")
@@ -85,8 +91,4 @@ public static class TransferSubmissionEndpoints
         Guid? CorrelationId,
         string? State,
         string Outcome);
-
-    internal sealed record ErrorResponse(string Error);
-
-    internal sealed record ValidationErrorResponse(IReadOnlyList<string> Errors);
 }
