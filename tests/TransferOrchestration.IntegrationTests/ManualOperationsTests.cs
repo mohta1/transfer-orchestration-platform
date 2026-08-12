@@ -14,6 +14,7 @@ using TransferOrchestration.PaymentNetwork.Contracts;
 using TransferOrchestration.TransferManagement.Application.PaymentSubmission;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Reconciliation;
+using TransferOrchestration.TransferManagement.Contracts.IntegrationEvents;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 
@@ -208,10 +209,73 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var combined = string.Join('\n', sink.Where(line =>
-            line.StartsWith("TransferOrchestration.AuditOperations.Infrastructure.Correlation.CorrelationMiddleware:", StringComparison.Ordinal)));
+        var combined = string.Join('\n', sink);
         Assert.DoesNotContain(secretToken, combined, StringComparison.Ordinal);
         Assert.DoesNotContain(accountNumber, combined, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ManualConfirmSettlementPropagatesManualCorrelationToOutbox()
+    {
+        var originalCorrelationId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var manualCorrelationId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
+        var transferId = await SeedManualReviewTransferAsync(factory, originalCorrelationId);
+
+        using var client = factory.CreateClient();
+        using var request = ManualRequest(
+            transferId,
+            "manual-settle-correlation",
+            new { Reason = "Verify outbox correlation propagation" },
+            manualCorrelationId,
+            $"operator-{_operatorId:D}",
+            confirmSettlement: true);
+
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var transferContext = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
+        var process = await transferContext.TransferProcessStates.AsNoTracking()
+            .SingleAsync(item => item.TransferId == new TransferId(transferId));
+        Assert.Equal(manualCorrelationId, process.CorrelationId);
+
+        var message = await transferContext.OutboxMessages.AsNoTracking()
+            .SingleAsync(item => item.TransferId == transferId);
+        Assert.Equal(manualCorrelationId, message.CorrelationId);
+        var payload = System.Text.Json.JsonSerializer.Deserialize<TransferCompletedIntegrationEvent>(message.Payload);
+        Assert.Equal(manualCorrelationId, payload?.CorrelationId);
+    }
+
+    [Fact]
+    public async Task ConcurrentDuplicateManualCommandReturnsReplayWithoutServerError()
+    {
+        await using var factory = await OperationsFactory.CreateAsync(_connectionString, _clock);
+        var transferId = await SeedManualReviewTransferAsync(factory);
+        var operatorHeader = $"operator-{_operatorId:D}";
+
+        using var client = factory.CreateClient();
+        var first = ManualRequest(
+            transferId,
+            "manual-reject-concurrent",
+            new { Reason = "Concurrent duplicate test" },
+            _correlationId,
+            operatorHeader);
+        var second = ManualRequest(
+            transferId,
+            "manual-reject-concurrent",
+            new { Reason = "Concurrent duplicate test" },
+            _correlationId,
+            operatorHeader);
+
+        var responses = await Task.WhenAll(
+            client.SendAsync(first),
+            client.SendAsync(second));
+
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
+        await using var scope = factory.Services.CreateAsyncScope();
+        Assert.Equal(1, await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>()
+            .OperationsAuditRecords.CountAsync());
     }
 
     [Fact]
@@ -294,7 +358,10 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         Assert.True((bool)(await command.ExecuteScalarAsync())!);
     }
 
-    private async Task<Guid> SeedManualReviewTransferAsync(WebApplicationFactory<Program> factory)
+    private Task<Guid> SeedManualReviewTransferAsync(WebApplicationFactory<Program> factory) =>
+        SeedManualReviewTransferAsync(factory, _correlationId);
+
+    private async Task<Guid> SeedManualReviewTransferAsync(WebApplicationFactory<Program> factory, Guid correlationId)
     {
         var gateway = new RecordingGateway
         {
@@ -311,7 +378,7 @@ public sealed class ManualOperationsTests : IAsyncLifetime
         transfer.Authorise(now);
         transfer.BeginFraudScreening(now);
         transfer.RequestBalanceReservation(now);
-        var process = TransferProcessState.Create(transfer.Id, _correlationId, now);
+        var process = TransferProcessState.Create(transfer.Id, correlationId, now);
         process.Schedule(TransferProcessAction.ReserveBalance, now, now);
 
         var accountContext = scope.ServiceProvider.GetRequiredService<AccountBalanceDbContext>();

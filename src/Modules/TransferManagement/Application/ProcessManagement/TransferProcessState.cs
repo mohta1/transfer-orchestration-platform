@@ -184,6 +184,18 @@ internal sealed class TransferProcessState
         Touch(nowUtc);
     }
 
+    public void AdoptCorrelation(Guid correlationId, DateTimeOffset nowUtc)
+    {
+        if (correlationId == Guid.Empty)
+        {
+            throw new DomainException("Correlation identifier is required.");
+        }
+
+        EnsureUpdateTime(nowUtc);
+        CorrelationId = correlationId;
+        Touch(nowUtc);
+    }
+
     private void EnsureMutable()
     {
         if (Status == TransferProcessStatus.Completed)

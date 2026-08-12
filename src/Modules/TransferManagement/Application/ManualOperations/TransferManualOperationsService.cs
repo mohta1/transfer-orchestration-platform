@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using TransferOrchestration.AccountBalance.Contracts;
 using TransferOrchestration.AuditOperations.Contracts;
 using TransferOrchestration.TransferManagement.Application.Persistence;
@@ -97,25 +99,46 @@ internal sealed class TransferManualOperationsService(
             return MapReservationFailure(transfer.Id.Value, previousState, transfer.State.ToString(), command.CorrelationId);
         }
 
-        await transaction.ExecuteAsync(async ct =>
+        process.AdoptCorrelation(command.CorrelationId, now);
+
+        try
         {
-            var dbTransaction = transferDbContext.Database.CurrentTransaction
-                ?? throw new InvalidOperationException("Transfer management transaction is required.");
-            auditWriter.Enlist(dbTransaction);
-            auditWriter.Stage(new OperationsAuditEntry(
-                command.CommandId,
-                command.ActorId,
-                action,
-                transfer.Id.Value,
-                previousState,
-                transfer.State.ToString(),
-                command.Reason.Trim(),
-                command.CorrelationId,
-                command.CausationId,
-                now));
-            await auditWriter.SaveStagedAsync(ct);
-            await processRepository.SaveChangesAsync(ct);
-        }, cancellationToken);
+            await transaction.ExecuteAsync(async ct =>
+            {
+                var dbTransaction = transferDbContext.Database.CurrentTransaction
+                    ?? throw new InvalidOperationException("Transfer management transaction is required.");
+                auditWriter.Enlist(dbTransaction);
+                auditWriter.Stage(new OperationsAuditEntry(
+                    command.CommandId,
+                    command.ActorId,
+                    action,
+                    transfer.Id.Value,
+                    previousState,
+                    transfer.State.ToString(),
+                    command.Reason.Trim(),
+                    command.CorrelationId,
+                    command.CausationId,
+                    now));
+                await auditWriter.SaveStagedAsync(ct);
+                await processRepository.SaveChangesAsync(ct);
+            }, cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsCommandIdUniqueViolation(exception))
+        {
+            transferDbContext.ChangeTracker.Clear();
+            var replay = await auditWriter.FindByCommandIdAsync(command.CommandId, cancellationToken);
+            if (replay is null)
+            {
+                throw;
+            }
+
+            return new ManualTransferOperationResult(
+                ManualTransferOperationOutcome.Replay,
+                replay.TransferId,
+                replay.PreviousState,
+                replay.NewState,
+                replay.CorrelationId);
+        }
 
         return new ManualTransferOperationResult(
             ManualTransferOperationOutcome.Succeeded,
@@ -124,6 +147,13 @@ internal sealed class TransferManualOperationsService(
             transfer.State.ToString(),
             command.CorrelationId);
     }
+
+    private static bool IsCommandIdUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "ix_operations_audit_records_command_id"
+        };
 
     private static ManualTransferOperationResult MapReservationFailure(
         Guid transferId,
