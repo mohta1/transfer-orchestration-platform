@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TransferOrchestration.PaymentNetwork.Contracts;
 using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
+using TransferOrchestration.TransferManagement.Application.Reconciliation;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 
 namespace TransferOrchestration.TransferManagement.Application.PaymentSubmission;
@@ -97,7 +98,9 @@ internal sealed class PaymentSubmissionProcessStep(
             return await PersistAmbiguousOutcomeAsync(transferId, request.Reference);
         }
 
-        var outcome = await PersistOutcomeAsync(transferId, request.Reference, result);
+        var outcome = result == PaymentSubmissionResult.Timeout
+            ? await PersistAmbiguousOutcomeAsync(transferId, request.Reference)
+            : await PersistOutcomeAsync(transferId, request.Reference, result);
         cancellationToken.ThrowIfCancellationRequested();
         return outcome;
     }
@@ -148,6 +151,8 @@ internal sealed class PaymentSubmissionProcessStep(
             }
 
             transfer.MarkSubmissionStatusUnknown(timeProvider.GetUtcNow());
+            await outcomeScope.ServiceProvider.GetRequiredService<IReconciliationScheduling>()
+                .EnsureScheduledAsync(transferId, reference.Value, timeProvider.GetUtcNow(), CancellationToken.None);
             try
             {
                 await processRepository.SaveChangesAsync(CancellationToken.None);
@@ -189,7 +194,6 @@ internal sealed class PaymentSubmissionProcessStep(
         {
             PaymentSubmissionResult.Accepted => Accept(transfer, process, now),
             PaymentSubmissionResult.Rejected => Reject(transfer, process, now),
-            PaymentSubmissionResult.Timeout => MarkUnknown(transfer, now),
             _ => throw new InvalidOperationException("Unsupported payment submission result.")
         };
 
@@ -218,11 +222,5 @@ internal sealed class PaymentSubmissionProcessStep(
         transfer.RejectExternalSubmission(now);
         process.Schedule(TransferProcessAction.ReleaseReservation, now, now);
         return PaymentSubmissionStepOutcome.Rejected;
-    }
-
-    private static PaymentSubmissionStepOutcome MarkUnknown(Transfer transfer, DateTimeOffset now)
-    {
-        transfer.MarkSubmissionStatusUnknown(now);
-        return PaymentSubmissionStepOutcome.StatusUnknown;
     }
 }

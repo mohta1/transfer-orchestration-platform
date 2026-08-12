@@ -4,6 +4,7 @@ using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Idempotency;
 using TransferOrchestration.TransferManagement.Contracts.IntegrationEvents;
 using TransferOrchestration.TransferManagement.Domain.Transfers.Events;
+using TransferOrchestration.TransferManagement.Application.Reconciliation;
 using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 using System.Text.Json;
 
@@ -24,6 +25,8 @@ public sealed class TransferManagementDbContext(
     internal DbSet<DailyTransferUsage> DailyTransferUsages => Set<DailyTransferUsage>();
 
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    internal DbSet<ReconciliationRecord> ReconciliationRecords => Set<ReconciliationRecord>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
