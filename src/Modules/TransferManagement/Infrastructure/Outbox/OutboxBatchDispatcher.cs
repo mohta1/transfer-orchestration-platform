@@ -7,7 +7,7 @@ using TransferOrchestration.TransferManagement.Contracts.IntegrationEvents;
 namespace TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 
 internal sealed class OutboxBatchDispatcher(
-    OutboxStore store,
+    IOutboxStore store,
     IIntegrationEventDispatcher dispatcher,
     IOptions<OutboxOptions> options,
     ILogger<OutboxBatchDispatcher> logger)
@@ -24,11 +24,13 @@ internal sealed class OutboxBatchDispatcher(
 
     public async Task<int> DispatchBatchAsync(string workerId, CancellationToken cancellationToken)
     {
+        var claimed = 0;
         var processed = 0;
-        while (processed < _options.BatchSize)
+        while (claimed < _options.BatchSize)
         {
             var claim = await store.ClaimOneAsync(workerId, _options.LeaseDuration, cancellationToken);
             if (claim is null) break;
+            claimed++;
             var renewed = await store.RenewBeforeDispatchAsync(claim, workerId, _options.LeaseDuration, cancellationToken);
             if (renewed is null) continue;
             await DispatchOneAsync(renewed, workerId, cancellationToken);

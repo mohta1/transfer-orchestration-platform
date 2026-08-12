@@ -46,7 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentSubmissionProcessStep, PaymentSubmissionProcessStep>();
         services.AddScoped<IPaymentSubmissionDueWorkDispatcher, PaymentSubmissionDueWorkDispatcher>();
         services.AddHostedService<TransferProcessWorker>();
-        services.AddScoped<OutboxStore>();
+        services.AddScoped<IOutboxStore, OutboxStore>();
         services.AddScoped<OutboxBatchDispatcher>();
         services.AddSingleton<IIntegrationEventDispatcher, LoggingIntegrationEventDispatcher>();
         services.AddHostedService<OutboxWorker>();

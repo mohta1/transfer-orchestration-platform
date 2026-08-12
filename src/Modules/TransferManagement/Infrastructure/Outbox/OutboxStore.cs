@@ -7,7 +7,17 @@ using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 
 namespace TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 
-internal sealed class OutboxStore(TransferManagementDbContext dbContext)
+internal interface IOutboxStore
+{
+    Task<OutboxClaim?> ClaimOneAsync(string workerId, TimeSpan leaseDuration, CancellationToken token);
+    Task<OutboxClaim?> RenewBeforeDispatchAsync(
+        OutboxClaim claim, string workerId, TimeSpan leaseDuration, CancellationToken token);
+    Task<int> MarkPublishedAsync(OutboxClaim claim, string workerId, CancellationToken token);
+    Task<int> MarkFailureAsync(OutboxClaim claim, string workerId, TimeSpan retryDelay, string error,
+        bool deadLetter, CancellationToken token);
+}
+
+internal sealed class OutboxStore(TransferManagementDbContext dbContext) : IOutboxStore
 {
     public async Task<OutboxClaim?> ClaimOneAsync(string workerId, TimeSpan leaseDuration, CancellationToken token)
     {

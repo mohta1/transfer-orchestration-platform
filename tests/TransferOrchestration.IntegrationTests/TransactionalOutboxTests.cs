@@ -176,6 +176,28 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RepeatedRenewalLossConsumesClaimBudgetAndReturnsWithoutDispatching()
+    {
+        const int batchSize = 3;
+        var store = new RenewalLosingStore();
+        var dispatcher = new RecordingDispatcher();
+        var batch = new OutboxBatchDispatcher(store, dispatcher, Options.Create(TestOptions(batchSize: batchSize)),
+            NullLogger<OutboxBatchDispatcher>.Instance);
+
+        var processed = await batch.DispatchBatchAsync("worker", default);
+
+        Assert.Equal(0, processed);
+        Assert.Equal(batchSize, store.ClaimCount);
+        Assert.Equal(batchSize, store.RenewCount);
+        Assert.Equal(0, store.MarkPublishedCount);
+        Assert.Equal(0, store.MarkFailureCount);
+        Assert.Empty(dispatcher.Deliveries);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            batch.DispatchBatchAsync("worker", new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
     public async Task ConcurrentWorkersCannotOwnTheSameLease()
     {
         await CompleteAsync(TransferType.InternalBank);
@@ -391,6 +413,45 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         public List<TransferCompletedIntegrationEvent> Deliveries { get; } = [];
         public Task DispatchAsync(TransferCompletedIntegrationEvent integrationEvent, CancellationToken cancellationToken)
         { cancellationToken.ThrowIfCancellationRequested(); Deliveries.Add(integrationEvent); return Failure is null ? Task.CompletedTask : Task.FromException(Failure); }
+    }
+
+    private sealed class RenewalLosingStore : IOutboxStore
+    {
+        private readonly OutboxClaim _claim = new(1, Guid.NewGuid(), Guid.NewGuid(), null,
+            TransferCompletedIntegrationEvent.EventType, "{}", 0, DateTimeOffset.UtcNow);
+
+        public int ClaimCount { get; private set; }
+        public int RenewCount { get; private set; }
+        public int MarkPublishedCount { get; private set; }
+        public int MarkFailureCount { get; private set; }
+
+        public Task<OutboxClaim?> ClaimOneAsync(string workerId, TimeSpan leaseDuration, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            ClaimCount++;
+            return Task.FromResult<OutboxClaim?>(_claim);
+        }
+
+        public Task<OutboxClaim?> RenewBeforeDispatchAsync(
+            OutboxClaim claim, string workerId, TimeSpan leaseDuration, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            RenewCount++;
+            return Task.FromResult<OutboxClaim?>(null);
+        }
+
+        public Task<int> MarkPublishedAsync(OutboxClaim claim, string workerId, CancellationToken token)
+        {
+            MarkPublishedCount++;
+            return Task.FromResult(1);
+        }
+
+        public Task<int> MarkFailureAsync(OutboxClaim claim, string workerId, TimeSpan retryDelay, string error,
+            bool deadLetter, CancellationToken token)
+        {
+            MarkFailureCount++;
+            return Task.FromResult(1);
+        }
     }
 
     private sealed class MutableTimeProvider(DateTimeOffset now) : TimeProvider
