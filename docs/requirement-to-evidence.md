@@ -153,6 +153,47 @@ Build: **0 warnings**, **0 errors**. Integration suite run twice in fresh proces
 
 ---
 
+## TASK-20 Gap Remediation — Stuck Operations and Observability (Scenario K, §24)
+
+Verified TASK-20 (2026-08-13) on branch `feature/operations-observability`. Requires `TEST_DATABASE_CONNECTION_STRING` → PostgreSQL 16.
+
+| Evidence | Requirement | Implementation | Tests |
+| -------- | ----------- | -------------- | ----- |
+| Scenario K | Stuck transfers detectable, visible, investigable, recoverable via auditable actions | `IStuckTransferQueries`, `StuckTransferClassifier`, `GET /api/operations/stuck-transfers`, `StuckTransferOperationsOptions` | `StuckTransferOperationsTests.*`, `StuckTransferClassifierTests.*` |
+| §24 structured baseline | Correlation, causation, transfer ID, safe fingerprints, external duration/outcome, retries, reconciliation, outbox, concurrency, manual actions, unknown submission, stuck query | `OperationalTelemetry`, workflow step logging, `CorrelationMiddleware` | `ObservabilityTelemetryTests.*`, existing Outbox/correlation tests |
+| Security | Operator-only; no sensitive projection | `OperationsEndpoints` + `AuthorizationPolicies.Operator` | `StuckTransferOperationsTests` 401/403/200, projection redaction |
+| Recovery | Existing manual reject/confirm only | Unchanged `ManualOperationsEndpoints` | `DiscoveredTransferSupportsManualRecoveryWithAudit` |
+
+**Stuck definition assumptions:** UTC age from `max(transfer.UpdatedAtUtc, process.UpdatedAtUtc)`; default threshold 600s; excludes terminal states and future scheduled process/reconciliation work; eligible workflow states only (excludes `Draft`, `ValidationFailed`).
+
+**§24 field matrix (summary):**
+
+| Field | Status |
+| ----- | ------ |
+| CorrelationId / CausationId / TransferId | Implemented structured log + HTTP scope |
+| Safe AccountId / Idempotency key | Fingerprint helpers (`OperationalTelemetry`) |
+| State transitions | Submission + fraud screening logs |
+| External call duration/outcome | Fraud, payment, reconciliation logs |
+| Retry / reconciliation | RetryScheduled, ReconciliationOutcome logs |
+| Outbox status | Existing OutboxBatchDispatcher logs |
+| Concurrency conflicts | Payment submission lost-claim log |
+| Manual actions | ManualAction log + audit persistence |
+| SubmissionStatusUnknown | Dedicated warning log |
+| Stuck transfers | Query log + operator endpoint (persisted evidence) |
+| Identified metrics only | Submission outcomes, latency percentiles, backlog counts per architecture §19 (no Prometheus stack) |
+
+Updated test totals (TASK-20, build verified locally):
+
+| Project | Passed |
+| ------- | ------ |
+| TransferOrchestration.Domain.Tests | 81 |
+| TransferOrchestration.IntegrationTests | 210+ (requires PostgreSQL) |
+| TransferOrchestration.ArchitectureTests | 12 |
+
+Build: **0 warnings**, **0 errors**.
+
+---
+
 ## Related Documents
 
 - [00-ROADMAP-INDEX.md](./tasks/00-ROADMAP-INDEX.md)

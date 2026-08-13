@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
+using TransferOrchestration.TransferManagement.Application.Observability;
 using TransferOrchestration.AccountBalance.Contracts;
 using TransferOrchestration.PaymentNetwork.Contracts;
 using TransferOrchestration.TransferManagement.Application.Persistence;
@@ -31,7 +34,8 @@ internal sealed class ReconciliationProcessStep(
     IServiceScopeFactory scopeFactory,
     IPaymentNetworkGateway paymentNetworkGateway,
     IOptions<ReconciliationOptions> options,
-    TimeProvider timeProvider) : IReconciliationProcessStep
+    TimeProvider timeProvider,
+    ILogger<ReconciliationProcessStep> logger) : IReconciliationProcessStep
 {
     public async Task<ReconciliationStepOutcome> ExecuteAsync(
         ReconciliationClaim claim,
@@ -72,6 +76,7 @@ internal sealed class ReconciliationProcessStep(
         }
 
         PaymentStatusResult enquiryResult;
+        var stopwatch = Stopwatch.StartNew();
         try
         {
             enquiryResult = await paymentNetworkGateway.GetStatusAsync(reference, cancellationToken);
@@ -82,10 +87,31 @@ internal sealed class ReconciliationProcessStep(
         }
         catch (Exception exception)
         {
+            stopwatch.Stop();
             return await PersistEnquiryFailureAsync(claim, exception.Message, cancellationToken);
         }
+        finally
+        {
+            stopwatch.Stop();
+        }
 
-        return await PersistOutcomeAsync(claim, enquiryResult, cancellationToken);
+        OperationalTelemetry.LogExternalCallCompleted(
+            logger,
+            claim.TransferId.Value,
+            "PaymentNetworkStatus",
+            enquiryResult.ToString(),
+            stopwatch.ElapsedMilliseconds,
+            null);
+
+        var outcome = await PersistOutcomeAsync(claim, enquiryResult, cancellationToken);
+        OperationalTelemetry.LogReconciliationOutcome(
+            logger,
+            claim.TransferId.Value,
+            claim.AttemptCount,
+            outcome.ToString(),
+            enquiryResult.ToString(),
+            null);
+        return outcome;
     }
 
     private async Task<ReconciliationStepOutcome> PersistOutcomeAsync(

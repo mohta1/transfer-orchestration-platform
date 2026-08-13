@@ -1,5 +1,7 @@
 using TransferOrchestration.BuildingBlocks.Domain;
+using Microsoft.Extensions.Logging;
 using TransferOrchestration.TransferManagement.Application.Idempotency;
+using TransferOrchestration.TransferManagement.Application.Observability;
 using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
@@ -14,7 +16,8 @@ internal sealed class TransferSubmissionService(
     ITransferManagementTransaction transaction,
     ICustomerAuthorization customerAuthorization,
     IDailyTransferLimit dailyTransferLimit,
-    TimeProvider timeProvider) : ITransferSubmissionService
+    TimeProvider timeProvider,
+    ILogger<TransferSubmissionService> logger) : ITransferSubmissionService
 {
     public async Task<SubmitTransferResult> SubmitAsync(SubmitTransferCommand command, CancellationToken cancellationToken)
     {
@@ -53,16 +56,34 @@ internal sealed class TransferSubmissionService(
 
         if (claim.Outcome == IdempotencyClaimOutcome.Conflict)
         {
+            OperationalTelemetry.LogIdempotencyObservation(
+                logger,
+                "Conflict",
+                OperationalTelemetry.FingerprintIdempotencyKey(command.IdempotencyKey),
+                "TransferSubmission",
+                command.CorrelationId);
             return new SubmitTransferResult(TransferSubmissionOutcome.Conflict);
         }
 
         if (claim.Outcome == IdempotencyClaimOutcome.Processing)
         {
+            OperationalTelemetry.LogIdempotencyObservation(
+                logger,
+                "Processing",
+                OperationalTelemetry.FingerprintIdempotencyKey(command.IdempotencyKey),
+                "TransferSubmission",
+                command.CorrelationId);
             return new SubmitTransferResult(TransferSubmissionOutcome.Processing);
         }
 
         if (claim.Outcome == IdempotencyClaimOutcome.Completed)
         {
+            OperationalTelemetry.LogIdempotencyObservation(
+                logger,
+                "Replay",
+                OperationalTelemetry.FingerprintIdempotencyKey(command.IdempotencyKey),
+                "TransferSubmission",
+                command.CorrelationId);
             return await ReplayAsync(claim.Result!, cancellationToken);
         }
 
@@ -113,6 +134,21 @@ internal sealed class TransferSubmissionService(
                 now,
                 token);
         }, cancellationToken);
+
+        OperationalTelemetry.LogIdempotencyObservation(
+            logger,
+            outcome.ToString(),
+            OperationalTelemetry.FingerprintIdempotencyKey(command.IdempotencyKey),
+            "TransferSubmission",
+            command.CorrelationId);
+        OperationalTelemetry.LogStateTransition(
+            logger,
+            transfer.Id.Value,
+            TransferState.Submitted.ToString(),
+            transfer.State.ToString(),
+            "Submission",
+            command.CorrelationId,
+            null);
 
         return new SubmitTransferResult(outcome, transfer.Id.Value, command.CorrelationId, transfer.State);
     }
