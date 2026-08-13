@@ -18,7 +18,7 @@ The platform orchestrates domestic interbank transfers with:
 
 **Critical goals:** financial safety (no negative available balance, no duplicate reservation consumption), reliable messaging (no lost committed events), and safe external payment handling (no blind resubmission after ambiguous timeout).
 
-**Current status:** TASK-01 through TASK-20 are implemented on `main`. TASK-21 adds leadership documentation (team model, debt trade-off, architecture review simulation, AI report).
+**Current status:** TASK-01 through TASK-21 are complete on `main` (SHA `d7833b1`). TASK-22 final strict compliance audit is on branch `release/challenge-compliance-final`.
 
 ## Architecture
 
@@ -441,6 +441,8 @@ Expected totals (counting `[Fact]`/`[Theory]` cases per project):
 | TransferOrchestration.ArchitectureTests | 12 |
 | **Total** | **303** |
 
+Counting method: CI `dotnet test` totals on branch SHA (TASK-22 PR #32 run 31686999881). Local `dotnet test --list-tests` on Windows may report 206 integration cases due to test-discovery differences; CI pass count is authoritative.
+
 Run PostgreSQL integration suite twice in fresh processes to detect order dependence:
 
 ```bash
@@ -507,7 +509,7 @@ Reviewers can validate from a fresh clone:
 ```bash
 git clone https://github.com/mohta1/transfer-orchestration-platform.git review-checkout
 cd review-checkout
-git checkout release/final-challenge-review   # or main after merge
+git checkout release/challenge-compliance-final   # or main after TASK-22 merge
 
 cp .env.example .env
 # Set local-only POSTGRES_PASSWORD and JWT_SIGNING_KEY
