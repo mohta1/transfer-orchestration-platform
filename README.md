@@ -18,7 +18,7 @@ The platform orchestrates domestic interbank transfers with:
 
 **Critical goals:** financial safety (no negative available balance, no duplicate reservation consumption), reliable messaging (no lost committed events), and safe external payment handling (no blind resubmission after ambiguous timeout).
 
-**Current status:** TASK-01 through TASK-17 are implemented on `main`. TASK-18 provides the final reviewer guide, demo path, and submission gate.
+**Current status:** TASK-01 through TASK-20 are implemented on `main`. TASK-21 adds leadership documentation (team model, debt trade-off, architecture review simulation, AI report).
 
 ## Architecture
 
@@ -61,9 +61,11 @@ The system does **not** claim exactly-once delivery.
 | [Modernisation roadmap](docs/modernisation-roadmap.md) | Legacy → target evolution |
 | [Runtime setup](docs/runtime-setup.md) | Detailed Docker and migration guide |
 | [Engineering standards](docs/engineering-standards.md) | Coding and review rules |
-| [Team engineering model](docs/team-engineering-model.md) | Ownership and collaboration |
-| [AI-assisted engineering](docs/ai-assisted-engineering.md) | Safe AI usage guardrails |
-| [Technical debt prioritisation](docs/technical-debt-prioritisation.md) | Known debt register |
+| [Team engineering model](docs/team-engineering-model.md) | Ownership, DoR/DoD, and collaboration (§27) |
+| [Technical debt prioritisation](docs/technical-debt-prioritisation.md) | Debt register and eight-week trade-off (§29) |
+| [Architecture review simulation](docs/architecture-review-simulation.md) | Microservice proposal review exercise (§30) |
+| [AI-assisted engineering](docs/ai-assisted-engineering.md) | Safe AI usage guardrails (team policy) |
+| [AI-assisted engineering report](docs/ai-assisted-engineering-report.md) | Candidate AI usage report (§34) |
 | [Requirement-to-evidence matrix](docs/requirement-to-evidence.md) | Challenge compliance traceability |
 
 ### Diagrams (8 mandatory)
@@ -92,7 +94,7 @@ Detailed evidence lives in [docs/requirement-to-evidence.md](docs/requirement-to
 | Transactional Outbox, at-least-once, idempotent consumers | Verified |
 | Reconciliation, manual review, audit | Verified |
 | Security boundary (401/403/concealed 404) | Verified |
-| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (51 / 177 / 12) |
+| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 210 / 12) |
 | Five ADRs, eight diagrams | Verified |
 | Docker Compose runtime, CI | Verified |
 | Legacy runtime routing in production code | Partially verified (documented non-goal) |
@@ -434,10 +436,10 @@ Expected totals (counting `[Fact]`/`[Theory]` cases per project):
 
 | Project | Tests |
 | ------- | ----- |
-| TransferOrchestration.Domain.Tests | 51 |
-| TransferOrchestration.IntegrationTests | 177 |
+| TransferOrchestration.Domain.Tests | 81 |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **240** |
+| **Total** | **303** |
 
 Run PostgreSQL integration suite twice in fresh processes to detect order dependence:
 

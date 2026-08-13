@@ -43,7 +43,7 @@
         <mxCell id="audit" value="&lt;b&gt;Audit &amp;amp; Operations&lt;/b&gt;&lt;br&gt;operational read models&lt;br&gt;manual-action audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="1120" y="945" width="450" height="125" as="geometry" />
         </mxCell>
-        <mxCell id="workers" value="&lt;b&gt;.NET Hosted BackgroundServices&lt;/b&gt;&lt;br&gt;Outbox Publisher · Reconciliation Scheduler/Worker&lt;br&gt;stuck-process detection / durable retries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="workers" value="&lt;b&gt;.NET Hosted BackgroundServices&lt;/b&gt;&lt;br&gt;Outbox Publisher · Process / Fraud / Reconciliation workers&lt;br&gt;durable retries (stuck-transfer **query** is on-demand — TASK-20)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EADCF8;strokeColor=#8E7CC3;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="610" y="1130" width="960" height="125" as="geometry" />
         </mxCell>
         <mxCell id="app_note" value="&lt;b&gt;Important&lt;/b&gt;&lt;br&gt;Module / Bounded Context boundaries are code + ownership boundaries.&lt;br&gt;They are NOT separate containers or Microservices in the initial deployment." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
@@ -73,10 +73,10 @@
         <mxCell id="provider" value="&lt;b&gt;Notification Provider&lt;/b&gt;&lt;br&gt;adapter/stub acceptable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE8E6;strokeColor=#C0504D;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="2450" y="790" width="300" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="legacy" value="&lt;b&gt;Legacy Banking System&lt;/b&gt;&lt;br&gt;coexists during Strangler migration&lt;br&gt;access via ACL / explicit integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#7F6000;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
+        <mxCell id="legacy" value="&lt;b&gt;Legacy Banking System&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;2&quot;&gt;TARGET / FUTURE coexistence — not implemented in challenge runtime&lt;/font&gt;&lt;br&gt;access via ACL / explicit integration when built" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7E6E6;strokeColor=#7F6000;fontSize=11;fontStyle=1;arcSize=10;" vertex="1" parent="1">
           <mxGeometry x="2450" y="990" width="300" height="135" as="geometry" />
         </mxCell>
-        <mxCell id="future" value="&lt;b&gt;Future — only if justified&lt;/b&gt;&lt;br&gt;RabbitMQ/Kafka may later sit behind Outbox publisher for independently deployed consumers.&lt;br&gt;Not present in initial runtime." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+        <mxCell id="future" value="&lt;b&gt;Future / not in challenge runtime&lt;/b&gt;&lt;br&gt;RabbitMQ/Kafka may later sit behind Outbox publisher.&lt;br&gt;Prometheus/Grafana monitoring stack not implemented (structured logs + operator query only)." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
           <mxGeometry x="2440" y="1260" width="480" height="150" as="geometry" />
         </mxCell>
         <mxCell id="runtime_rules" value="&lt;b&gt;Runtime guarantees demonstrated by this topology&lt;/b&gt;&lt;br&gt;1. API and workers may restart without losing persisted workflow work.&lt;br&gt;2. Business state + Outbox are committed atomically in PostgreSQL.&lt;br&gt;3. Outbox delivery is at-least-once; consumers are idempotent.&lt;br&gt;4. Payment timeout enters durable Reconciliation rather than blind retry.&lt;br&gt;5. Notification failure does not roll back a completed Transfer.&lt;br&gt;6. No synchronous distributed transaction is required." style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">

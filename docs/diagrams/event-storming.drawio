@@ -274,7 +274,7 @@
         <mxCell id="ilsN6uS8iSWgmep3KS0A-69" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=28;fontStyle=1;fontColor=#1F2937;" value="Focused Event Storming — Resilient Interbank Transfer Orchestration" vertex="1">
           <mxGeometry height="40" width="760" x="1150" y="-230" as="geometry" />
         </mxCell>
-        <mxCell id="ilsN6uS8iSWgmep3KS0A-70" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=13;fontColor=#4B5563;" value="Scope: transfer submission, fraud, balance reservation, payment-network ambiguity, settlement, reconciliation, reliable messaging and operations." vertex="1">
+        <mxCell id="ilsN6uS8iSWgmep3KS0A-70" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=13;fontColor=#4B5563;" value="Domain discovery workshop output — not proof that every sticky note is implemented. Implemented behaviour: see requirement matrix and code/tests." vertex="1">
           <mxGeometry height="28" width="1350" x="1150" y="-188" as="geometry" />
         </mxCell>
         <mxCell id="ilsN6uS8iSWgmep3KS0A-71" parent="1" style="shape=mxgraph.basic.person;html=1;whiteSpace=wrap;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=12;fontStyle=1;" value="Actor" vertex="1">

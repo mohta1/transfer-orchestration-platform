@@ -138,7 +138,7 @@ Otherwise debt remains **Non-blocking improvement** or **Preference**.
 
 ## 10. Project-Specific Debt Register
 
-Verified against `main` baseline (TASK-16 merged). Re-verify on each major TASK.
+Verified against `main` baseline (TASK-20 merged; TASK-21 debt exercise). Re-verify on each major TASK.
 
 | ID | Evidence | Module / doc | Risk | Priority | Treatment | Owner role | Trigger | Blocks submission? |
 | -- | -------- | ------------ | ---- | -------- | --------- | ---------- | ------- | ------------------ |
@@ -152,7 +152,66 @@ Verified against `main` baseline (TASK-16 merged). Re-verify on each major TASK.
 
 ---
 
-## 11. Related Documents
+## 11. Eight-Week Product Delivery Trade-off
+
+**Exercise type:** Challenge leadership simulation — not production incident data
+**Team:** Three Backend Developers, one QA Engineer, one Product Owner, one shared DevOps/Platform Engineer
+**Goal:** Ship the Modular Monolith transfer capability to a controlled release gate within **eight weeks**, while Legacy coexistence documentation remains honest about partial runtime implementation.
+
+### Assumptions
+
+- The eight weeks cover hardening, operational readiness, and selected debt — not building a full Legacy replacement or production broker cluster.
+- No invented latency SLAs, regulatory claims, or team capacity beyond the roles above.
+- Financial correctness, Outbox atomicity, and payment timeout semantics are **non-negotiable** (locked ADRs).
+- Legacy routing ACL in production code remains a **documented future phase** unless Product reprioritises the entire release.
+- Residual risks require a named **acceptance owner** (Product Owner for business risk; Platform for operational risk).
+
+### Phase allocation (eight weeks)
+
+| Weeks | Focus | Primary owners |
+| ----- | ----- | -------------- |
+| **1–2** | Release blockers: log redaction, fraud idempotency contract with provider, integration test expansion for payment/reconciliation paths | Backend + QA + Platform |
+| **3–4** | Legacy account query mitigation (read-model/ACL caching design); payment-network documentation pack for operators | Backend Dev B + Platform + Product |
+| **5–6** | Broker readiness decision gate; automated integration suite in CI; stuck-transfer/runbook validation | Platform + QA + Backend Dev C |
+| **7** | Residual-risk review; release/no-release rehearsal; debt register closure | Product + all |
+| **8** | Controlled release or documented no-release with accepted mitigations | Product Owner sign-off |
+
+**Critical path:** concerns **1** (Legacy query performance at coexistence boundary) and **2** (fraud idempotency) affect customer-visible correctness during migration — they consume early backend capacity. Concern **6** (broker cluster) is evaluated in week 5; if not production-ready, release proceeds with in-process Outbox (current architecture) rather than delaying eight weeks for Kafka.
+
+**Explicitly not built in eight weeks:** full Legacy decommission, Kubernetes platform, production fraud engine, complete broker-based exactly-once illusion, team-per-microservice ownership.
+
+### Concern matrix (exactly six)
+
+| # | Concern | Classification | Risk | Mitigation | Owner role | Release impact | Follow-up condition |
+| - | ------- | -------------- | ---- | ---------- | ---------- | -------------- | ------------------- |
+| **1** | Legacy account queries are slow | **Can be mitigated temporarily** | Slow authorisation or balance lookups delay submission; migration traffic may hit Legacy read paths | Add timed ACL caching layer + read-model projection for hot account metadata; cap Legacy query fan-out in router; monitor p95 in shadow mode | Backend Dev B + Platform | Release allowed with cache TTL documented and rollback to uncached path | Product confirms acceptable staleness window; remove cache when New owns account reads |
+| **2** | Fraud integration has no idempotency support | **Must resolve before release** | Duplicate fraud calls could produce inconsistent screening outcomes for the same Transfer | Implement client-side idempotency key on fraud requests; persist screening attempt reference in process state; bounded retry only with same key; escalate to Manual Review on ambiguity | Backend Dev A + QA | **Blocks release** until contract test with provider stub proves duplicate call safety | Provider documents idempotency semantics; integration test green on CI |
+| **3** | Payment-network documentation is incomplete | **Can be mitigated temporarily** | Operators mis-handle timeout vs rejection; incorrect manual recovery | Produce operator runbook: timeout → `SubmissionStatusUnknown`, enquiry-only recovery, reference stability; link to sequence diagram | Backend Dev C + Product | Release allowed when runbook reviewed by Operations advisor | Complete provider API catalogue in Phase 4 migration doc |
+| **4** | Existing logs contain account numbers | **Must resolve before release** | Sensitive data exposure in log aggregation | Structured logging redaction/fingerprint helpers (as implemented in `OperationalTelemetry`); scrub legacy log pipelines; add CI grep for raw account patterns in new code | Platform + Backend Dev C | **Blocks release** until redaction verified in integration tests | Security review confirms no raw account numbers in standard log fields |
+| **5** | Automated integration tests are limited | **Can be mitigated temporarily** (+ **Requires business decision** on scope) | Undetected regressions in rare paths (fraud escalation, reconciliation) | Expand PostgreSQL suite in CI for top risk scenarios; manual test charter for gaps; Product accepts documented untested paths | QA + Platform | Release allowed if CI covers financial/concurrency/Outbox/security blockers and Product signs residual test gap register | CI runs full integration project on every main merge |
+| **6** | Broker cluster is not production-ready | **Can be postponed** (+ **Requires business decision** on messaging topology) | Cannot fan out to independent consumers at scale | Continue in-process Outbox dispatcher (current challenge architecture); document broker introduction criteria per ADR-004; do not claim Kafka exactly-once | Platform + Product | Release allowed **without** broker — at-least-once via Outbox remains | Re-evaluate when independent consumer deployment is required |
+
+### Release / no-release conditions
+
+**Release allowed when:**
+
+- Concerns **2** and **4** are resolved with test evidence.
+- Concerns **1**, **3**, **5** have documented mitigations and named acceptance owners.
+- Concern **6** explicitly postponed — Outbox in-process path proven (existing `TransactionalOutboxTests`).
+- Product Owner accepts residual-risk register for items mitigated temporarily.
+- No P0 debt remains open ([§10 register](#10-project-specific-debt-register)).
+
+**No-release when:**
+
+- Fraud idempotency or log redaction lacks executable proof.
+- Product rejects staleness or test-gap residual risk.
+- Team attempts to substitute broker deployment for Outbox/idempotency testing.
+
+**Residual-risk acceptance owner:** Product Owner (business/customer impact); Platform Engineer (operational/logging/broker deferral).
+
+---
+
+## 12. Related Documents
 
 - [engineering-standards.md](./engineering-standards.md)
 - [team-engineering-model.md](./team-engineering-model.md)

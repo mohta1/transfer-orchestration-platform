@@ -638,7 +638,13 @@ Tests verify persisted final state and DB constraints, not only HTTP status.
 
 ## 21. Team Delivery Model
 
-The detailed model belongs in `docs/team-engineering-model.md`.
+The detailed model belongs in [team-engineering-model.md](./team-engineering-model.md) (§27 — three Backend Developers, one QA, one Product Owner, one shared DevOps/Platform Engineer).
+
+Related leadership deliverables:
+
+- [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) §11 — eight-week product delivery trade-off (§29)
+- [architecture-review-simulation.md](./architecture-review-simulation.md) — rejected premature microservice decomposition (§30)
+- [ai-assisted-engineering.md](./ai-assisted-engineering.md) — team policy; [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) — candidate report (§34)
 
 Architecture-level expectations:
 
@@ -661,7 +667,7 @@ Working model:
 
 ## 22. Main Trade-offs
 
-- **Modular Monolith vs Microservices:** local consistency and operational simplicity over independent deployment/scaling.
+- **Modular Monolith vs Microservices:** local consistency and operational simplicity over independent deployment/scaling — see [architecture-review-simulation.md](./architecture-review-simulation.md) for the simulated eight-service rejection rationale.
 - **Persistent Process State vs simpler stateless code:** recoverability/observability over fewer persistence concepts.
 - **Optimistic vs pessimistic locking:** lower normal blocking over simpler serialisation under contention.
 - **Database-backed Outbox worker vs broker-first:** minimal infrastructure over richer broker features.
