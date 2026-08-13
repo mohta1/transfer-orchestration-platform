@@ -299,7 +299,7 @@ See [modernisation-roadmap.md](./modernisation-roadmap.md) for phase ownership d
 
 ## 17. AI-Assisted Changes
 
-All AI-assisted work follows [ai-assisted-engineering.md](./ai-assisted-engineering.md) and the candidate report [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md):
+All AI-assisted work follows [ai-assisted-engineering.md](./ai-assisted-engineering.md) (policy in §1–13; §34 submission evidence in §15):
 
 - AI output is a **proposal**, not evidence.
 - Human author runs tests and captures evidence.
@@ -317,7 +317,7 @@ Extraction is **future consideration only**. Evidence required before changing a
 4. Consumer idempotency and reconciliation remain provable with tests.
 5. ADR-001 revisited after Legacy decommission — not before.
 
-See [architecture-review-simulation.md](./architecture-review-simulation.md) for why premature microservice decomposition is rejected for this team size.
+See [architecture.md](./architecture.md) §25 for why premature microservice decomposition is rejected for this team size.
 
 ---
 
@@ -326,7 +326,6 @@ See [architecture-review-simulation.md](./architecture-review-simulation.md) for
 - [engineering-standards.md](./engineering-standards.md)
 - [technical-debt-prioritisation.md](./technical-debt-prioritisation.md)
 - [ai-assisted-engineering.md](./ai-assisted-engineering.md)
-- [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md)
-- [architecture-review-simulation.md](./architecture-review-simulation.md)
+- [architecture.md](./architecture.md)
 - [modernisation-roadmap.md](./modernisation-roadmap.md)
 - [requirement-to-evidence.md](./requirement-to-evidence.md)

@@ -79,7 +79,7 @@ Verify all 27 §37 deliverables with exact paths and evidence:
 - reservation/idempotency/concurrency;
 - Outbox/durable processing/idempotent consumer.
 
-Also verify dedicated Architecture Review Simulation even though §37 does not list it separately.
+Also verify Architecture Review Simulation in `docs/architecture.md` §25 even though §37 does not list it separately.
 
 ## 6. Business-rule audit
 
@@ -168,11 +168,11 @@ Verify:
 - exact team composition and all 13 §27 model items;
 - all §28 standards are concrete/verifiable;
 - exactly six §29 concerns, exact classifications, risk/mitigation/owner/release impact/follow-up;
-- all nine §30 review dimensions;
+- all nine §30 review dimensions in `docs/architecture.md` §25;
 - all 24 §31 architecture topics;
 - exactly five ADRs with required sections;
 - eight mandatory diagrams;
-- all §34 report items and maximum-two-page constraint.
+- all §34 report items in `docs/ai-assisted-engineering.md` §15 and maximum-two-page constraint.
 
 ## 11. Clean-room validation
 

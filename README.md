@@ -50,7 +50,7 @@ The system does **not** claim exactly-once delivery.
 
 | Document | Purpose |
 | -------- | ------- |
-| [Architecture overview](docs/architecture.md) | System design and module boundaries |
+| [Architecture overview](docs/architecture.md) | System design, module boundaries, and §30 microservice review (§25) |
 | [ADR-001 Architecture style](docs/adr/ADR-001-architecture-style.md) | Modular Monolith decision |
 | [ADR-002 Process coordination](docs/adr/ADR-002-process-coordination.md) | Persistent Process Manager |
 | [ADR-003 Reservation concurrency](docs/adr/ADR-003-reservation-concurrency.md) | Account as financial boundary |
@@ -63,9 +63,7 @@ The system does **not** claim exactly-once delivery.
 | [Engineering standards](docs/engineering-standards.md) | Coding and review rules |
 | [Team engineering model](docs/team-engineering-model.md) | Ownership, DoR/DoD, and collaboration (§27) |
 | [Technical debt prioritisation](docs/technical-debt-prioritisation.md) | Debt register and eight-week trade-off (§29) |
-| [Architecture review simulation](docs/architecture-review-simulation.md) | Microservice proposal review exercise (§30) |
-| [AI-assisted engineering](docs/ai-assisted-engineering.md) | Safe AI usage guardrails (team policy) |
-| [AI-assisted engineering report](docs/ai-assisted-engineering-report.md) | Candidate AI usage report (§34) |
+| [AI-assisted engineering](docs/ai-assisted-engineering.md) | Safe AI usage guardrails and §34 submission evidence |
 | [Requirement-to-evidence matrix](docs/requirement-to-evidence.md) | Challenge compliance traceability |
 
 ### Diagrams (8 mandatory)
