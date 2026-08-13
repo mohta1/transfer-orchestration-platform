@@ -18,7 +18,7 @@ The platform orchestrates domestic interbank transfers with:
 
 **Critical goals:** financial safety (no negative available balance, no duplicate reservation consumption), reliable messaging (no lost committed events), and safe external payment handling (no blind resubmission after ambiguous timeout).
 
-**Current status:** TASK-01 through TASK-21 are complete on `main` (SHA `d7833b1`). TASK-22 final strict compliance audit is on branch `release/challenge-compliance-final`.
+**Current status:** TASK-01 through TASK-22 are complete on `main` (SHA `06a3379`). Challenge compliance audit passed with 0 blockers.
 
 ## Architecture
 
@@ -509,7 +509,7 @@ Reviewers can validate from a fresh clone:
 ```bash
 git clone https://github.com/mohta1/transfer-orchestration-platform.git review-checkout
 cd review-checkout
-git checkout release/challenge-compliance-final   # or main after TASK-22 merge
+git checkout main
 
 cp .env.example .env
 # Set local-only POSTGRES_PASSWORD and JWT_SIGNING_KEY
