@@ -2,8 +2,8 @@
 
 **Status:** TASK-22 final strict compliance audit complete (branch verification)
 **Baseline main SHA:** `d7833b1be63045b4f03f0828a5daabb22e634b1d` (TASK-21 merged)
-**TASK-22 branch SHA:** `41eb354` (`release/challenge-compliance-final`)
-**CI SHA:** `41eb354` — [PR #32 run 31686999881](https://github.com/mohta1/transfer-orchestration-platform/actions/runs/31686999881) (Build and Test + Runtime Verification passed)
+**TASK-22 branch SHA:** `140f3ef` (`release/challenge-compliance-final`)
+**CI SHA:** `140f3ef` — [PR #32 run 31687556055](https://github.com/mohta1/transfer-orchestration-platform/actions/runs/31687556055) (Build and Test + Runtime Verification passed)
 **Last verified:** 2026-08-13 (TASK-22 clean-room audit)
 
 This matrix maps mandatory challenge evidence to **verified** implementation, test, and documentation paths. Status meanings:
@@ -110,7 +110,7 @@ Partially verified (intentional non-goals): REQ-001 (Legacy coexistence runtime)
 | REQ-056 | Roadmap | Persistent PostgreSQL volume | `transfer_postgres_data` volume | TASK-16 compose verification script | [runtime-setup.md](./runtime-setup.md), TASK-16 | **Verified** | |
 | REQ-057 | Roadmap | Clean runtime image | Multi-stage `Dockerfile` | CI runtime-verification job inspects image | [.github/workflows/ci.yml](../.github/workflows/ci.yml), TASK-16 | **Verified** | No Tests.dll, no SDK |
 | REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-22: 0 warnings, 0 errors, **303** tests (81/210/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | CI run 31686999881 |
-| REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI passed on TASK-22 SHA `41eb354` (run 31686999881) | TASK-22 PR #32 | **Verified** | Final main SHA confirmation pending TASK-22 merge |
+| REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI passed on TASK-22 SHA `140f3ef` (run 31687556055) | TASK-22 PR #32 | **Verified** | Final main SHA confirmation pending TASK-22 merge |
 | REQ-060 | Roadmap | Reviewer README, demo path, secret hygiene | [README.md](../README.md), `scripts/seed-local-demo-data.*`, `scripts/LocalDevToken/`, `scripts/demo-transfer-payload.json` | Live Compose demo: POST 202, GET 200/404/401, idempotency replay/conflict | [README.md](../README.md), TASK-18 evidence | **Verified** | No committed secrets; token helper reads env only |
 | REQ-061 | Roadmap §30 | Architecture Review Simulation | N/A | N/A | [architecture-review-simulation.md](./architecture-review-simulation.md) — 12 headings | **Verified** | TASK-21; aligns ADR-001–005 |
 | REQ-062 | Roadmap §34 | AI-Assisted Engineering Report (candidate) | N/A | N/A | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) (~1,050 words) | **Verified** | TASK-21; policy remains in ai-assisted-engineering.md |
@@ -241,7 +241,7 @@ Build: **0 warnings**, **0 errors**.
 
 ## TASK-22 — Final Strict Compliance Audit
 
-Verified 2026-08-13 on branch `release/challenge-compliance-final` SHA `41eb354` (from main `d7833b1`).
+Verified 2026-08-13 on branch `release/challenge-compliance-final` SHA `140f3ef` (from main `d7833b1`).
 
 ### Audit outcome
 
