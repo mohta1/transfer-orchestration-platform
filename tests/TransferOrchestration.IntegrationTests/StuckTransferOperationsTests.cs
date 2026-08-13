@@ -436,6 +436,13 @@ public sealed class StuckTransferOperationsTests : IAsyncLifetime
 
     private static void ApplyTransferState(Transfer transfer, TransferState state, DateTimeOffset now)
     {
+        if (state == TransferState.Rejected)
+        {
+            transfer.RequestAuthorisation(now);
+            transfer.RejectAuthorisation(now);
+            return;
+        }
+
         transfer.RequestAuthorisation(now);
         transfer.Authorise(now);
         switch (state)
@@ -466,9 +473,6 @@ public sealed class StuckTransferOperationsTests : IAsyncLifetime
                 transfer.BeginExternalSubmission(now);
                 transfer.MarkSettlementPending(now);
                 transfer.CompleteSettlement(now);
-                break;
-            case TransferState.Rejected:
-                transfer.RejectAuthorisation(now);
                 break;
             case TransferState.FraudRejected:
                 transfer.BeginFraudScreening(now);
@@ -541,12 +545,20 @@ public sealed class StuckTransferOperationsTests : IAsyncLifetime
             builder.UseSetting("TransferManagement:StuckTransfers:StateAgeThresholdSeconds", ThresholdSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture));
             builder.UseSetting("TransferManagement:StuckTransfers:MaxResults", "50");
             builder.UseSetting("TransferManagement:Reconciliation:EscalationAttemptThreshold", "1");
+            builder.UseSetting("TransferManagement:Reconciliation:RetryDelaySeconds", "5");
+            builder.UseSetting("TransferManagement:Reconciliation:BatchSize", "20");
+            builder.UseSetting("TransferManagement:Reconciliation:LeaseDurationSeconds", "30");
+            builder.UseSetting("TransferManagement:Reconciliation:PollIntervalMilliseconds", "1000");
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<TimeProvider>();
                 services.AddSingleton<TimeProvider>(_clock);
                 services.RemoveAll<IPaymentNetworkGateway>();
-                services.AddSingleton<IPaymentNetworkGateway, RecordingGateway>();
+                services.AddSingleton<IPaymentNetworkGateway>(new RecordingGateway
+                {
+                    SubmissionResult = PaymentSubmissionResult.Timeout,
+                    StatusResult = PaymentStatusResult.Unknown
+                });
                 services.RemoveHostedWorkers();
             });
         }
