@@ -77,7 +77,7 @@ New/updated in TASK-21: REQ-051 (§27 team model), REQ-053 (§29 eight-week trad
 | REQ-039 | Roadmap | Operator-only manual commands | Role policy on manual endpoints | `SecurityBoundaryTests.ManualCommandOrdinaryUserForbidden`, `ManualOperatorSucceeds` | [team-engineering-model.md](./team-engineering-model.md) §10 | **Verified** | |
 | REQ-040 | Roadmap | Liveness and readiness | `/health/live`, `/health/ready`, `PostgreSqlHealthCheck` | `TransferReadAndHealthApiTests.LivenessRemainsHealthyWhenDatabaseIsUnavailable`, `ReadinessIsHealthyWhenDatabaseIsReachable`, `ReadinessIsUnhealthyWhenDatabaseIsUnavailable` | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
 | REQ-041 | Roadmap | ≥10 meaningful domain tests | Domain test project | **81** tests in `TransferOrchestration.Domain.Tests` (TASK-21 recount) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Exceeds minimum |
-| REQ-042 | Roadmap | ≥12 meaningful integration tests | Integration test project | **197** tests in `TransferOrchestration.IntegrationTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Real PostgreSQL |
+| REQ-042 | Roadmap | ≥12 meaningful integration tests | Integration test project | **210** tests in `TransferOrchestration.IntegrationTests` (CI TASK-21 PR #31) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Real PostgreSQL |
 | REQ-043 | Roadmap | Genuine PostgreSQL concurrency tests | Concurrent reservation/idempotency tests | `AccountReservationContractTests.ConcurrentReservationsThatDoNotBothFitProduceOneBusinessLoser`, `TransferSubmissionApiTests.ConcurrentIdenticalRequestsCreateAtMostOneTransferAndProcess` | [TASK-15](./tasks/TASK-15-test-hardening.md) | **Verified** | |
 | REQ-044 | Roadmap | Restart, Outbox, duplicate-delivery, security coverage | Multiple test classes | `TransactionalOutboxTests`, `NotificationConsumerTests`, `ReconciliationWorkflowTests`, `SecurityBoundaryTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) §requirement matrix | **Verified** | |
 | REQ-045 | Roadmap | Mechanical architecture enforcement | Architecture test project | **12** tests in `TransferOrchestration.ArchitectureTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) | **Verified** | |
@@ -93,7 +93,7 @@ New/updated in TASK-21: REQ-051 (§27 team model), REQ-053 (§29 eight-week trad
 | REQ-055 | Roadmap | Deterministic migration/setup | `migrate` service, `scripts/apply-database-migrations.*` | Migrations apply in CI/local | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
 | REQ-056 | Roadmap | Persistent PostgreSQL volume | `transfer_postgres_data` volume | TASK-16 compose verification script | [runtime-setup.md](./runtime-setup.md), TASK-16 | **Verified** | |
 | REQ-057 | Roadmap | Clean runtime image | Multi-stage `Dockerfile` | CI runtime-verification job inspects image | [.github/workflows/ci.yml](../.github/workflows/ci.yml), TASK-16 | **Verified** | No Tests.dll, no SDK |
-| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-21: 0 warnings, 0 errors, **290** tests (81/197/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | Integration requires `TEST_DATABASE_CONNECTION_STRING` |
+| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-21: 0 warnings, 0 errors, **303** tests (81/210/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | Integration requires `TEST_DATABASE_CONNECTION_STRING` |
 | REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI on TASK-18 PR SHA (pending) | TASK-18 PR evidence | **Verified** | Final main SHA confirmation pending merge |
 | REQ-060 | Roadmap | Reviewer README, demo path, secret hygiene | [README.md](../README.md), `scripts/seed-local-demo-data.*`, `scripts/LocalDevToken/`, `scripts/demo-transfer-payload.json` | Live Compose demo: POST 202, GET 200/404/401, idempotency replay/conflict | [README.md](../README.md), TASK-18 evidence | **Verified** | No committed secrets; token helper reads env only |
 | REQ-061 | Roadmap §30 | Architecture Review Simulation | N/A | N/A | [architecture-review-simulation.md](./architecture-review-simulation.md) — 12 headings | **Verified** | TASK-21; aligns ADR-001–005 |
@@ -118,14 +118,14 @@ New/updated in TASK-21: REQ-051 (§27 team model), REQ-053 (§29 eight-week trad
 
 ## Test Totals (REQ-041–044, REQ-058)
 
-Verified TASK-21 (2026-08-13). Domain and architecture tests executed locally. Integration count from source inventory (`[Fact]`/`[Theory]`); full integration run requires `TEST_DATABASE_CONNECTION_STRING` → PostgreSQL 16.
+Verified TASK-21 (2026-08-13). Domain/architecture tests executed locally; integration totals from CI PR #31 (210 passed). Full suite requires `TEST_DATABASE_CONNECTION_STRING` → PostgreSQL 16.
 
 | Project | Passed / counted |
 | ------- | ---------------- |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 197 |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **290** |
+| **Total** | **303** |
 
 Build (TASK-21): **0 warnings**, **0 errors**. Integration suite: run on CI with PostgreSQL service; locally requires Docker Compose or host PostgreSQL.
 
@@ -189,9 +189,9 @@ Updated test totals (TASK-20 merged, TASK-21 recount):
 | Project | Passed |
 | ------- | ------ |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 197 |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **290** |
+| **Total** | **303** |
 
 Build: **0 warnings**, **0 errors**.
 

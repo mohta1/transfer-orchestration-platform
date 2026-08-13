@@ -94,7 +94,7 @@ Detailed evidence lives in [docs/requirement-to-evidence.md](docs/requirement-to
 | Transactional Outbox, at-least-once, idempotent consumers | Verified |
 | Reconciliation, manual review, audit | Verified |
 | Security boundary (401/403/concealed 404) | Verified |
-| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 197 / 12) |
+| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 210 / 12) |
 | Five ADRs, eight diagrams | Verified |
 | Docker Compose runtime, CI | Verified |
 | Legacy runtime routing in production code | Partially verified (documented non-goal) |
@@ -437,9 +437,9 @@ Expected totals (counting `[Fact]`/`[Theory]` cases per project):
 | Project | Tests |
 | ------- | ----- |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 197 |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **290** |
+| **Total** | **303** |
 
 Run PostgreSQL integration suite twice in fresh processes to detect order dependence:
 
