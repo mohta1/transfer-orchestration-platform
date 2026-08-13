@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TransferOrchestration.TransferManagement.Application.FraudScreening;
 using TransferOrchestration.TransferManagement.Application.Idempotency;
 using TransferOrchestration.TransferManagement.Application.BalanceReservation;
 using TransferOrchestration.TransferManagement.Application.Persistence;
@@ -13,6 +14,7 @@ using TransferOrchestration.TransferManagement.Infrastructure.Persistence.Reposi
 using TransferOrchestration.TransferManagement.Infrastructure.Processing;
 using TransferOrchestration.TransferManagement.Infrastructure.Submission;
 using TransferOrchestration.TransferManagement.Application.Reconciliation;
+using TransferOrchestration.TransferManagement.Infrastructure.FraudScreening;
 using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 using TransferOrchestration.TransferManagement.Infrastructure.Reconciliation;
 using TransferOrchestration.TransferManagement.Application.ManualOperations;
@@ -46,6 +48,8 @@ public static class DependencyInjection
         services.AddScoped<ITransferSubmissionIdempotencyStore, TransferSubmissionIdempotencyStore>();
         services.AddScoped<ITransferManagementTransaction, TransferManagementTransaction>();
         services.AddScoped<ITransferSubmissionService, TransferSubmissionService>();
+        services.AddScoped<IFraudScreeningProcessStep, FraudScreeningProcessStep>();
+        services.AddScoped<IFraudScreeningDueWorkDispatcher, FraudScreeningDueWorkDispatcher>();
         services.AddScoped<IReserveBalanceProcessStep, ReserveBalanceProcessStep>();
         services.AddScoped<ITransferProcessDueWorkDispatcher, TransferProcessDueWorkDispatcher>();
         services.AddScoped<IPaymentSubmissionProcessStep, PaymentSubmissionProcessStep>();
@@ -69,6 +73,12 @@ public static class DependencyInjection
         services.Configure<SubmissionPolicyOptions>(configuration.GetSection(SubmissionPolicyOptions.SectionName));
         services.AddOptions<OutboxOptions>()
             .Bind(configuration.GetSection(OutboxOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(options => options.InitialRetryDelaySeconds <= options.MaxRetryDelaySeconds,
+                "InitialRetryDelay must not exceed MaxRetryDelay.")
+            .ValidateOnStart();
+        services.AddOptions<FraudScreeningOptions>()
+            .Bind(configuration.GetSection(FraudScreeningOptions.SectionName))
             .ValidateDataAnnotations()
             .Validate(options => options.InitialRetryDelaySeconds <= options.MaxRetryDelaySeconds,
                 "InitialRetryDelay must not exceed MaxRetryDelay.")

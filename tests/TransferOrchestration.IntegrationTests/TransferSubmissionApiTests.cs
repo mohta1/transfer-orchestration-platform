@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
-using TransferOrchestration.TransferManagement.Application.Idempotency;
+using TransferOrchestration.AccountBalance.Infrastructure.Persistence;
+using TransferOrchestration.AccountBalance.Domain.Accounts;
+using TransferOrchestration.TransferManagement.Application.FraudScreening;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
@@ -35,9 +37,15 @@ public sealed class TransferSubmissionApiTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<Response>();
         Assert.NotNull(body);
-        Assert.Equal("PendingBalanceReservation", body.State);
+        Assert.Equal("PendingFraudScreening", body.State);
         Assert.Equal(correlation, body.CorrelationId);
         Assert.Equal(correlation.ToString("D"), response.Headers.GetValues("X-Correlation-ID").Single());
+
+        await using (var dispatchScope = factory.Services.CreateAsyncScope())
+        {
+            await FraudScreeningTestSupport.DispatchDueFraudScreeningAsync(dispatchScope.ServiceProvider);
+        }
+
         await using var scope = factory.Services.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>();
         var transfer = await context.Transfers.SingleAsync();
@@ -146,11 +154,16 @@ public sealed class TransferSubmissionApiTests
     [Fact]
     public async Task FraudRejectionCannotReachBalanceReservation()
     {
-        await using var factory = await SubmissionFactory.CreateAsync(fraud: DecisionOutcome.Rejected);
+        await using var factory = await SubmissionFactory.CreateAsync(fraud: FraudScreeningResult.Rejected);
         var response = await factory.SendAsync("fraud-rejected", Payload());
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Equal(0, factory.Fraud.CallCount);
+
+        await factory.DispatchFraudAsync();
+
         Assert.Equal(1, factory.Fraud.CallCount);
         Assert.Equal(TransferState.FraudRejected, await factory.SingleTransferStateAsync());
+        Assert.Equal(0, await factory.ReservationCountAsync());
     }
 
     [Fact]
@@ -166,6 +179,8 @@ public sealed class TransferSubmissionApiTests
         Assert.Equal(1, await factory.TransferCountAsync());
         Assert.Equal(1, await factory.ProcessCountAsync());
         Assert.Equal(1, factory.Authorization.CallCount);
+        Assert.Equal(0, factory.Fraud.CallCount);
+        await factory.DispatchFraudAsync();
         Assert.Equal(1, factory.Fraud.CallCount);
     }
 
@@ -264,7 +279,25 @@ public sealed class TransferSubmissionApiTests
         await using var factory = await SubmissionFactory.CreateAsync(useConfiguredDailyLimit: true);
         Assert.Equal(HttpStatusCode.Accepted, (await factory.SendAsync("daily-first", Payload(amount: 6_000m))).StatusCode);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, (await factory.SendAsync("daily-second", Payload(amount: 6_000m))).StatusCode);
+        Assert.Equal(0, factory.Fraud.CallCount);
+        await factory.DispatchFraudAsync();
         Assert.Equal(1, factory.Fraud.CallCount);
+    }
+
+    [Fact]
+    public async Task SameKeyReplayDuringPendingFraudScreeningCreatesNoDuplicateWork()
+    {
+        await using var factory = await SubmissionFactory.CreateAsync();
+        await factory.SendAsync("pending-fraud-replay", Payload());
+        await factory.SendAsync("pending-fraud-replay", Payload());
+        Assert.Equal(1, await factory.TransferCountAsync());
+        Assert.Equal(1, await factory.ProcessCountAsync());
+        Assert.Equal(0, factory.Fraud.CallCount);
+        Assert.Equal(TransferState.PendingFraudScreening, await factory.SingleTransferStateAsync());
+        await using var scope = factory.Services.CreateAsyncScope();
+        var process = await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>()
+            .TransferProcessStates.SingleAsync();
+        Assert.Equal(TransferProcessAction.RequestFraudScreening, process.NextAction);
     }
 
     private static object Payload(decimal amount = 10m, Guid? destination = null) => new
@@ -296,7 +329,7 @@ public sealed class TransferSubmissionApiTests
 
         private readonly bool _useConfiguredDailyLimit;
 
-        private SubmissionFactory(string connectionString, DecisionOutcome authorization, DecisionOutcome dailyLimit, DecisionOutcome fraud, bool throwAuthorization, bool useConfiguredDailyLimit)
+        private SubmissionFactory(string connectionString, DecisionOutcome authorization, DecisionOutcome dailyLimit, FraudScreeningResult fraud, bool throwAuthorization, bool useConfiguredDailyLimit)
         {
             _connectionString = connectionString;
             _useConfiguredDailyLimit = useConfiguredDailyLimit;
@@ -308,7 +341,7 @@ public sealed class TransferSubmissionApiTests
         public static async Task<SubmissionFactory> CreateAsync(
             DecisionOutcome authorization = DecisionOutcome.Approved,
             DecisionOutcome dailyLimit = DecisionOutcome.Approved,
-            DecisionOutcome fraud = DecisionOutcome.Approved,
+            FraudScreeningResult fraud = FraudScreeningResult.Approved,
             bool throwAuthorization = false,
             bool useConfiguredDailyLimit = false)
         {
@@ -322,6 +355,7 @@ public sealed class TransferSubmissionApiTests
             var factory = new SubmissionFactory(connectionString, authorization, dailyLimit, fraud, throwAuthorization, useConfiguredDailyLimit);
             _ = factory.Services;
             await using var scope = factory.Services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<AccountBalanceDbContext>().Database.MigrateAsync();
             await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>().Database.MigrateAsync();
             await scope.ServiceProvider.GetRequiredService<AuditOperationsDbContext>().Database.MigrateAsync();
             return factory;
@@ -366,6 +400,23 @@ public sealed class TransferSubmissionApiTests
                 .TryConsumeAsync(sourceAccountId, amount, "GBP", day, CancellationToken.None);
         }
 
+        public async Task DispatchFraudAsync()
+        {
+            await using var scope = Services.CreateAsyncScope();
+            await FraudScreeningTestSupport.DispatchDueFraudScreeningAsync(scope.ServiceProvider);
+        }
+
+        public async Task<int> ReservationCountAsync()
+        {
+            await using var scope = Services.CreateAsyncScope();
+            var transferId = await scope.ServiceProvider.GetRequiredService<TransferManagementDbContext>()
+                .Transfers.Select(transfer => transfer.Id.Value)
+                .SingleAsync();
+            return await scope.ServiceProvider.GetRequiredService<AccountBalanceDbContext>()
+                .Set<BalanceReservation>()
+                .CountAsync(reservation => reservation.TransferId == transferId);
+        }
+
         private async Task<T> WithContext<T>(Func<TransferManagementDbContext, Task<T>> query)
         {
             await using var scope = Services.CreateAsyncScope();
@@ -394,10 +445,11 @@ public sealed class TransferSubmissionApiTests
         }
     }
 
-    private sealed class CountingFraud(DecisionOutcome outcome) : IFraudScreening
+    private sealed class CountingFraud(FraudScreeningResult outcome) : IFraudScreening
     {
         public int CallCount { get; private set; }
-        public Task<DecisionOutcome> ScreenAsync(TransferSubmissionRequest request, CancellationToken cancellationToken)
+
+        public Task<FraudScreeningResult> ScreenAsync(FraudScreeningRequest request, CancellationToken cancellationToken)
         {
             CallCount++;
             return Task.FromResult(outcome);

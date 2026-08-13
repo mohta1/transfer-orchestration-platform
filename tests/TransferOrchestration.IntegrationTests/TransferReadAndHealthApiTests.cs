@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
-using TransferOrchestration.TransferManagement.Application.Idempotency;
+using TransferOrchestration.TransferManagement.Application.FraudScreening;
 using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Contracts.Queries;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
@@ -38,6 +38,11 @@ public sealed class TransferReadAndHealthApiTests
         Assert.Equal(HttpStatusCode.Accepted, submitResponse.StatusCode);
         var submitBody = await submitResponse.Content.ReadFromJsonAsync<SubmissionResponse>();
         Assert.NotNull(submitBody?.TransferId);
+
+        await using (var dispatchScope = factory.Services.CreateAsyncScope())
+        {
+            await FraudScreeningTestSupport.DispatchDueFraudScreeningAsync(dispatchScope.ServiceProvider);
+        }
 
         using var getRequest = GetTransferRequest(submitBody.TransferId.Value, correlation);
         var getResponse = await client.SendAsync(getRequest);
@@ -130,13 +135,26 @@ public sealed class TransferReadAndHealthApiTests
     }
 
     [Fact]
-    public async Task FraudRejectionReturnsUnprocessableEntityProblemDetails()
+    public async Task FraudRejectionIsVisibleAfterDurableScreeningCompletes()
     {
-        await using var factory = await ApiFactory.CreateAsync(fraud: DecisionOutcome.Rejected);
+        await using var factory = await ApiFactory.CreateAsync(fraud: FraudScreeningResult.Rejected);
         using var client = factory.CreateClient();
-        var response = await client.SendAsync(SubmitRequest("fraud-rejected-problem", Payload()));
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        await AssertProblemDetails(response, "fraud_rejected", HttpStatusCode.UnprocessableEntity);
+        var submitResponse = await client.SendAsync(SubmitRequest("fraud-rejected-problem", Payload()));
+        Assert.Equal(HttpStatusCode.Accepted, submitResponse.StatusCode);
+
+        await using (var dispatchScope = factory.Services.CreateAsyncScope())
+        {
+            await FraudScreeningTestSupport.DispatchDueFraudScreeningAsync(dispatchScope.ServiceProvider);
+        }
+
+        var submitBody = await submitResponse.Content.ReadFromJsonAsync<SubmissionResponse>();
+        Assert.NotNull(submitBody?.TransferId);
+        using var getRequest = GetTransferRequest(submitBody.TransferId.Value);
+        var getResponse = await client.SendAsync(getRequest);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var transfer = await getResponse.Content.ReadFromJsonAsync<TransferDetailsDto>();
+        Assert.NotNull(transfer);
+        Assert.Equal("FraudRejected", transfer.State);
     }
 
     [Fact]
@@ -263,13 +281,13 @@ public sealed class TransferReadAndHealthApiTests
         private readonly string _connectionString;
         private readonly bool _throwAuthorization;
         private readonly DecisionOutcome _authorization;
-        private readonly DecisionOutcome _fraud;
+        private readonly FraudScreeningResult _fraud;
 
         private ApiFactory(
             string connectionString,
             bool throwAuthorization,
             DecisionOutcome authorization,
-            DecisionOutcome fraud)
+            FraudScreeningResult fraud)
         {
             _connectionString = connectionString;
             _throwAuthorization = throwAuthorization;
@@ -281,7 +299,7 @@ public sealed class TransferReadAndHealthApiTests
             bool throwAuthorization = false,
             bool useInvalidDatabase = false,
             DecisionOutcome authorization = DecisionOutcome.Approved,
-            DecisionOutcome fraud = DecisionOutcome.Approved)
+            FraudScreeningResult fraud = FraudScreeningResult.Approved)
         {
             if (useInvalidDatabase)
             {
@@ -345,9 +363,9 @@ public sealed class TransferReadAndHealthApiTests
                 Task.FromResult(DecisionOutcome.Approved);
         }
 
-        private sealed class ConfigurableFraud(DecisionOutcome outcome) : IFraudScreening
+        private sealed class ConfigurableFraud(FraudScreeningResult outcome) : IFraudScreening
         {
-            public Task<DecisionOutcome> ScreenAsync(TransferSubmissionRequest request, CancellationToken cancellationToken) =>
+            public Task<FraudScreeningResult> ScreenAsync(FraudScreeningRequest request, CancellationToken cancellationToken) =>
                 Task.FromResult(outcome);
         }
     }

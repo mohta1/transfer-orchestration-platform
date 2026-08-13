@@ -16,7 +16,7 @@ using TransferOrchestration.PaymentNetwork.Contracts;
 using TransferOrchestration.TransferManagement.Application.PaymentSubmission;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Reconciliation;
-using TransferOrchestration.TransferManagement.Application.Idempotency;
+using TransferOrchestration.TransferManagement.Application.FraudScreening;
 using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
@@ -455,8 +455,8 @@ public sealed class SecurityBoundaryTests
 
     private sealed class AllowAllFraud : IFraudScreening
     {
-        public Task<DecisionOutcome> ScreenAsync(TransferSubmissionRequest request, CancellationToken cancellationToken) =>
-            Task.FromResult(DecisionOutcome.Approved);
+        public Task<FraudScreeningResult> ScreenAsync(FraudScreeningRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(FraudScreeningResult.Approved);
     }
 
     private sealed class SecurityTestLoggerProvider(List<string> sink) : ILoggerProvider

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TransferOrchestration.TransferManagement.Application.FraudScreening;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.PaymentSubmission;
 
@@ -26,6 +27,8 @@ internal sealed class TransferProcessWorker(
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
+                var fraudDispatcher = scope.ServiceProvider.GetRequiredService<IFraudScreeningDueWorkDispatcher>();
+                await fraudDispatcher.DispatchDueAsync(stoppingToken);
                 var dispatcher = scope.ServiceProvider.GetRequiredService<ITransferProcessDueWorkDispatcher>();
                 await dispatcher.DispatchDueAsync(stoppingToken);
                 var paymentDispatcher = scope.ServiceProvider.GetRequiredService<IPaymentSubmissionDueWorkDispatcher>();

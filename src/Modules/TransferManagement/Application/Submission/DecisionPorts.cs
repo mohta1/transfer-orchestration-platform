@@ -1,5 +1,3 @@
-using TransferOrchestration.TransferManagement.Application.Idempotency;
-
 namespace TransferOrchestration.TransferManagement.Application.Submission;
 
 internal enum DecisionOutcome
@@ -16,11 +14,6 @@ internal interface ICustomerAuthorization
 internal interface IDailyTransferLimit
 {
     Task<DecisionOutcome> TryConsumeAsync(Guid sourceAccountId, decimal amount, string currency, DateOnly utcDay, CancellationToken cancellationToken);
-}
-
-internal interface IFraudScreening
-{
-    Task<DecisionOutcome> ScreenAsync(TransferSubmissionRequest request, CancellationToken cancellationToken);
 }
 
 internal sealed class SubmissionPolicyOptions

@@ -170,6 +170,14 @@ internal sealed class Transfer : AggregateRoot<TransferId>
             nowUtc);
     }
 
+    public void EscalateFraudToManualReview(DateTimeOffset nowUtc)
+    {
+        Transition(
+            TransferState.PendingFraudScreening,
+            TransferState.ManualReviewRequired,
+            nowUtc);
+    }
+
     public void RequestBalanceReservation(DateTimeOffset nowUtc)
     {
         Transition(

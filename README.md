@@ -273,9 +273,9 @@ curl -sS -X POST http://localhost:8080/api/transfers \
   --data-binary @scripts/demo-transfer-payload.json
 ```
 
-Expected: **202 Accepted** with body containing `transferId`, `state` (initially `PendingBalanceReservation`), `outcome` (`Accepted` or `Replay`).
+Expected: **202 Accepted** with body containing `transferId`, `state` (initially `PendingFraudScreening` while durable screening runs), `outcome` (`Accepted` or `Replay`). After the background worker completes fraud screening, state becomes `PendingBalanceReservation` when approved.
 
-Errors: **400** validation/idempotency key, **401** missing/invalid auth, **403** customer not authorized for source account, **409** idempotency conflict, **422** daily limit / fraud rejection.
+Errors: **400** validation/idempotency key, **401** missing/invalid auth, **403** customer not authorized for source account, **409** idempotency conflict, **422** daily limit rejection. Fraud rejection is applied asynchronously by the process worker and is visible via GET once screening completes.
 
 ### GET /api/transfers/{transferId}
 
@@ -476,7 +476,7 @@ Runtime image: multi-stage build — no .NET SDK, no test binaries in the final 
 - No production identity provider or token issuance
 - No complete Legacy runtime integration/routing (documented in ADR-005 and technical-debt register)
 - Reconciliation orchestration lives in TransferManagement (DEBT-001)
-- Challenge adapters/stubs for fraud screening and payment network in local runtime
+- Challenge adapters/stubs for fraud screening and payment network in local runtime; fraud screening is durable and asynchronous (timeout/unavailability retry with bounded escalation to manual review)
 - Not a full banking ledger or production SLA
 - No Kafka/RabbitMQ, Kubernetes, or cloud deployment in scope
 - No production secret manager
