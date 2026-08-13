@@ -516,6 +516,7 @@ public sealed class PaymentSubmissionWorkflowTests : IAsyncLifetime
         services.AddAccountBalanceModule(_connectionString);
         services.AddTransferManagementModule(_connectionString, configuration);
         services.Replace(ServiceDescriptor.Singleton<IPaymentNetworkGateway>(gateway));
+        services.ConfigureManualIntegrationTestHost();
         return services.BuildServiceProvider();
     }
 

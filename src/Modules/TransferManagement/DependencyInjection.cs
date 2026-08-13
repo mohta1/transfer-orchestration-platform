@@ -15,6 +15,7 @@ using TransferOrchestration.TransferManagement.Infrastructure.Processing;
 using TransferOrchestration.TransferManagement.Infrastructure.Submission;
 using TransferOrchestration.TransferManagement.Application.Reconciliation;
 using TransferOrchestration.TransferManagement.Infrastructure.FraudScreening;
+using TransferOrchestration.TransferManagement.Infrastructure.Operations;
 using TransferOrchestration.TransferManagement.Infrastructure.Outbox;
 using TransferOrchestration.TransferManagement.Infrastructure.Reconciliation;
 using TransferOrchestration.TransferManagement.Application.ManualOperations;
@@ -61,6 +62,8 @@ public static class DependencyInjection
         services.AddScoped<IReconciliationDueWorkDispatcher, ReconciliationDueWorkDispatcher>();
         services.AddScoped<ITransferManualOperations, TransferManualOperationsService>();
         services.AddScoped<ITransferQueries, TransferQueries>();
+        services.AddScoped<IStuckTransferQueries, StuckTransferQueries>();
+        services.AddScoped<IStuckTransferQueryRepository, StuckTransferQueryRepository>();
         services.AddHostedService<TransferProcessWorker>();
         services.AddHostedService<ReconciliationWorker>();
         services.AddScoped<IOutboxStore, OutboxStore>();
@@ -85,6 +88,10 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddOptions<ReconciliationOptions>()
             .Bind(configuration.GetSection(ReconciliationOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddOptions<StuckTransferOperationsOptions>()
+            .Bind(configuration.GetSection(StuckTransferOperationsOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 

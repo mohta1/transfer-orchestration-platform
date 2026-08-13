@@ -332,6 +332,7 @@ public sealed class TransferReadAndHealthApiTests
                 services.AddSingleton<ICustomerAuthorization>(new ConfigurableAuthorization(_authorization, _throwAuthorization));
                 services.AddSingleton<IDailyTransferLimit>(new AllowDailyLimit());
                 services.AddSingleton<IFraudScreening>(new ConfigurableFraud(_fraud));
+                services.RemoveHostedWorkers();
             });
         }
 

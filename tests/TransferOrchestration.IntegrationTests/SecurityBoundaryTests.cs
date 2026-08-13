@@ -374,6 +374,8 @@ public sealed class SecurityBoundaryTests
                 {
                     services.AddSingleton<ILoggerProvider>(new SecurityTestLoggerProvider(_logSink));
                 }
+
+                services.RemoveHostedWorkers();
             });
         }
 

@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using TransferOrchestration.PaymentNetwork.Contracts;
+using TransferOrchestration.TransferManagement.Application.Observability;
 using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Reconciliation;
@@ -17,7 +20,8 @@ internal enum PaymentSubmissionStepOutcome { Accepted, Rejected, StatusUnknown, 
 internal sealed class PaymentSubmissionProcessStep(
     IServiceScopeFactory scopeFactory,
     IPaymentNetworkGateway paymentNetworkGateway,
-    TimeProvider timeProvider) : IPaymentSubmissionProcessStep
+    TimeProvider timeProvider,
+    ILogger<PaymentSubmissionProcessStep> logger) : IPaymentSubmissionProcessStep
 {
     private const int AmbiguityPersistenceAttempts = 3;
 
@@ -27,6 +31,7 @@ internal sealed class PaymentSubmissionProcessStep(
         CancellationToken cancellationToken)
     {
         PaymentSubmissionRequest? request;
+        Guid processCorrelationId;
         await using (var preparationScope = scopeFactory.CreateAsyncScope())
         {
             var transferRepository = preparationScope.ServiceProvider.GetRequiredService<ITransferRepository>();
@@ -51,6 +56,7 @@ internal sealed class PaymentSubmissionProcessStep(
 
             var reference = paymentNetworkGateway.CreateSubmissionReference(transfer.Id.Value);
             var now = timeProvider.GetUtcNow();
+            processCorrelationId = process.CorrelationId;
             transfer.BeginExternalSubmission(now);
             process.PrepareExternalSubmission(reference.Value, now);
             try
@@ -61,6 +67,12 @@ internal sealed class PaymentSubmissionProcessStep(
             }
             catch (TransferProcessConcurrencyConflictException)
             {
+                OperationalTelemetry.LogConcurrencyConflict(
+                    logger,
+                    transferId.Value,
+                    nameof(TransferProcessState),
+                    "SaveChanges",
+                    processCorrelationId);
                 return PaymentSubmissionStepOutcome.LostClaim;
             }
 
@@ -74,32 +86,44 @@ internal sealed class PaymentSubmissionProcessStep(
         }
 
         PaymentSubmissionResult result;
+        var stopwatch = Stopwatch.StartNew();
         try
         {
             result = await paymentNetworkGateway.SubmitAsync(request, cancellationToken);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return await PersistAmbiguousOutcomeAsync(transferId, request.Reference);
+            return await PersistAmbiguousOutcomeAsync(transferId, request.Reference, processCorrelationId);
         }
         catch (OperationCanceledException)
         {
-            // Once SubmitAsync has been invoked, cancellation can no longer prove that
-            // the provider did not receive the request. The safety write must therefore
-            // ignore the cancelled caller token and complete before cancellation escapes.
-            await PersistAmbiguousOutcomeAsync(transferId, request.Reference);
+            await PersistAmbiguousOutcomeAsync(transferId, request.Reference, processCorrelationId);
             throw;
         }
         catch
         {
-            // Any provider uncertainty after preparation deliberately remains on the
-            // persisted enquiry path. Persist the ambiguous Transfer state in a fresh
-            // scope before returning; it is never converted into rejection or submit.
-            return await PersistAmbiguousOutcomeAsync(transferId, request.Reference);
+            stopwatch.Stop();
+            OperationalTelemetry.LogExternalCallCompleted(
+                logger,
+                transferId.Value,
+                "PaymentNetwork",
+                "Ambiguous",
+                stopwatch.ElapsedMilliseconds,
+                processCorrelationId);
+            return await PersistAmbiguousOutcomeAsync(transferId, request.Reference, processCorrelationId);
         }
 
+        stopwatch.Stop();
+        OperationalTelemetry.LogExternalCallCompleted(
+            logger,
+            transferId.Value,
+            "PaymentNetwork",
+            result.ToString(),
+            stopwatch.ElapsedMilliseconds,
+            processCorrelationId);
+
         var outcome = result == PaymentSubmissionResult.Timeout
-            ? await PersistAmbiguousOutcomeAsync(transferId, request.Reference)
+            ? await PersistAmbiguousOutcomeAsync(transferId, request.Reference, processCorrelationId)
             : await PersistOutcomeAsync(transferId, request.Reference, result);
         cancellationToken.ThrowIfCancellationRequested();
         return outcome;
@@ -107,7 +131,8 @@ internal sealed class PaymentSubmissionProcessStep(
 
     private async Task<PaymentSubmissionStepOutcome> PersistAmbiguousOutcomeAsync(
         TransferId transferId,
-        NetworkSubmissionReference reference)
+        NetworkSubmissionReference reference,
+        Guid correlationId)
     {
         for (var attempt = 1; attempt <= AmbiguityPersistenceAttempts; attempt++)
         {
@@ -156,6 +181,11 @@ internal sealed class PaymentSubmissionProcessStep(
             try
             {
                 await processRepository.SaveChangesAsync(CancellationToken.None);
+                OperationalTelemetry.LogSubmissionStatusUnknown(
+                    logger,
+                    transferId.Value,
+                    "PaymentNetwork",
+                    correlationId);
                 return PaymentSubmissionStepOutcome.StatusUnknown;
             }
             catch (TransferProcessConcurrencyConflictException) when (attempt < AmbiguityPersistenceAttempts)

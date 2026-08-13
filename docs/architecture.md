@@ -558,7 +558,11 @@ Manual Audit Records include operator, reason, prior state, resulting action/sta
 
 ## 19. Observability
 
-Baseline:
+Runtime baseline (TASK-20): `OperationalTelemetry` uses `LoggerMessage` templates across submission, fraud screening, payment submission, reconciliation, manual operations, Outbox dispatch, HTTP correlation middleware, and stuck-transfer queries. Logging failures are swallowed so business behavior is unchanged. Sensitive values are never logged — idempotency keys and account identifiers use SHA-256 fingerprints when referenced.
+
+Operator stuck-work discovery: `GET /api/operations/stuck-transfers` (Operator policy) backed by `IStuckTransferQueries` and durable `Transfer` + `TransferProcessState` (+ optional reconciliation schedule) projections.
+
+Baseline fields:
 
 - structured `ILogger`;
 - `CorrelationId`;

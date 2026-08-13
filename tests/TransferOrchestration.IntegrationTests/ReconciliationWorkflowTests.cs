@@ -500,6 +500,7 @@ public sealed class ReconciliationWorkflowTests : IAsyncLifetime
         services.AddTransferManagementModule(_connectionString, configuration);
         services.Replace(ServiceDescriptor.Singleton<IPaymentNetworkGateway>(gateway));
         services.Replace(ServiceDescriptor.Singleton<TimeProvider>(_clock));
+        services.ConfigureManualIntegrationTestHost();
         return services.BuildServiceProvider();
     }
 

@@ -46,3 +46,8 @@ Idempotency-Key: manual-confirm-http-001
 {
   "reason": "Demo manual settlement confirmation"
 }
+
+### List stuck transfers (operator only)
+GET {{baseUrl}}/api/operations/stuck-transfers?maxResults=20
+Authorization: Bearer {{operatorToken}}
+X-Correlation-ID: 00000000-0000-0000-0000-000000000002

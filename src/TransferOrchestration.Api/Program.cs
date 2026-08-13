@@ -54,6 +54,7 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 app.MapTransferSubmissionEndpoints();
 app.MapTransferReadEndpoints();
 app.MapManualOperationsEndpoints();
+app.MapOperationsEndpoints();
 
 app.Run();
 

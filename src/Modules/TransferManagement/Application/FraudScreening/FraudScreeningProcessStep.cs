@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
+using TransferOrchestration.TransferManagement.Application.Observability;
 using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Domain.Transfers;
@@ -30,7 +33,8 @@ internal sealed class FraudScreeningProcessStep(
     IServiceScopeFactory scopeFactory,
     IFraudScreening fraudScreening,
     IOptions<FraudScreeningOptions> options,
-    TimeProvider timeProvider) : IFraudScreeningProcessStep
+    TimeProvider timeProvider,
+    ILogger<FraudScreeningProcessStep> logger) : IFraudScreeningProcessStep
 {
     public async Task<FraudScreeningStepOutcome> ExecuteAsync(
         TransferId transferId,
@@ -38,6 +42,7 @@ internal sealed class FraudScreeningProcessStep(
         CancellationToken cancellationToken)
     {
         FraudScreeningRequest? screeningRequest;
+        Guid processCorrelationId;
         await using (var preparationScope = scopeFactory.CreateAsyncScope())
         {
             var transferRepository = preparationScope.ServiceProvider.GetRequiredService<ITransferRepository>();
@@ -64,6 +69,7 @@ internal sealed class FraudScreeningProcessStep(
                 return FraudScreeningStepOutcome.NotActionable;
             }
 
+            processCorrelationId = process.CorrelationId;
             screeningRequest = new FraudScreeningRequest(
                 transfer.Id.Value,
                 transfer.SourceAccountId,
@@ -74,6 +80,7 @@ internal sealed class FraudScreeningProcessStep(
         }
 
         FraudScreeningResult result;
+        var stopwatch = Stopwatch.StartNew();
         try
         {
             result = await fraudScreening.ScreenAsync(screeningRequest, cancellationToken);
@@ -86,6 +93,18 @@ internal sealed class FraudScreeningProcessStep(
         {
             result = FraudScreeningResult.TemporarilyUnavailable;
         }
+        finally
+        {
+            stopwatch.Stop();
+        }
+
+        OperationalTelemetry.LogExternalCallCompleted(
+            logger,
+            transferId.Value,
+            "FraudScreening",
+            result.ToString(),
+            stopwatch.ElapsedMilliseconds,
+            processCorrelationId);
 
         return await PersistOutcomeAsync(transferId, claimedVersion, result, cancellationToken);
     }
@@ -127,6 +146,14 @@ internal sealed class FraudScreeningProcessStep(
         switch (result)
         {
             case FraudScreeningResult.Approved:
+                OperationalTelemetry.LogStateTransition(
+                    logger,
+                    transferId.Value,
+                    TransferState.PendingFraudScreening.ToString(),
+                    TransferState.PendingBalanceReservation.ToString(),
+                    TransferProcessAction.ReserveBalance.ToString(),
+                    process.CorrelationId,
+                    null);
                 transfer.RequestBalanceReservation(now);
                 process.Schedule(TransferProcessAction.ReserveBalance, now, now);
                 await processRepository.SaveChangesAsync(cancellationToken);
@@ -161,6 +188,13 @@ internal sealed class FraudScreeningProcessStep(
                         attemptCountAfterFailure,
                         now),
                     now);
+                OperationalTelemetry.LogRetryScheduled(
+                    logger,
+                    transferId.Value,
+                    process.NextAction.ToString(),
+                    process.AttemptCount,
+                    process.NextAttemptAtUtc!.Value,
+                    process.CorrelationId);
                 await processRepository.SaveChangesAsync(cancellationToken);
                 return FraudScreeningStepOutcome.RetryScheduled;
 

@@ -255,6 +255,7 @@ All business endpoints require `Authorization: Bearer <token>` unless noted.
 | GET | `/api/transfers/{transferId}` | Customer | Read own transfer (cross-customer → concealed 404) |
 | POST | `/api/transfers/{transferId}/manual/reject` | Operator | Reject from manual review |
 | POST | `/api/transfers/{transferId}/manual/confirm-settlement` | Operator | Confirm settlement from manual review |
+| GET | `/api/operations/stuck-transfers` | Operator | List transfers stuck beyond configured state-age threshold |
 | GET | `/health/live` | Anonymous | Liveness |
 | GET | `/health/ready` | Anonymous | Readiness (PostgreSQL) |
 
@@ -297,6 +298,20 @@ curl -sS -X POST "http://localhost:8080/api/transfers/{transferId}/manual/reject
 ```
 
 Expected: **403** for customer tokens; **200** for operator when transfer is in a valid manual-review state.
+
+### Stuck transfers (operator)
+
+On-demand query for non-terminal transfers whose last activity exceeds `TransferManagement:StuckTransfers:StateAgeThresholdSeconds` (default **600** seconds). Does not mutate workflow state; recovery remains via existing manual commands.
+
+```bash
+curl -sS "http://localhost:8080/api/operations/stuck-transfers?maxResults=20" \
+  -H "Authorization: Bearer $OPERATOR_TOKEN" \
+  -H "X-Correlation-ID: $(uuidgen)"
+```
+
+Expected: **401** without auth; **403** for customer tokens; **200** with bounded safe projection (transfer/process metadata, age, category — no account IDs, idempotency keys, or tokens). Scheduled future process or reconciliation work is excluded until due.
+
+Limitations: demo operational threshold only (not a production SLA); no Prometheus/Grafana stack; detection is query-based (no background alert worker).
 
 Producing a transfer in `ManualReviewRequired` via the public API alone is not guaranteed — that state arises from reconciliation escalation in integration tests (see Timeout/reconciliation demo below).
 

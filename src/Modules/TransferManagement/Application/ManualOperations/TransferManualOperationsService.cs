@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using TransferOrchestration.AccountBalance.Contracts;
 using TransferOrchestration.AuditOperations.Contracts;
+using TransferOrchestration.TransferManagement.Application.Observability;
 using TransferOrchestration.TransferManagement.Application.Persistence;
 using TransferOrchestration.TransferManagement.Application.ProcessManagement;
 using TransferOrchestration.TransferManagement.Application.Reconciliation;
@@ -19,7 +21,8 @@ internal sealed class TransferManualOperationsService(
     ITransferManagementTransaction transaction,
     TransferManagementDbContext transferDbContext,
     IOperationsAuditWriter auditWriter,
-    TimeProvider timeProvider) : ITransferManualOperations
+    TimeProvider timeProvider,
+    ILogger<TransferManualOperationsService> logger) : ITransferManualOperations
 {
     private const string RejectAction = "RejectFromManualReview";
     private const string ConfirmSettlementAction = "ConfirmSettlementFromManualReview";
@@ -140,12 +143,31 @@ internal sealed class TransferManualOperationsService(
                 replay.CorrelationId);
         }
 
+        LogSuccessfulManualAction(command, action, previousState, transfer.State.ToString());
+
         return new ManualTransferOperationResult(
             ManualTransferOperationOutcome.Succeeded,
             transfer.Id.Value,
             previousState,
             transfer.State.ToString(),
             command.CorrelationId);
+    }
+
+    private void LogSuccessfulManualAction(
+        ManualTransferOperationCommand command,
+        string action,
+        string previousState,
+        string newState)
+    {
+        OperationalTelemetry.LogManualAction(
+            logger,
+            command.TransferId,
+            action,
+            command.ActorId,
+            previousState,
+            newState,
+            command.CorrelationId,
+            command.CausationId);
     }
 
     private static bool IsCommandIdUniqueViolation(DbUpdateException exception) =>
