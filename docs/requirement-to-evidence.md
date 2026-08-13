@@ -111,8 +111,8 @@ Partially verified (intentional non-goals): REQ-001 (Legacy coexistence runtime)
 | REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-22: 0 warnings, 0 errors, **303** tests (81/210/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | CI run 31686999881 |
 | REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI passed pre-merge (run 31687556055); merged to `main` at `06a3379` | TASK-22 PR #32 | **Verified** | |
 | REQ-060 | Roadmap | Reviewer README, demo path, secret hygiene | [README.md](../README.md), `scripts/seed-local-demo-data.*`, `scripts/LocalDevToken/`, `scripts/demo-transfer-payload.json` | Live Compose demo: POST 202, GET 200/404/401, idempotency replay/conflict | [README.md](../README.md), TASK-18 evidence | **Verified** | No committed secrets; token helper reads env only |
-| REQ-061 | Roadmap §30 | Architecture Review Simulation | N/A | N/A | [architecture-review-simulation.md](./architecture-review-simulation.md) — 12 headings | **Verified** | TASK-21; aligns ADR-001–005 |
-| REQ-062 | Roadmap §34 | AI-Assisted Engineering Report (candidate) | N/A | N/A | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) (~1,050 words) | **Verified** | TASK-21; policy remains in ai-assisted-engineering.md |
+| REQ-061 | Roadmap §30 | Architecture Review Simulation | N/A | N/A | [architecture.md](./architecture.md) §25 — 9 subsections | **Verified** | TASK-21; aligns ADR-001–005 |
+| REQ-062 | Roadmap §34 | AI-Assisted Engineering Report (candidate) | N/A | N/A | [ai-assisted-engineering.md](./ai-assisted-engineering.md) §15 | **Verified** | TASK-21; policy in §1–13 |
 
 ---
 
@@ -220,8 +220,8 @@ Verified TASK-21 (2026-08-13) on branch `docs/challenge-leadership-compliance`.
 | ----------- | ------ | ------------- | ---------- |
 | §27 Team model | Exactly 3 BE + QA + PO + DevOps | [team-engineering-model.md](./team-engineering-model.md) | 14 required sections present |
 | §29 Eight-week trade-off | Six named concerns | [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) §11 | Exact classifications + phase table |
-| §30 Architecture review | Microservice proposal simulation | [architecture-review-simulation.md](./architecture-review-simulation.md) | 12 headings; ADR-aligned |
-| §34 AI report | Candidate report (≤2 pages) | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) | 14 items; ~1,050 words |
+| §30 Architecture review | Microservice proposal simulation | [architecture.md](./architecture.md) §25 | 9 subsections; ADR-aligned |
+| §34 AI report | Candidate report (≤2 pages) | [ai-assisted-engineering.md](./ai-assisted-engineering.md) §15 | Policy §1–13 + submission evidence |
 | Stale REMAINING-TASKS | Archived notice | [tasks/REMAINING-TASKS.md](./tasks/REMAINING-TASKS.md) | Points to 00-ROADMAP-INDEX |
 | Diagram corrections | Implemented vs target labels | [diagrams/deployment-runtime.drawio](./diagrams/deployment-runtime.drawio), [event-storming.drawio](./diagrams/event-storming.drawio) | Valid Draw.io XML |
 
@@ -281,13 +281,13 @@ Verified 2026-08-13; merged to `main` at **`06a3379`** (PR #32).
 | 19 | Team model (§27) | [team-engineering-model.md](./team-engineering-model.md) | Verified |
 | 20 | Engineering standards (§28) | [engineering-standards.md](./engineering-standards.md) | Verified |
 | 21 | Technical debt + §29 | [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) | Verified |
-| 22 | AI report (§34) | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) | Verified |
+| 22 | AI report (§34) | [ai-assisted-engineering.md](./ai-assisted-engineering.md) §15 | Verified |
 | 23 | Transfer aggregate | `TransferManagement/Domain/Transfer.cs` | Verified |
 | 24 | Reservation/idempotency/concurrency | Account + idempotency store | Verified |
 | 25 | Outbox/durable processing | Outbox + workers | Verified |
 | 26 | Idempotent consumer | Notification consumer + ProcessedMessage | Verified |
 | 27 | Requirement traceability | This document | Verified |
-| — | Architecture Review Simulation (§30) | [architecture-review-simulation.md](./architecture-review-simulation.md) | Verified |
+| — | Architecture Review Simulation (§30) | [architecture.md](./architecture.md) §25 | Verified |
 
 ### §6 business rules matrix (22 rules)
 
@@ -404,9 +404,9 @@ Full monitoring infrastructure (Prometheus/Grafana) is **not** deployed or claim
 | §27 | 3 BE + QA + PO + DevOps; 13 model items | Verified — 14 sections in team-engineering-model.md |
 | §28 | Concrete engineering standards | Verified — engineering-standards.md |
 | §29 | Six concerns, four classifications each | Verified — technical-debt-prioritisation.md §11 |
-| §30 | Architecture review simulation | Verified — architecture-review-simulation.md (12 headings) |
+| §30 | Architecture review simulation | Verified — architecture.md §25 |
 | §31 | 24 architecture topics | Verified — architecture.md |
-| §34 | AI report ≤2 pages | Verified — ai-assisted-engineering-report.md (~1,050 words) |
+| §34 | AI report ≤2 pages | Verified — ai-assisted-engineering.md §15 |
 
 ### Clean-room validation
 

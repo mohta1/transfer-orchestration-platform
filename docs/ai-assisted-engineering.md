@@ -209,3 +209,85 @@ AI-assisted work is done only when the human author confirms:
 - [engineering-standards.md](./engineering-standards.md)
 - [team-engineering-model.md](./team-engineering-model.md)
 - [requirement-to-evidence.md](./requirement-to-evidence.md)
+
+---
+
+## 15. Repository AI Practice (§34 submission evidence)
+
+This section records how AI tools were used on this challenge repository. Sections 1–13 remain the authoritative team policy; this section provides candidate accountability and concrete examples from delivery.
+
+### 15.1 Tools used
+
+| Tool | Use in this repository |
+| ---- | ---------------------- |
+| **Cursor** (AI coding agent) | Primary assistant for TASK-scoped implementation, tests, and documentation drafts |
+| **Git / GitHub CLI** | Branch-per-TASK workflow, PR evidence, CI links |
+| **dotnet CLI** | Build, test, EF migrations — mandatory verification gate |
+| **Docker Compose** | Local PostgreSQL runtime (TASK-16) |
+
+Git history may include `Co-authored-by: Cursor <cursoragent@cursor.com>` on AI-assisted commits.
+
+### 15.2 Delegated vs not delegated
+
+**Delegated:** boilerplate aligned to existing module patterns; draft documentation from verified code paths; first-pass test cases from TASK Required Tests lists; CI/runtime script troubleshooting suggestions; exploratory grep/read assistance — never accepted without compile/test proof.
+
+**Not delegated:** merge approval, Blocker classification, production/release decisions, secret handling.
+
+### 15.3 Prompt patterns used
+
+| Pattern | Purpose |
+| ------- | ------- |
+| Read `AGENTS.md` + current TASK file completely before coding | Scope control; locked architecture |
+| Inspect repository before generating imports or test names | Prevent hallucinated APIs |
+| One TASK per branch/PR; no future-TASK features | Challenge execution rule |
+| Real PostgreSQL for concurrency/Outbox/restart tests | Avoid false confidence from InMemory |
+| Cite test class/method in evidence sections | Truthful requirement matrix |
+| Classify review findings as Blocker / Non-blocking / Preference | Consistent review gate |
+
+Example instruction shape used across TASKs: *“Read TASK-NN, inspect existing implementation, implement only in-scope behaviour, add Required Tests in same TASK, run full build/test, capture evidence.”*
+
+### 15.4 Validation processes
+
+**Generated-code review:**
+
+1. Human reads full diff — especially financial, security, and migration files.
+2. Run `dotnet build` (TreatWarningsAsErrors) and `dotnet test` with `TEST_DATABASE_CONNECTION_STRING`.
+3. Map diff to TASK acceptance criteria; reject scope creep.
+4. Architecture tests must pass (`TransferOrchestration.ArchitectureTests`).
+5. PR description lists **executed** commands and outcomes — not “AI verified.”
+6. Reviewer applies [AGENTS.md](../AGENTS.md) Blocker rules.
+
+**Architecture validation:** locked ADRs (001–005) consulted before boundary changes; `ArchitectureTests` enforce module dependency rules (TASK-15 required negative proof); diagrams and `architecture.md` cross-checked against `src/Modules/` layout. AI did **not** approve architecture — it drafted options; the human facilitator aligned with ADR-001 Modular Monolith.
+
+**Test validation:**
+
+| Layer | Validation |
+| ----- | ---------- |
+| Domain | xUnit in `TransferOrchestration.Domain.Tests` |
+| Integration | Real PostgreSQL — persistence, concurrency, Outbox, fraud, stuck transfers |
+| Architecture | Dependency/composition tests |
+| CI | GitHub Actions on PR SHAs |
+
+Integration tests run twice in fresh processes where TASKs required order-independence proof (TASK-18). AI-generated tests are treated as suspect until green locally.
+
+### 15.5 Case studies
+
+**Rejected suggestion — shared AppDbContext:** AI suggested a global DbContext “to simplify cross-module queries.” Rejected as a Blocker — violates locked module boundaries ([ADR-001](./adr/ADR-001-architecture-style.md)). See also §12 Unacceptable; `ArchitectureTests` enforce forbidden dependencies.
+
+**Substantially modified — fraud screening (TASK-19):** Initial direction was a synchronous fraud call with binary approved/rejected outcome before durable scheduling. Human-modified result: durable `RequestFraudScreening` process action, `FraudScreeningResult` with explicit timeout/unavailable/manual-review outcomes, external call outside DB transaction, bounded retry policy. Evidence: `FraudScreeningWorkflowTests`, `TransferFraudScreeningTests`.
+
+**Accelerated delivery — TASK-15 architecture tests:** Cursor scaffolded `ArchitectureTestHelpers` and composition-root tests from existing project structure. Human fixed Linux `ProjectReference` path parsing after CI failure. Dependency enforcement landed in one TASK instead of multi-day boilerplate writing.
+
+**Increased review effort — TASK-20 integration tests:** AI-generated test host setup initially left hosted workers running, causing flaky parallel behaviour. Human added worker-disable helpers and corrected seed helpers for domain rules. AI sped scaffolding; human spent extra cycles on test-host lifecycle review.
+
+### 15.6 Additional risks observed
+
+| Risk | Manifestation | Mitigation |
+| ---- | ------------- | ---------- |
+| Windows-only assumptions | Linux CI failures | Cross-platform path helpers; CI on `ubuntu-latest` |
+| Over-broad refactors | TASK scope violation | One TASK per PR; human diff review |
+| False “tests passed” claims | Evidence without commands | Require pasted `dotnet test` output in TASK files |
+
+### 15.7 Candidate accountability
+
+The human author is accountable for every merged change in this repository. AI tools assisted drafting and exploration; the author read TASK files and ADRs, inspected the codebase, ran build and test commands, and captured truthful evidence in TASK and PR records. AI did not independently verify financial correctness, security, architecture approval, or production readiness. Review Blockers override AI suggestions — including rejected global DbContext shortcuts and revised fraud durability design.

@@ -46,8 +46,8 @@ In scope:
 
 - exact §27 team leadership model;
 - exact §29 eight-week debt/delivery trade-off for six named concerns;
-- dedicated §30 Architecture Review Simulation;
-- candidate-specific §34 AI-Assisted Engineering Report, maximum two pages;
+- dedicated §30 Architecture Review Simulation in `docs/architecture.md` §25;
+- candidate-specific §34 AI-Assisted Engineering submission evidence in `docs/ai-assisted-engineering.md` §15 (team policy remains §1–13);
 - stale/contradictory documentation cleanup;
 - requirement matrix/README/doc map updates;
 - factual corrections to existing diagrams;
@@ -156,30 +156,29 @@ Do not invent latency numbers, incidents, team capacity beyond the stated team, 
 
 ## 8. Architecture Review Simulation — §30
 
-Create:
+Add or maintain in:
 
 ```text
-docs/architecture-review-simulation.md
+docs/architecture.md — §25 Architecture Review Simulation (§30)
 ```
+
+Do **not** create a separate `docs/architecture-review-simulation.md` file; content lives in the architecture document.
 
 Review this exact proposal:
 
 > Create separate Microservices for Transfer, Account, Reservation, Fraud, Limit, Notification, Audit, and Reconciliation, each with its own Kafka topic and database.
 
-Required headings:
+Required content (§25 subsections):
 
 1. Proposal under review.
-2. Strengths.
+2. Strengths of the microservice proposal.
 3. Risks.
-4. Unnecessary complexity.
-5. Alternative design.
-6. Recommended initial boundaries.
-7. Conditions that justify later extraction.
-8. Operational implications.
-9. Team-size implications.
-10. Data-consistency implications.
-11. Migration/Legacy implications.
-12. Final recommendation.
+4. Unnecessary complexity initially.
+5. Recommended initial boundaries (includes alternative design — Modular Monolith).
+6. Conditions that justify later extraction.
+7. Operational and team implications.
+8. Data consistency and Legacy implications.
+9. Final recommendation.
 
 Address:
 
@@ -198,15 +197,17 @@ Align with ADR-001–005. Do not create another ADR.
 
 ## 9. AI-Assisted Engineering Report — §34
 
-Preserve `docs/ai-assisted-engineering.md` as the reusable team policy.
+Preserve `docs/ai-assisted-engineering.md` §1–13 as the reusable team policy.
 
-Create a separate candidate report:
+Add or maintain candidate submission evidence in:
 
 ```text
-docs/ai-assisted-engineering-report.md
+docs/ai-assisted-engineering.md — §15 Repository AI Practice (§34 submission evidence)
 ```
 
-Maximum length: **two rendered A4 pages**. Use concise prose/tables and document the rendering assumption. If repository tooling cannot render pages, constrain to approximately 900–1,100 words and report the limitation truthfully.
+Do **not** create a separate `docs/ai-assisted-engineering-report.md` file.
+
+Maximum length for §15: **two rendered A4 pages** equivalent. Use concise prose/tables and document the rendering assumption. If repository tooling cannot render pages, constrain to approximately 900–1,100 words and report the limitation truthfully.
 
 Required content:
 
@@ -258,8 +259,8 @@ Update `docs/requirement-to-evidence.md`:
 
 Add links to:
 
-- Architecture Review Simulation;
-- AI-Assisted Engineering Report;
+- Architecture Review Simulation — `docs/architecture.md` §25;
+- AI-Assisted Engineering submission evidence — `docs/ai-assisted-engineering.md` §15;
 - updated team/debt documents.
 
 Keep commands and counts accurate.
@@ -297,7 +298,9 @@ Do not redesign for aesthetics alone.
 The challenge recommends a maximum of ten pages excluding diagrams/ADRs. Assess `docs/architecture.md` honestly.
 
 - Do not delete required reasoning merely to chase an unverifiable page count.
-- Reduce duplication by linking detailed ADR/team/debt/report documents.
+- Reduce duplication by linking detailed ADR/team/debt documents.
+- §30 simulation content belongs in `architecture.md` §25 (not a separate file).
+- §34 submission evidence belongs in `ai-assisted-engineering.md` §15 (policy in §1–13).
 - Keep all 24 required architecture topics discoverable.
 - Keep quality attributes as targets/assumptions, not production SLA claims.
 - Clearly label implemented/current versus target/future behavior.
@@ -313,8 +316,8 @@ Run checks for:
 - valid non-empty Draw.io XML;
 - all §27 headings;
 - all six §29 concerns and exact classifications;
-- all §30 headings;
-- every §34 report item and length limit;
+- all §30 content in `architecture.md` §25 (nine subsections);
+- every §34 report item in `ai-assisted-engineering.md` §15 and length limit;
 - terminology consistency;
 - no fabricated metrics/SLA/compliance/production claims;
 - no exactly-once wording;
@@ -347,8 +350,8 @@ Capture:
 - files created/updated/removed;
 - team-model requirement checklist;
 - six-concern §29 matrix;
-- architecture-review heading checklist;
-- AI-report item/length verification;
+- architecture-review §25 subsection checklist;
+- AI-report §15 item/length verification;
 - stale-file resolution;
 - requirement-matrix counts;
 - ADR/diagram names/counts/XML result;

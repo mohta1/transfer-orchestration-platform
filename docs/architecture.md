@@ -643,8 +643,7 @@ The detailed model belongs in [team-engineering-model.md](./team-engineering-mod
 Related leadership deliverables:
 
 - [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) §11 — eight-week product delivery trade-off (§29)
-- [architecture-review-simulation.md](./architecture-review-simulation.md) — rejected premature microservice decomposition (§30)
-- [ai-assisted-engineering.md](./ai-assisted-engineering.md) — team policy; [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) — candidate report (§34)
+- [ai-assisted-engineering.md](./ai-assisted-engineering.md) — team policy and §34 submission evidence
 
 Architecture-level expectations:
 
@@ -667,7 +666,7 @@ Working model:
 
 ## 22. Main Trade-offs
 
-- **Modular Monolith vs Microservices:** local consistency and operational simplicity over independent deployment/scaling — see [architecture-review-simulation.md](./architecture-review-simulation.md) for the simulated eight-service rejection rationale.
+- **Modular Monolith vs Microservices:** local consistency and operational simplicity over independent deployment/scaling — see §25 for the simulated eight-service rejection rationale.
 - **Persistent Process State vs simpler stateless code:** recoverability/observability over fewer persistence concepts.
 - **Optimistic vs pessimistic locking:** lower normal blocking over simpler serialisation under contention.
 - **Database-backed Outbox worker vs broker-first:** minimal infrastructure over richer broker features.
@@ -728,3 +727,118 @@ Consider a dedicated workflow engine only if workflow variants/versioning/schedu
 After Legacy Transfer decommissioning, revisit ADR-001 because system-level Hybrid classification may no longer be necessary.
 
 Any future extraction must preserve financial invariants, explicit ownership, idempotency, durable recovery, Reconciliation, auditability, observability, and the prohibition on hidden synchronous distributed transactions.
+
+See §25 for the full architecture review simulation that produced this evidence-driven extraction posture.
+
+---
+
+## 25. Architecture Review Simulation (§30)
+
+**Date:** 2026-08-13  
+**Reviewers (simulated panel):** Backend facilitator, Account owner, Platform Engineer, Product Owner  
+**Aligned ADRs:** [ADR-001](./adr/ADR-001-architecture-style.md) through [ADR-005](./adr/ADR-005-legacy-modernisation.md)
+
+### 25.1 Proposal under review
+
+> Create separate Microservices for Transfer, Account, Reservation, Fraud, Limit, Notification, Audit, and Reconciliation, each with its own Kafka topic and database.
+
+The proposal decomposes every noun-like capability into an independently deployable service, assigns each a dedicated Kafka topic, and splits persistence so each service owns its own database.
+
+### 25.2 Strengths of the microservice proposal
+
+| Strength | Why it appears attractive |
+| -------- | ------------------------- |
+| **Independent scaling story** | Payment or fraud workloads could scale without scaling the entire API |
+| **Technology isolation** | Different storage or language choices per service become possible |
+| **Failure containment (theoretical)** | A bug in Notification might not crash Transfer — if boundaries are perfect |
+| **Team ownership narrative** | Each service maps to a team backlog and separate release cadence |
+| **Event-driven decoupling** | Kafka topics suggest loose coupling between producers and consumers |
+
+These strengths are real **when** independent scaling, compliance isolation, or release cadence differences are **measured** — not assumed on day one.
+
+### 25.3 Risks
+
+| Risk | Impact on transfer workflow |
+| ---- | ----------------------------- |
+| **Distributed transaction need** | Reserve funds + advance Transfer state + emit integration event becomes cross-service coordination; partial failure causes double hold or lost workflow |
+| **Reservation as separate service** | Violates Account-as-financial-boundary ([ADR-003](./adr/ADR-003-reservation-concurrency.md)); introduces synchronous cross-database reservation calls |
+| **Kafka ≠ business exactly-once** | At-least-once delivery remains; consumers still need idempotency and Outbox on the producer side |
+| **Operational surface area** | Eight services + eight databases + broker cluster + schema migration coordination |
+| **Timeout/reconciliation complexity** | Payment ambiguity spans Transfer, Payment ACL, and Reconciliation services — harder to keep “timeout ≠ rejection” invariant |
+| **Legacy migration** | Strangler routing plus eight new services increases dual-write and ownership-error risk |
+| **Three-developer team** | Cognitive load, on-call rotation, and review breadth exceed sustainable ownership |
+
+### 25.4 Unnecessary complexity initially
+
+| Element | Why unnecessary initially |
+| ------- | ------------------------- |
+| **Reservation microservice** | Reservation is not an Aggregate Root; it is owned by Account ([AGENTS.md](../AGENTS.md)) |
+| **Limit microservice** | Daily limit is a logical capability inside Transfer workflow, not a separate deployment unit |
+| **Separate Fraud service before volume proof** | Challenge uses adapter/stub; extraction needs measured isolation benefit |
+| **Eight databases** | Module-owned schemas in one PostgreSQL instance already enforce ownership without network partitions |
+| **Kafka as default glue** | In-process Outbox + at-least-once dispatch satisfies current consumer count; broker adds ops without removing Outbox |
+| **Team-per-service** | Three backend developers cannot own eight production services with meaningful on-call depth |
+
+### 25.5 Recommended initial boundaries
+
+| Boundary | Initial form | Communication |
+| -------- | ------------ | --------------- |
+| Transfer workflow | TransferManagement module | In-process + durable process state |
+| Financial concurrency | AccountBalance module | Contract `IAccountBalanceReservations` |
+| External payments | PaymentNetwork ACL module | Synchronous adapter; timeout classification |
+| Fraud | Adapter behind process step | Durable retry + Manual Review escalation |
+| Daily limit | Logic in TransferManagement | Same DbContext transaction where applicable |
+| Notification | Module + idempotent consumer | Outbox → in-process dispatch initially |
+| Reconciliation | Logic in TransferManagement (placeholder assembly) | Durable workers |
+| Audit / operations | AuditOperations module | HTTP + audit persistence |
+| Messaging | Transactional Outbox | At-least-once; no exactly-once claim |
+
+This matches the locked decision in §11: Incremental Hybrid at system level with a **Modular Monolith** for the new transfer capability.
+
+### 25.6 Conditions that justify later extraction
+
+Extract a module to an independent service **only when measured evidence shows**:
+
+1. Sustained independent scaling or release cadence need.
+2. Required failure or compliance isolation that cannot be achieved modularly.
+3. Independently owned team with on-call capacity.
+4. Extraction preserves Account concurrency boundary — reservations do not become a separate financially authoritative service without ADR revision.
+5. Producer-side Outbox and consumer idempotency remain provable after extraction.
+6. Reconciliation and ambiguous payment handling remain traceable across boundaries.
+
+Likely **first** candidates (not immediate): Payment Network Integration, Reconciliation, Notification — per ADR-001. Kafka/RabbitMQ behind the Outbox publisher is justified when **independently deployed consumers** or fan-out throughput require it — not as a default for three developers.
+
+### 25.7 Operational and team implications
+
+| Topic | Eight microservices | Modular Monolith (recommended) |
+| ----- | ------------------- | ------------------------------ |
+| Deployments | Eight pipelines, version skew risk | One API artifact + migration job |
+| Observability | Distributed trace mandatory for every transfer | Correlation ID across modules; structured logs ([TASK-20](./tasks/TASK-20-stuck-transfer-operations-observability.md)) |
+| Failure modes | Network partitions between Account and Transfer | Local transaction failure rolls back atomically within module DbContext scope |
+| Broker ops | Cluster patching, ACLs, topic retention, consumer lag | Deferred; poison-message bounds in Outbox store |
+| Runbooks | Eight services + broker + eight DB backups | Compose/CI documented; stuck-transfer query + manual recovery |
+| Recovery | Saga compensation across services | Process Manager restart + reconciliation steps |
+| Ownership depth (~3 backend devs) | ~0.4 FTE per service — unsustainable | ~1 FTE per slice (workflow / financial / reliability) |
+| On-call | Eight paging surfaces | One primary API + PostgreSQL + external adapters |
+
+Premature microservices **increase** coordination overhead for a three-developer team without reducing financial risk.
+
+### 25.8 Data consistency and Legacy implications
+
+**Account and Reservation:** Account aggregate owns BalanceReservation entities; Reserve/Consume/Release are atomic within AccountBalance module transactions ([ADR-003](./adr/ADR-003-reservation-concurrency.md)). A separate Reservation service implies cross-service commit to hold funds and advance Transfer — classic distributed transaction or eventual-consistency gap with double reservation, lost release, or negative available balance risk.
+
+**Transfer state and Outbox:** Business state change and Outbox message must commit **atomically** in one module DbContext ([ADR-004](./adr/ADR-004-reliable-messaging.md)). Splitting Transfer and Outbox across services reintroduces the dual-write problem Kafka alone does not solve.
+
+**Kafka semantics:** Kafka provides at-least-once delivery; **business** exactly-once (reserve once, pay once, notify once) still requires idempotent handlers and durable deduplication — already implemented via Processed Messages.
+
+**Legacy coexistence:** Incremental Hybrid ([ADR-005](./adr/ADR-005-legacy-modernisation.md)) requires single owner per Transfer and no financial dual-write. Eight greenfield microservices **alongside** Legacy multiply integration points. Hybrid coexistence (Legacy + Modular Monolith) is not the same as prematurely distributing the New system — the first manages **where** transfers execute; the second manages **how** the New codebase is deployed.
+
+### 25.9 Final recommendation
+
+**Reject** the proposal to create eight microservices with eight Kafka topics and eight databases as the **initial** architecture for this team and workload.
+
+**Accept** the locked Modular Monolith with module-owned schemas, Transactional Outbox, Account-owned reservations, and Incremental Hybrid Legacy coexistence.
+
+**Revisit extraction** per module when independent scale, isolation, ownership, or release cadence evidence exists — introducing Kafka **behind** the Outbox publisher if independently deployed consumers require it, without claiming exactly-once business effects.
+
+This recommendation aligns with ADR-001–005, the implemented codebase under `src/Modules/`, and the three-developer team model in [team-engineering-model.md](./team-engineering-model.md).
