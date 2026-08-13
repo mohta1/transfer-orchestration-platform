@@ -18,7 +18,7 @@ The platform orchestrates domestic interbank transfers with:
 
 **Critical goals:** financial safety (no negative available balance, no duplicate reservation consumption), reliable messaging (no lost committed events), and safe external payment handling (no blind resubmission after ambiguous timeout).
 
-**Current status:** TASK-01 through TASK-20 are implemented on `main`. TASK-21 adds leadership documentation (team model, debt trade-off, architecture review simulation, AI report).
+**Current status:** TASK-01 through TASK-21 are complete on `main` (SHA `d7833b1`). TASK-22 final strict compliance audit is on branch `release/challenge-compliance-final`.
 
 ## Architecture
 
@@ -94,7 +94,7 @@ Detailed evidence lives in [docs/requirement-to-evidence.md](docs/requirement-to
 | Transactional Outbox, at-least-once, idempotent consumers | Verified |
 | Reconciliation, manual review, audit | Verified |
 | Security boundary (401/403/concealed 404) | Verified |
-| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 210 / 12) |
+| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 206 / 12) |
 | Five ADRs, eight diagrams | Verified |
 | Docker Compose runtime, CI | Verified |
 | Legacy runtime routing in production code | Partially verified (documented non-goal) |
@@ -437,9 +437,11 @@ Expected totals (counting `[Fact]`/`[Theory]` cases per project):
 | Project | Tests |
 | ------- | ----- |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 210 |
+| TransferOrchestration.IntegrationTests | 206 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **303** |
+| **Total** | **299** |
+
+Counting method: `dotnet test --list-tests --no-build` per project; each `[Theory]` data row counts as one executable case.
 
 Run PostgreSQL integration suite twice in fresh processes to detect order dependence:
 
@@ -507,7 +509,7 @@ Reviewers can validate from a fresh clone:
 ```bash
 git clone https://github.com/mohta1/transfer-orchestration-platform.git review-checkout
 cd review-checkout
-git checkout release/final-challenge-review   # or main after merge
+git checkout release/challenge-compliance-final   # or main after TASK-22 merge
 
 cp .env.example .env
 # Set local-only POSTGRES_PASSWORD and JWT_SIGNING_KEY
