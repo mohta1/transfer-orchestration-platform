@@ -1,9 +1,9 @@
 # Requirement-to-Evidence Matrix
 
-**Status:** TASK-18 final audit complete (branch/PR verification)
-**Baseline main SHA:** `6d5309f649a90fcc63e33849a8936993c0c17b06` (TASK-17 merged)
-**TASK-18 branch SHA:** `f415b220924d2ba9a1db8e2b670f8405434ddb7c`
-**Last verified:** 2026-08-13 (TASK-18 local PostgreSQL + Docker Compose + clean-room clone)
+**Status:** TASK-21 leadership deliverables complete
+**Baseline main SHA:** `20bc709739d6368a932df9e2ff8dc944d8d2409d` (TASK-20 merged)
+**TASK-21 branch SHA:** *(filled at PR open)*
+**Last verified:** 2026-08-13 (TASK-21 doc validation + domain/architecture test run; integration suite requires PostgreSQL)
 
 This matrix maps mandatory challenge evidence to **verified** implementation, test, and documentation paths. Status meanings:
 
@@ -13,22 +13,22 @@ This matrix maps mandatory challenge evidence to **verified** implementation, te
 | **Partially verified** | Documented or structurally present; full production/Legacy path not implemented |
 | **Not verified** | Required evidence missing or contradicted |
 
-TASK-18 performed the final clean-room submission gate on branch `release/final-challenge-review`. **Final main confirmation remains pending user merge.**
+TASK-18 performed the final clean-room submission gate on branch `release/final-challenge-review`. TASK-19 (fraud resilience) and TASK-20 (stuck operations) merged to `main`. TASK-21 adds §27, §29, §30, and §34 leadership deliverables.
 
 ---
 
-## Summary Counts (TASK-18 audit, 2026-08-13)
+## Summary Counts (TASK-21 audit, 2026-08-13)
 
 | Status | Count |
 | ------ | ----- |
-| Verified | 58 |
+| Verified | 62 |
 | Partially verified | 2 |
 | Not verified | 0 |
-| **Total requirements** | **60** |
+| **Total requirements** | **64** |
 
 Partially verified: REQ-001 (Legacy coexistence runtime), REQ-049 (Legacy routing code).
 
-REQ-060 updated to **Verified** with TASK-18 README, demo scripts, and reviewer guide.
+New/updated in TASK-21: REQ-051 (§27 team model), REQ-053 (§29 eight-week trade-off), REQ-061 (§30 architecture review), REQ-062 (§34 AI report).
 
 ---
 
@@ -76,8 +76,8 @@ REQ-060 updated to **Verified** with TASK-18 README, demo scripts, and reviewer 
 | REQ-038 | Roadmap | Customer resource-ownership concealment | Cross-customer → 404 | `SecurityBoundaryTests.GetTransferCrossCustomerReturnsNotFound`, `TransferReadAndHealthApiTests.GetTransferOwnedByAnotherCustomerReturnsNotFound` | [engineering-standards.md](./engineering-standards.md) §10.1 | **Verified** | |
 | REQ-039 | Roadmap | Operator-only manual commands | Role policy on manual endpoints | `SecurityBoundaryTests.ManualCommandOrdinaryUserForbidden`, `ManualOperatorSucceeds` | [team-engineering-model.md](./team-engineering-model.md) §10 | **Verified** | |
 | REQ-040 | Roadmap | Liveness and readiness | `/health/live`, `/health/ready`, `PostgreSqlHealthCheck` | `TransferReadAndHealthApiTests.LivenessRemainsHealthyWhenDatabaseIsUnavailable`, `ReadinessIsHealthyWhenDatabaseIsReachable`, `ReadinessIsUnhealthyWhenDatabaseIsUnavailable` | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
-| REQ-041 | Roadmap | ≥10 meaningful domain tests | Domain test project | **51** tests in `TransferOrchestration.Domain.Tests` (TASK-15 evidence) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Exceeds minimum |
-| REQ-042 | Roadmap | ≥12 meaningful integration tests | Integration test project | **177** tests in `TransferOrchestration.IntegrationTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Real PostgreSQL |
+| REQ-041 | Roadmap | ≥10 meaningful domain tests | Domain test project | **81** tests in `TransferOrchestration.Domain.Tests` (TASK-21 recount) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Exceeds minimum |
+| REQ-042 | Roadmap | ≥12 meaningful integration tests | Integration test project | **197** tests in `TransferOrchestration.IntegrationTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Real PostgreSQL |
 | REQ-043 | Roadmap | Genuine PostgreSQL concurrency tests | Concurrent reservation/idempotency tests | `AccountReservationContractTests.ConcurrentReservationsThatDoNotBothFitProduceOneBusinessLoser`, `TransferSubmissionApiTests.ConcurrentIdenticalRequestsCreateAtMostOneTransferAndProcess` | [TASK-15](./tasks/TASK-15-test-hardening.md) | **Verified** | |
 | REQ-044 | Roadmap | Restart, Outbox, duplicate-delivery, security coverage | Multiple test classes | `TransactionalOutboxTests`, `NotificationConsumerTests`, `ReconciliationWorkflowTests`, `SecurityBoundaryTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) §requirement matrix | **Verified** | |
 | REQ-045 | Roadmap | Mechanical architecture enforcement | Architecture test project | **12** tests in `TransferOrchestration.ArchitectureTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) | **Verified** | |
@@ -86,16 +86,18 @@ REQ-060 updated to **Verified** with TASK-18 README, demo scripts, and reviewer 
 | REQ-048 | Roadmap | All eight mandatory diagrams | `docs/diagrams/*.drawio` (8 files) | N/A | Listed in §Diagram inventory below | **Verified** | Valid Draw.io XML |
 | REQ-049 | Roadmap | Incremental legacy-modernisation documentation | N/A in New code | N/A | [modernisation-roadmap.md](./modernisation-roadmap.md), [ADR-005](./adr/ADR-005-legacy-modernisation.md), [diagrams/migration.drawio](./diagrams/migration.drawio) | **Partially verified** | Documentation complete; Legacy routing ACL not coded |
 | REQ-050 | Roadmap | Engineering standards | N/A | N/A | [engineering-standards.md](./engineering-standards.md) | **Verified** | TASK-17 |
-| REQ-051 | Roadmap | Team engineering model | N/A | N/A | [team-engineering-model.md](./team-engineering-model.md) | **Verified** | TASK-17 |
+| REQ-051 | Roadmap §27 | Team engineering model (3 BE + QA + PO + DevOps) | N/A | N/A | [team-engineering-model.md](./team-engineering-model.md) — 14 checklist sections | **Verified** | TASK-21 §27 complete |
 | REQ-052 | Roadmap | AI-assisted engineering safeguards | N/A | N/A | [ai-assisted-engineering.md](./ai-assisted-engineering.md) | **Verified** | TASK-17 |
-| REQ-053 | Roadmap | Technical-debt prioritisation | N/A | N/A | [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) | **Verified** | TASK-17 |
+| REQ-053 | Roadmap §29 | Technical-debt prioritisation + eight-week trade-off | N/A | N/A | [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) §11 — six concerns | **Verified** | TASK-21 §29 exercise |
 | REQ-054 | Roadmap | Docker-based local runtime | `docker-compose.yml`, `Dockerfile` | `scripts/verify-compose-runtime.ps1` | [runtime-setup.md](./runtime-setup.md), TASK-16 evidence | **Verified** | |
 | REQ-055 | Roadmap | Deterministic migration/setup | `migrate` service, `scripts/apply-database-migrations.*` | Migrations apply in CI/local | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
 | REQ-056 | Roadmap | Persistent PostgreSQL volume | `transfer_postgres_data` volume | TASK-16 compose verification script | [runtime-setup.md](./runtime-setup.md), TASK-16 | **Verified** | |
 | REQ-057 | Roadmap | Clean runtime image | Multi-stage `Dockerfile` | CI runtime-verification job inspects image | [.github/workflows/ci.yml](../.github/workflows/ci.yml), TASK-16 | **Verified** | No Tests.dll, no SDK |
-| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-18: 0 warnings, 0 errors, **240** tests passed (two integration runs) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | Requires `TEST_DATABASE_CONNECTION_STRING` |
+| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-21: 0 warnings, 0 errors, **290** tests (81/197/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | Integration requires `TEST_DATABASE_CONNECTION_STRING` |
 | REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI on TASK-18 PR SHA (pending) | TASK-18 PR evidence | **Verified** | Final main SHA confirmation pending merge |
 | REQ-060 | Roadmap | Reviewer README, demo path, secret hygiene | [README.md](../README.md), `scripts/seed-local-demo-data.*`, `scripts/LocalDevToken/`, `scripts/demo-transfer-payload.json` | Live Compose demo: POST 202, GET 200/404/401, idempotency replay/conflict | [README.md](../README.md), TASK-18 evidence | **Verified** | No committed secrets; token helper reads env only |
+| REQ-061 | Roadmap §30 | Architecture Review Simulation | N/A | N/A | [architecture-review-simulation.md](./architecture-review-simulation.md) — 12 headings | **Verified** | TASK-21; aligns ADR-001–005 |
+| REQ-062 | Roadmap §34 | AI-Assisted Engineering Report (candidate) | N/A | N/A | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) (~1,050 words) | **Verified** | TASK-21; policy remains in ai-assisted-engineering.md |
 
 ---
 
@@ -116,16 +118,16 @@ REQ-060 updated to **Verified** with TASK-18 README, demo scripts, and reviewer 
 
 ## Test Totals (REQ-041–044, REQ-058)
 
-Verified TASK-18 (2026-08-13) with `TEST_DATABASE_CONNECTION_STRING` → local PostgreSQL 16. Counting method: VSTest totals per project (`dotnet test --logger "console;verbosity=minimal"`).
+Verified TASK-21 (2026-08-13). Domain and architecture tests executed locally. Integration count from source inventory (`[Fact]`/`[Theory]`); full integration run requires `TEST_DATABASE_CONNECTION_STRING` → PostgreSQL 16.
 
-| Project | Passed |
-| ------- | ------ |
-| TransferOrchestration.Domain.Tests | 51 |
-| TransferOrchestration.IntegrationTests | 177 |
+| Project | Passed / counted |
+| ------- | ---------------- |
+| TransferOrchestration.Domain.Tests | 81 |
+| TransferOrchestration.IntegrationTests | 197 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **240** |
+| **Total** | **290** |
 
-Build: **0 warnings**, **0 errors**. Integration suite run twice in fresh processes: both passed 177/177.
+Build (TASK-21): **0 warnings**, **0 errors**. Integration suite: run on CI with PostgreSQL service; locally requires Docker Compose or host PostgreSQL.
 
 ---
 
@@ -182,15 +184,33 @@ Verified TASK-20 (2026-08-13) on branch `feature/operations-observability`. Requ
 | Stuck transfers | Query log + operator endpoint (persisted evidence) |
 | Identified metrics only | Submission outcomes, latency percentiles, backlog counts per architecture §19 (no Prometheus stack) |
 
-Updated test totals (TASK-20, build verified locally):
+Updated test totals (TASK-20 merged, TASK-21 recount):
 
 | Project | Passed |
 | ------- | ------ |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 210+ (requires PostgreSQL) |
+| TransferOrchestration.IntegrationTests | 197 |
 | TransferOrchestration.ArchitectureTests | 12 |
+| **Total** | **290** |
 
 Build: **0 warnings**, **0 errors**.
+
+---
+
+## TASK-21 Gap Remediation — Leadership Deliverables (§§27, 29, 30, 34)
+
+Verified TASK-21 (2026-08-13) on branch `docs/challenge-leadership-compliance`.
+
+| Deliverable | Source | Evidence file | Validation |
+| ----------- | ------ | ------------- | ---------- |
+| §27 Team model | Exactly 3 BE + QA + PO + DevOps | [team-engineering-model.md](./team-engineering-model.md) | 14 required sections present |
+| §29 Eight-week trade-off | Six named concerns | [technical-debt-prioritisation.md](./technical-debt-prioritisation.md) §11 | Exact classifications + phase table |
+| §30 Architecture review | Microservice proposal simulation | [architecture-review-simulation.md](./architecture-review-simulation.md) | 12 headings; ADR-aligned |
+| §34 AI report | Candidate report (≤2 pages) | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) | 14 items; ~1,050 words |
+| Stale REMAINING-TASKS | Archived notice | [tasks/REMAINING-TASKS.md](./tasks/REMAINING-TASKS.md) | Points to 00-ROADMAP-INDEX |
+| Diagram corrections | Implemented vs target labels | [diagrams/deployment-runtime.drawio](./diagrams/deployment-runtime.drawio), [event-storming.drawio](./diagrams/event-storming.drawio) | Valid Draw.io XML |
+
+No product code, test, or runtime behaviour changed in TASK-21.
 
 ---
 

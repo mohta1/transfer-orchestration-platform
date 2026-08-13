@@ -1,8 +1,19 @@
 # Remaining Tasks — Execution Plan
 
+> **ARCHIVED / SUPERSEDED — 2026-08-13**
+> This file is retained for historical context only. **Do not use it for current status.**
+> Authoritative task status and roadmap: [00-ROADMAP-INDEX.md](./00-ROADMAP-INDEX.md) and individual `TASK-*.md` files (TASK-01 through TASK-22).
+> Requirement traceability: [requirement-to-evidence.md](../requirement-to-evidence.md).
+
+---
+
+# Remaining Tasks — Execution Plan (historical snapshot)
+
 **Last updated:** 2026-08-12  
 **Baseline:** TASK-01 through TASK-14 are **Done**.  
 **Next official task:** [TASK-15](./TASK-15-test-hardening.md)
+
+**Note:** TASK-15 through TASK-20 are **Done** on `main` as of SHA `20bc709`. TASK-21 and TASK-22 remain. The tables below reflect the August 12 snapshot and are **not current**.
 
 This file consolidates the remaining roadmap work and any open follow-up items from the TASK-14 / PR #24 security review.
 
