@@ -1009,7 +1009,7 @@ public sealed class AccountReservationContractTests : IAsyncLifetime
             services.Replace(ServiceDescriptor.Singleton<TimeProvider>(timeProvider));
         }
 
-        services.RemoveHostedWorkers();
+        services.ConfigureManualIntegrationTestHost();
         return services.BuildServiceProvider();
     }
 

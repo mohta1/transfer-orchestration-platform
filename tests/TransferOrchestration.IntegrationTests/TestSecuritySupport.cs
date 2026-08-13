@@ -23,7 +23,6 @@ internal static class TestSecurityDefaults
         builder.UseSetting($"Authentication:Jwt:{nameof(JwtOptions.Issuer)}", Issuer);
         builder.UseSetting($"Authentication:Jwt:{nameof(JwtOptions.Audience)}", Audience);
         builder.UseSetting($"Authentication:Jwt:{nameof(JwtOptions.SigningKey)}", SigningKey);
-        builder.ConfigureServices(services => services.RemoveHostedWorkers());
     }
 }
 

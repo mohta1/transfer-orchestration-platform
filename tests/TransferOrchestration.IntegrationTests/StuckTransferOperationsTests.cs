@@ -547,6 +547,7 @@ public sealed class StuckTransferOperationsTests : IAsyncLifetime
                 services.AddSingleton<TimeProvider>(_clock);
                 services.RemoveAll<IPaymentNetworkGateway>();
                 services.AddSingleton<IPaymentNetworkGateway, RecordingGateway>();
+                services.RemoveHostedWorkers();
             });
         }
     }

@@ -479,6 +479,8 @@ public sealed class ManualOperationsTests : IAsyncLifetime
                 {
                     services.AddSingleton<ILoggerProvider>(new TestLoggerProvider(_logSink));
                 }
+
+                services.RemoveHostedWorkers();
             });
         }
     }

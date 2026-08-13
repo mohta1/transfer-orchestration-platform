@@ -373,6 +373,7 @@ public sealed class TransferSubmissionApiTests
                 services.AddSingleton<ICustomerAuthorization>(Authorization);
                 if (!_useConfiguredDailyLimit) services.AddSingleton<IDailyTransferLimit>(DailyLimit);
                 services.AddSingleton<IFraudScreening>(Fraud);
+                services.RemoveHostedWorkers();
             });
         }
 
