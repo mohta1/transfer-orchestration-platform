@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
-using TransferOrchestration.TransferManagement.Application.Idempotency;
+using TransferOrchestration.TransferManagement.Application.FraudScreening;
 using TransferOrchestration.TransferManagement.Application.Submission;
 using TransferOrchestration.TransferManagement.Infrastructure.Persistence;
 
@@ -53,6 +53,6 @@ internal sealed class ConfiguredDailyTransferLimit(
 
 internal sealed class AllowFraudScreening : IFraudScreening
 {
-    public Task<DecisionOutcome> ScreenAsync(TransferSubmissionRequest request, CancellationToken cancellationToken) =>
-        Task.FromResult(DecisionOutcome.Approved);
+    public Task<FraudScreeningResult> ScreenAsync(FraudScreeningRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult(FraudScreeningResult.Approved);
 }

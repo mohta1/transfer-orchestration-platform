@@ -14,7 +14,6 @@ internal sealed class TransferSubmissionService(
     ITransferManagementTransaction transaction,
     ICustomerAuthorization customerAuthorization,
     IDailyTransferLimit dailyTransferLimit,
-    IFraudScreening fraudScreening,
     TimeProvider timeProvider) : ITransferSubmissionService
 {
     public async Task<SubmitTransferResult> SubmitAsync(SubmitTransferCommand command, CancellationToken cancellationToken)
@@ -89,15 +88,6 @@ internal sealed class TransferSubmissionService(
             else
             {
                 transfer.BeginFraudScreening(now);
-                if (await fraudScreening.ScreenAsync(request, cancellationToken) == DecisionOutcome.Rejected)
-                {
-                    transfer.RejectForFraud(now);
-                    outcome = TransferSubmissionOutcome.FraudRejected;
-                }
-                else
-                {
-                    transfer.RequestBalanceReservation(now);
-                }
             }
         }
 
@@ -105,7 +95,12 @@ internal sealed class TransferSubmissionService(
         {
             if (outcome == TransferSubmissionOutcome.Accepted)
             {
-                await processManager.ScheduleAsync(transfer.Id, TransferProcessAction.ReserveBalance, now, now, token);
+                await processManager.ScheduleAsync(
+                    transfer.Id,
+                    TransferProcessAction.RequestFraudScreening,
+                    now,
+                    now,
+                    token);
             }
             else
             {
@@ -144,6 +139,7 @@ internal sealed class TransferSubmissionService(
 
         return state switch
         {
+            TransferState.PendingFraudScreening => TransferSubmissionOutcome.Replay,
             TransferState.PendingBalanceReservation => TransferSubmissionOutcome.Replay,
             TransferState.FraudRejected => TransferSubmissionOutcome.FraudRejected,
             TransferState.Rejected => TransferSubmissionOutcome.Replay,

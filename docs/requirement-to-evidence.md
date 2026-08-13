@@ -129,6 +129,30 @@ Build: **0 warnings**, **0 errors**. Integration suite run twice in fresh proces
 
 ---
 
+## TASK-19 Gap Remediation — Fraud Screening (Scenario E, Domain Test #5)
+
+Verified TASK-19 (2026-08-13) on branch `feature/fraud-screening-resilience` with `TEST_DATABASE_CONNECTION_STRING` → local PostgreSQL 16.
+
+| Evidence | Requirement | Implementation | Tests |
+| -------- | ----------- | -------------- | ----- |
+| Scenario E | Fraud timeout/unavailability must not silently proceed; workflow remains recoverable with bounded retry and Manual Review escalation | Durable `RequestFraudScreening` process action; `FraudScreeningResult` outcomes; `FraudScreeningProcessStep` (external call outside DB, outcome in short transaction); `FraudScreeningRetryPolicy` | `FraudScreeningWorkflowTests.TimeoutLeavesDurableRecoverableWork`, `TemporarilyUnavailableLeavesDurableRecoverableWork`, `MaximumAttemptsEscalateToManualReview`, `RestartRediscoversPendingFraudWork`, `ConcurrentDuplicateClaimsProduceOneFraudTransition` |
+| Domain Test #5 | Fraud-rejected Transfer cannot continue | `Transfer.RejectForFraud`; guards on reservation/submission/settlement/completion | `TransferFraudScreeningTests.*` (6 tests) |
+| HTTP idempotency during pending fraud | Same key replay while screening pending creates no duplicate work | Submission persists `PendingFraudScreening` before worker runs | `TransferSubmissionApiTests.SameKeySamePayloadReplaysWithoutSideEffectsAndDifferentPayloadConflicts`, `SameKeyReplayDuringPendingFraudScreeningCreatesNoDuplicateWork` |
+| Fraud before reservation | No balance reservation without fraud approval | Approved fraud schedules exactly one `ReserveBalance` action | `FraudScreeningWorkflowTests.ApprovedFraudSchedulesExactlyOneReserveBalanceAction`, `TransferSubmissionApiTests.FraudRejectionCannotReachBalanceReservation` |
+
+Updated test totals (TASK-19):
+
+| Project | Passed |
+| ------- | ------ |
+| TransferOrchestration.Domain.Tests | 66 |
+| TransferOrchestration.IntegrationTests | 189 |
+| TransferOrchestration.ArchitectureTests | 12 |
+| **Total** | **267** |
+
+Build: **0 warnings**, **0 errors**. Integration suite run twice in fresh processes: both passed 189/189.
+
+---
+
 ## Related Documents
 
 - [00-ROADMAP-INDEX.md](./tasks/00-ROADMAP-INDEX.md)
