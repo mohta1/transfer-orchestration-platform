@@ -94,7 +94,7 @@ Detailed evidence lives in [docs/requirement-to-evidence.md](docs/requirement-to
 | Transactional Outbox, at-least-once, idempotent consumers | Verified |
 | Reconciliation, manual review, audit | Verified |
 | Security boundary (401/403/concealed 404) | Verified |
-| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 206 / 12) |
+| ≥10 domain tests, ≥12 integration tests, architecture tests | Verified (81 / 210 / 12) |
 | Five ADRs, eight diagrams | Verified |
 | Docker Compose runtime, CI | Verified |
 | Legacy runtime routing in production code | Partially verified (documented non-goal) |
@@ -437,11 +437,11 @@ Expected totals (counting `[Fact]`/`[Theory]` cases per project):
 | Project | Tests |
 | ------- | ----- |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 206 |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **299** |
+| **Total** | **303** |
 
-Counting method: `dotnet test --list-tests --no-build` per project; each `[Theory]` data row counts as one executable case.
+Counting method: CI `dotnet test` totals on branch SHA (TASK-22 PR #32 run 31686999881). Local `dotnet test --list-tests` on Windows may report 206 integration cases due to test-discovery differences; CI pass count is authoritative.
 
 Run PostgreSQL integration suite twice in fresh processes to detect order dependence:
 

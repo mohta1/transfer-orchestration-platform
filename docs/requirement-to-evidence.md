@@ -2,8 +2,9 @@
 
 **Status:** TASK-22 final strict compliance audit complete (branch verification)
 **Baseline main SHA:** `d7833b1be63045b4f03f0828a5daabb22e634b1d` (TASK-21 merged)
-**TASK-22 branch SHA:** pending push (`release/challenge-compliance-final`)
-**Last verified:** 2026-08-13 (TASK-22 clean-room audit; integration/runtime via CI when Docker unavailable locally)
+**TASK-22 branch SHA:** `41eb354` (`release/challenge-compliance-final`)
+**CI SHA:** `41eb354` — [PR #32 run 31686999881](https://github.com/mohta1/transfer-orchestration-platform/actions/runs/31686999881) (Build and Test + Runtime Verification passed)
+**Last verified:** 2026-08-13 (TASK-22 clean-room audit)
 
 This matrix maps mandatory challenge evidence to **verified** implementation, test, and documentation paths. Status meanings:
 
@@ -30,22 +31,20 @@ Partially verified (intentional non-goals): REQ-001 (Legacy coexistence runtime)
 
 ---
 
-## Test Totals (REQ-041–044, REQ-058) — TASK-22 recount
+## Test Totals (REQ-041–044, REQ-058) — TASK-22
 
-**Counting method:** `dotnet test --list-tests --no-build` per project; each `[Theory]` data row = one executable case. No duplicate theory rows or framework-only tests included.
+**Counting method:** CI `dotnet test TransferOrchestrationPlatform.sln` on TASK-22 PR #32 (run 31686999881).
 
-| Project | Executable cases |
-| ------- | ---------------- |
+| Project | Passed |
+| ------- | ------ |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 206 |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **299** |
+| **Total** | **303** |
 
-**Local verification (2026-08-13):** Domain 81/81 passed; Architecture 12/12 passed. Integration suite requires PostgreSQL (`TEST_DATABASE_CONNECTION_STRING`); local Docker daemon unavailable — integration/runtime evidence from CI PR #31 (210 passed at merge time; TASK-22 list-tests recount 206 — see note below) and TASK-22 PR CI pending.
+**Local verification (2026-08-13):** Domain 81/81 passed; Architecture 12/12 passed. Integration 210/210 passed on CI with PostgreSQL 16 service.
 
-**Note on integration count:** Prior TASK-21 README cited 210 from CI console totals. TASK-22 `dotnet test --list-tests` recount yields **206** executable integration cases on SHA `d7833b1`. Both exceed the challenge minimum of 12. Final authoritative pass/fail count is CI on the TASK-22 branch SHA.
-
-**Build (TASK-22):** **0 warnings**, **0 errors** (`dotnet build TransferOrchestrationPlatform.sln --no-restore`).
+**Build (TASK-22):** **0 warnings**, **0 errors**.
 
 ---
 
@@ -94,7 +93,7 @@ Partially verified (intentional non-goals): REQ-001 (Legacy coexistence runtime)
 | REQ-039 | Roadmap | Operator-only manual commands | Role policy on manual endpoints | `SecurityBoundaryTests.ManualCommandOrdinaryUserForbidden`, `ManualOperatorSucceeds` | [team-engineering-model.md](./team-engineering-model.md) §10 | **Verified** | |
 | REQ-040 | Roadmap | Liveness and readiness | `/health/live`, `/health/ready`, `PostgreSqlHealthCheck` | `TransferReadAndHealthApiTests.LivenessRemainsHealthyWhenDatabaseIsUnavailable`, `ReadinessIsHealthyWhenDatabaseIsReachable`, `ReadinessIsUnhealthyWhenDatabaseIsUnavailable` | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
 | REQ-041 | Roadmap | ≥10 meaningful domain tests | Domain test project | **81** tests in `TransferOrchestration.Domain.Tests` (TASK-21 recount) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Exceeds minimum |
-| REQ-042 | Roadmap | ≥12 meaningful integration tests | Integration test project | **206** executable cases in `TransferOrchestration.IntegrationTests` (TASK-22 recount) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Real PostgreSQL |
+| REQ-042 | Roadmap | ≥12 meaningful integration tests | Integration test project | **210** passed on CI (TASK-22 PR #32) | [TASK-15](./tasks/TASK-15-test-hardening.md) §10 | **Verified** | Real PostgreSQL |
 | REQ-043 | Roadmap | Genuine PostgreSQL concurrency tests | Concurrent reservation/idempotency tests | `AccountReservationContractTests.ConcurrentReservationsThatDoNotBothFitProduceOneBusinessLoser`, `TransferSubmissionApiTests.ConcurrentIdenticalRequestsCreateAtMostOneTransferAndProcess` | [TASK-15](./tasks/TASK-15-test-hardening.md) | **Verified** | |
 | REQ-044 | Roadmap | Restart, Outbox, duplicate-delivery, security coverage | Multiple test classes | `TransactionalOutboxTests`, `NotificationConsumerTests`, `ReconciliationWorkflowTests`, `SecurityBoundaryTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) §requirement matrix | **Verified** | |
 | REQ-045 | Roadmap | Mechanical architecture enforcement | Architecture test project | **12** tests in `TransferOrchestration.ArchitectureTests` | [TASK-15](./tasks/TASK-15-test-hardening.md) | **Verified** | |
@@ -110,8 +109,8 @@ Partially verified (intentional non-goals): REQ-001 (Legacy coexistence runtime)
 | REQ-055 | Roadmap | Deterministic migration/setup | `migrate` service, `scripts/apply-database-migrations.*` | Migrations apply in CI/local | [runtime-setup.md](./runtime-setup.md) | **Verified** | |
 | REQ-056 | Roadmap | Persistent PostgreSQL volume | `transfer_postgres_data` volume | TASK-16 compose verification script | [runtime-setup.md](./runtime-setup.md), TASK-16 | **Verified** | |
 | REQ-057 | Roadmap | Clean runtime image | Multi-stage `Dockerfile` | CI runtime-verification job inspects image | [.github/workflows/ci.yml](../.github/workflows/ci.yml), TASK-16 | **Verified** | No Tests.dll, no SDK |
-| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-22: 0 warnings, 0 errors, **299** tests (81/206/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | Integration requires `TEST_DATABASE_CONNECTION_STRING` |
-| REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI on TASK-22 PR SHA (pending) | TASK-22 PR evidence | **Verified** | Final main SHA confirmation pending TASK-22 merge |
+| REQ-058 | Roadmap | Clean restore/build/test | Solution build + README | TASK-22: 0 warnings, 0 errors, **303** tests (81/210/12) | [README.md](../README.md), [runtime-setup.md](./runtime-setup.md) | **Verified** | CI run 31686999881 |
+| REQ-059 | Roadmap | GitHub Actions CI | `.github/workflows/ci.yml` | CI passed on TASK-22 SHA `41eb354` (run 31686999881) | TASK-22 PR #32 | **Verified** | Final main SHA confirmation pending TASK-22 merge |
 | REQ-060 | Roadmap | Reviewer README, demo path, secret hygiene | [README.md](../README.md), `scripts/seed-local-demo-data.*`, `scripts/LocalDevToken/`, `scripts/demo-transfer-payload.json` | Live Compose demo: POST 202, GET 200/404/401, idempotency replay/conflict | [README.md](../README.md), TASK-18 evidence | **Verified** | No committed secrets; token helper reads env only |
 | REQ-061 | Roadmap §30 | Architecture Review Simulation | N/A | N/A | [architecture-review-simulation.md](./architecture-review-simulation.md) — 12 headings | **Verified** | TASK-21; aligns ADR-001–005 |
 | REQ-062 | Roadmap §34 | AI-Assisted Engineering Report (candidate) | N/A | N/A | [ai-assisted-engineering-report.md](./ai-assisted-engineering-report.md) (~1,050 words) | **Verified** | TASK-21; policy remains in ai-assisted-engineering.md |
@@ -140,9 +139,9 @@ Verified TASK-21 (2026-08-13). Domain/architecture tests executed locally; integ
 | Project | Passed / counted |
 | ------- | ---------------- |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 206 (TASK-22 recount; CI reported 210 at PR #31) |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **299** |
+| **Total** | **303** |
 
 Build (TASK-21): **0 warnings**, **0 errors**.
 
@@ -232,9 +231,9 @@ Updated test totals (TASK-20 merged):
 | Project | Passed |
 | ------- | ------ |
 | TransferOrchestration.Domain.Tests | 81 |
-| TransferOrchestration.IntegrationTests | 206 (TASK-22 recount) |
+| TransferOrchestration.IntegrationTests | 210 |
 | TransferOrchestration.ArchitectureTests | 12 |
-| **Total** | **299** |
+| **Total** | **303** |
 
 Build: **0 warnings**, **0 errors**.
 
@@ -242,7 +241,7 @@ Build: **0 warnings**, **0 errors**.
 
 ## TASK-22 — Final Strict Compliance Audit
 
-Verified 2026-08-13 on branch `release/challenge-compliance-final` from main SHA `d7833b1`.
+Verified 2026-08-13 on branch `release/challenge-compliance-final` SHA `41eb354` (from main `d7833b1`).
 
 ### Audit outcome
 
@@ -252,7 +251,7 @@ Verified 2026-08-13 on branch `release/challenge-compliance-final` from main SHA
 | 22 §6 business rules | Mapped to code + tests (see matrix below) |
 | Failure scenarios A–K | Verified (E fraud timeout, K stuck operations closed in TASK-19/20) |
 | §23 domain tests (10) | All covered (81 domain cases) |
-| §23 integration tests (12) | All covered (206 integration cases) |
+| §23 integration tests (12) | All covered (210 integration cases on CI) |
 | §24 observability baseline | Structured logs implemented; metrics identified only (no false Prometheus claim) |
 | §25 security | JWT auth, masking, audit actor, operator separation verified |
 | §§27–34 leadership docs | Complete (TASK-21) |
@@ -419,9 +418,8 @@ Full monitoring infrastructure (Prometheus/Grafana) is **not** deployed or claim
 | `dotnet build --no-restore` | 0 warnings, 0 errors |
 | `dotnet test` domain | 81/81 passed |
 | `dotnet test` architecture | 12/12 passed |
-| `dotnet test` integration (local) | Skipped — PostgreSQL/Docker unavailable on audit host |
-| Integration (CI PR #31 on equivalent code) | 210/210 passed (merge validation) |
-| Docker Compose config/build/runtime | CI Runtime Verification job on PR #31 — passed |
+| `dotnet test` integration (CI) | 210/210 passed (run 31686999881) |
+| Docker Compose config/build/runtime | CI Runtime Verification passed (run 31686999881; initial Docker Hub 500 transient, rerun succeeded) |
 | Secret/git scan | No committed secrets, `.env`, bin/obj, or credentials found |
 | Link/placeholder scan | No TODO/TBD in required docs; REMAINING-TASKS archived |
 | Draw.io XML | 8 diagram files present; valid XML structure |
@@ -432,8 +430,8 @@ Full monitoring infrastructure (Prometheus/Grafana) is **not** deployed or claim
 | -- | ------- | -------------- |
 | F-01 | Legacy runtime routing not implemented | Non-blocking (documented non-goal per ADR-005) |
 | F-02 | Reconciliation logic in TransferManagement (DEBT-001) | Non-blocking improvement |
-| F-03 | Integration test count 206 (list-tests) vs prior 210 (CI console) | Preference — both exceed minimum; TASK-22 standardised on list-tests method |
-| F-04 | Local Docker unavailable during TASK-22 audit | Non-blocking — CI runtime verification provides equivalent evidence |
+| F-03 | Windows `list-tests` reports 206 integration vs CI 210 passed | Preference — CI pass count authoritative |
+| F-04 | Local Docker unavailable during TASK-22 audit | Non-blocking — CI runtime verification passed on PR #32 |
 | F-05 | No dedicated GET-without-token 401 test | Preference — covered via POST/manual/stuck paths |
 
 **Blockers: 0**
