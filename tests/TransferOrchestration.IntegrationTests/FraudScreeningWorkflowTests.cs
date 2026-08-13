@@ -378,6 +378,7 @@ public sealed class FraudScreeningWorkflowTests : IAsyncLifetime
             services.Replace(ServiceDescriptor.Singleton(timeProvider));
         }
 
+        services.RemoveHostedWorkers();
         return services.BuildServiceProvider();
     }
 
