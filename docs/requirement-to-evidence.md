@@ -2,7 +2,7 @@
 
 **Status:** TASK-21 leadership deliverables complete
 **Baseline main SHA:** `20bc709739d6368a932df9e2ff8dc944d8d2409d` (TASK-20 merged)
-**TASK-21 branch SHA:** *(filled at PR open)*
+**TASK-21 branch SHA:** `4dde494` (docs/challenge-leadership-compliance)
 **Last verified:** 2026-08-13 (TASK-21 doc validation + domain/architecture test run; integration suite requires PostgreSQL)
 
 This matrix maps mandatory challenge evidence to **verified** implementation, test, and documentation paths. Status meanings:
